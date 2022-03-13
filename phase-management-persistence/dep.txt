@@ -1,8 +1,0 @@
-base_exception
-configuration_manager
-db_connection_factory
-id_generator
-project_phases
-typesafe_enum
-workdays
-phase_management

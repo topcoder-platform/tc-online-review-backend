@@ -1,6 +1,0 @@
-base_exception
-configmanager
-review_data_structure
-scorecard_data_structure
-simple_cache
-weighted_calculator

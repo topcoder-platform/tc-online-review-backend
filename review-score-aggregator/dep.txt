@@ -1,4 +1,0 @@
-base_exception
-object_factory_config_manager_plugin
-configuration_manager
-object_factory

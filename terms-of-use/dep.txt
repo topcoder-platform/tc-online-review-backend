@@ -1,8 +1,0 @@
-base_exception
-configuration_api
-configuration_manager
-configuration_persistence
-logging_wrapper
-db_connection_factory
-id_generator
-typesafe_enum
