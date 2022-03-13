@@ -1,0 +1,11 @@
+contest_eligibility_persistence
+base_exception
+typesafe_enum
+object_formatter
+logging_wrapper
+configuration_api
+configuration_manager
+configuration_persistence
+object_factory
+object_factory_configuration_api_plugin
+	

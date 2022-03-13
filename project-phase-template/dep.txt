@@ -1,0 +1,10 @@
+base_exception
+typesafe_enum
+configmanager
+object_factory
+project_phases
+workdays
+command_line_utility
+db_connection_factory
+configuration_persistence
+configuration_api

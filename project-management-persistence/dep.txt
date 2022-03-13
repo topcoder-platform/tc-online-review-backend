@@ -1,0 +1,11 @@
+base_exception
+configuration_manager
+configuration_api
+db_connection_factory
+id_generator
+search_builder
+database_abstraction
+project_management
+resource_management
+logging_wrapper
+typesafe_enum

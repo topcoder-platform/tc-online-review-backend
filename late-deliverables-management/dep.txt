@@ -1,0 +1,14 @@
+base_exception
+configuration_api
+configuration_persistence
+search_builder
+database_abstraction
+logging_wrapper
+db_connection_factory
+object_factory
+object_factory_configuration_api_plugin
+object_formatter
+typesafe_enum
+configuration_manager
+data_validation
+class_associations

@@ -1,0 +1,12 @@
+configmanager
+search_builder
+database_abstraction
+db_connection_factory
+id_generator
+logging_wrapper
+object_factory
+resource_management
+base_exception
+typesafe_enum
+object_formatter
+configuration_api

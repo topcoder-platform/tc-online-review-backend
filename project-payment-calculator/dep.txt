@@ -1,0 +1,11 @@
+base_exception
+configuration_api
+configuration_manager
+configuration_persistence
+db_connection_factory
+logging_wrapper
+object_factory_configuration_api_plugin
+object_factory
+object_formatter
+topcoder_commons_utility
+typesafe_enum
