@@ -39,14 +39,14 @@ public class MockPhaseManager implements PhaseManager {
     }
 
     public OperationCheckResult canStart(Phase phase) {
-        return new OperationCheckResult(null);
+        return new OperationCheckResult("fail");
     }
 
     public void start(Phase phase, String operator) {
     }
 
     public OperationCheckResult canEnd(Phase phase) {
-        return new OperationCheckResult(null);
+        return new OperationCheckResult("fail");
     }
 
     public void end(Phase phase, String operator) {

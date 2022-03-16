@@ -90,7 +90,7 @@ public class AutoPilotTest extends TestCase {
     public void testAutoPilotAutoPilotSourceProjectPilot() throws Exception {
         AutoPilotSource autoPilotSource = new ActiveAutoPilotSource();
         ProjectPilot projectPilot = new DefaultProjectPilot();
-        autoPilot = new AutoPilot(autoPilotSource, projectPilot, null);
+        autoPilot = new AutoPilot(autoPilotSource, projectPilot, LogManager.getLog());
         assertTrue(autoPilot instanceof AutoPilot);
     }
 
@@ -147,11 +147,11 @@ public class AutoPilotTest extends TestCase {
      */
     private void createAutoPilot2() throws Exception {
         AutoPilotSource autoPilotSource = new ActiveAutoPilotSource(new ProjectManagerImpl2(
-            "project_manager"), "Active", "Autopilot Option", "On", null);
+            "project_manager"), "Active", "Autopilot Option", "On", LogManager.getLog());
         ProjectPilot projectPilot = new DefaultProjectPilot(new DefaultPhaseManager2("pm2"),
             DefaultProjectPilot.DEFAULT_SCHEDULED_STATUS_NAME,
             DefaultProjectPilot.DEFAULT_OPEN_STATUS_NAME, LogManager.getLog("ProjetPilot"));
-        autoPilot = new AutoPilot(autoPilotSource, projectPilot, null);
+        autoPilot = new AutoPilot(autoPilotSource, projectPilot, LogManager.getLog());
     }
 
     /**

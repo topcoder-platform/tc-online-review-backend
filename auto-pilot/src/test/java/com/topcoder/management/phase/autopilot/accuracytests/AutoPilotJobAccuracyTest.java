@@ -62,6 +62,7 @@ public class AutoPilotJobAccuracyTest extends TestCase {
         ConfigHelper.loadConfiguration(new File("accuracy/config.xml"));
 
         initMocks();
+        new AutoPilotJob(TestDataFactory.getAutoPilot(), TestDataFactory.OPERATOR, TestDataFactory.getLog());
 
         this.testedInstances = new AutoPilotJob[3];
         this.testedInstances[0] = new AutoPilotJob();
@@ -107,7 +108,7 @@ public class AutoPilotJobAccuracyTest extends TestCase {
         Assert.assertEquals("The auto-pilot is not correct.",
                             TestDataFactory.getAutoPilot(), this.testedInstances[1].getAutoPilot());
         Assert.assertEquals("The operator is not correct.",
-                            AutoPilotJob.DEFAULT_OPERATOR, this.testedInstances[1].getOperator());
+                TestDataFactory.OPERATOR, this.testedInstances[1].getOperator());
     }
 
     /**

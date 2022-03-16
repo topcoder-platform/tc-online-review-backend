@@ -6,6 +6,7 @@ package com.topcoder.management.phase.autopilot;
 
 import java.util.Iterator;
 
+import com.topcoder.util.log.LogManager;
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
@@ -37,7 +38,7 @@ public class AutoPilotJobTest extends TestCase {
      */
     protected void setUp() throws Exception {
         // Release AutoPilotJob.scheduler.
-        TestHelper.releaseSingletonInstance(AutoPilotJob.class, "scheduler");
+        TestHelper.releaseSingletonInstance(AutoPilotJob.class, "operator");
 
         ConfigManager cfg = ConfigManager.getInstance();
         cfg.add(ActiveAutoPilotSource.class.getName(), "active_auto_source_pilot.xml",
@@ -105,7 +106,7 @@ public class AutoPilotJobTest extends TestCase {
     public void testAutoPilotJobStringStringOperator() throws Exception {
         job = new AutoPilotJob("AutoPilotJob_Operator", AutoPilot.class.getName());
         assertTrue(job instanceof AutoPilotJob);
-        assertEquals("Auditor", job.getOperator());
+        assertEquals("AutoPilotJob", job.getOperator());
     }
 
     /**
@@ -114,7 +115,7 @@ public class AutoPilotJobTest extends TestCase {
      * @throws Exception - to JUnit.
      */
     public void testAutoPilotJobAutoPilotString() throws Exception {
-        job = new AutoPilotJob(new AutoPilot(), "Operator", null);
+        job = new AutoPilotJob(new AutoPilot(), "Operator", LogManager.getLog());
         assertTrue(job instanceof AutoPilotJob);
         assertEquals("Operator", job.getOperator());
     }
@@ -131,7 +132,8 @@ public class AutoPilotJobTest extends TestCase {
      * Test method for {@link AutoPilotJob#getOperator()}.
      * Verifies return the default operator.
      */
-    public void testGetOperator() {
+    public void testGetOperator() throws ConfigurationException {
+        job = new AutoPilotJob("AutoPilotJob_Operator", AutoPilot.class.getName());
         assertEquals(AutoPilotJob.DEFAULT_OPERATOR, job.getOperator());
     }
 
@@ -180,85 +182,6 @@ public class AutoPilotJobTest extends TestCase {
         assertEquals(AutoPilotJob.STATUS_RUNNING, job.getStatus());
         job.run();
         assertEquals(AutoPilotJob.STATUS_DONE, job.getStatus());
-    }
-
-    /**
-     * Test method for {@link AutoPilotJob#main(java.lang.String[])}.
-     * Verifies print usage if no arguments specified.
-     * @throws Exception - to JUnit.
-     */
-//    public void testMain() throws Exception {
-//        AutoPilotJob.main(new String[0]);
-//    }
-
-    /**
-     * Test method for {@link AutoPilotJob#main(java.lang.String[])}.
-     * Verifies poll mode works properly.
-     * @throws Exception - to JUnit.
-     */
-//    public void testMainPoll() throws Exception {
-//        AutoPilotJob.main(new String[] {"-namespace", "scheduler", "-poll", "5"});
-//        Job job1 = findJob(AutoPilotJob.getScheduler(), "AutoPilotJob");
-//        assertNotNull("AutoPilotJob not added", job1);
-//    }
-
-    /**
-     * Test method for {@link AutoPilotJob#main(java.lang.String[])}.
-     * Verifies project mode work properly.
-     * @throws Exception - to JUnit.
-     */
-//    public void testMainProject() throws Exception {
-//        AutoPilotJob.main(new String[] {"-project"});
-//    }
-
-    /**
-     * Test method for {@link AutoPilotJob#createJob(java.lang.String, int)}.
-     * Verifies the job created properly.
-     */
-//    public void testCreateJob() {
-//        Job job1 = AutoPilotJob.createJob("test", 3600 * 1000);
-//        assertEquals("test", job1.getName());
-//        assertEquals(3600 * 1000, job1.getIntervalValue());
-//    }
-
-    /**
-     * Test method for {@link AutoPilotJob#schedule(java.lang.String, java.lang.String, int)}.
-     * Verifies the job scheduled properly.
-     * @throws Exception - to JUnit.
-     */
-//    public void testSchedule() throws Exception {
-//        AutoPilotJob.schedule("scheduler", "test", 3600 * 1000);
-//        Job job1 = findJob(AutoPilotJob.getScheduler(), "test");
-//        assertNotNull("job not added", job1);
-//    }
-
-    /**
-     * Test method for {@link AutoPilotJob#getScheduler()}.
-     * Scheduler returned may be null cause of lazy creation.
-     */
-//    public void testGetScheduler() {
-//        assertTrue(AutoPilotJob.getScheduler() == null
-//            || AutoPilotJob.getScheduler() instanceof Scheduler);
-//    }
-
-    /**
-     * <p>
-     * Find job with the specified name.
-     * </p>
-     * @param scheduler the scheduler instance.
-     * @param jobName the job name.
-     * @return the job with the specified name.
-     */
-    private static Job findJob(Scheduler scheduler, String jobName) {
-        Job oldJob = null;
-        for (Iterator it = scheduler.getJobList().iterator(); it.hasNext();) {
-            Job job = (Job) it.next();
-            if (job.getName().equals(jobName)) {
-                oldJob = job;
-                break;
-            }
-        }
-        return oldJob;
     }
 
     /**

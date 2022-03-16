@@ -1,8 +1,6 @@
 package com.topcoder.security.authenticationfactory.accuracytests;
 
-import com.topcoder.security.authenticationfactory.AuthenticateException;
-import com.topcoder.security.authenticationfactory.Principal;
-import com.topcoder.security.authenticationfactory.Response;
+import com.topcoder.security.authenticationfactory.*;
 import com.topcoder.security.authenticationfactory.http.basicimpl.HTTPBasicAuthenticator;
 import junit.framework.TestCase;
 
@@ -21,7 +19,7 @@ public class HTTPBasicAuthenticatorAccuracyTest extends TestCase {
     /**
      * HTTPBasicAuthenticator is used to test the functionality of AbstractAuthenticator.
      */
-    private SubHTTPBasicAuthenticator authenticator = null;
+    private HTTPBasicAuthenticator authenticator = null;
     private Principal p = null;
 
     /**
@@ -31,7 +29,7 @@ public class HTTPBasicAuthenticatorAccuracyTest extends TestCase {
      */
     protected void setUp() throws Exception {
         TestUtil.loadConfigFile(TestUtil.ACCURACY_TEST_DIR + "testConfig.xml");
-        authenticator = new SubHTTPBasicAuthenticator(NAMESPACE);
+        authenticator = new HTTPBasicAuthenticatorSubclass(NAMESPACE);
 
         // add the username and password, note that "UserName" and "Pwd" is the key defined in the property
         // "mappings" in the configuration namespace of DefaultKeyConverter
@@ -54,8 +52,8 @@ public class HTTPBasicAuthenticatorAccuracyTest extends TestCase {
     /**
      * Test if the default mappings is loaded properly from the configuration file in normal case.
      */
-    public void testLoadDefaultMapping() {
-        Map defaultMappings = authenticator.getDefaultMappings();
+    public void testLoadDefaultMapping() throws ConfigurationException {
+        Map defaultMappings = new SubHTTPBasicAuthenticator(NAMESPACE).getDefaultMappings();
 
         assertTrue("'protocol' key is not loaded", defaultMappings.containsKey("protocol"));
         assertTrue("'port' key is not loaded", defaultMappings.containsKey("port"));
@@ -99,7 +97,7 @@ public class HTTPBasicAuthenticatorAccuracyTest extends TestCase {
      */
     public void testDoAuthenticateConvertPort1() throws Exception {
         TestUtil.loadConfigFile(TestUtil.ACCURACY_TEST_DIR + "testConfig_convert_port.xml");
-        authenticator = new SubHTTPBasicAuthenticator(NAMESPACE);
+        authenticator = new HTTPBasicAuthenticatorSubclass(NAMESPACE);
 
         Response r = authenticator.authenticate(p);
         assertEquals("Not the expected authentication result.", true, r.isSuccessful());
@@ -112,7 +110,7 @@ public class HTTPBasicAuthenticatorAccuracyTest extends TestCase {
      */
     public void testDoAuthenticateConvertPort2() throws Exception {
         TestUtil.loadConfigFile(TestUtil.ACCURACY_TEST_DIR + "testConfig_convert_port.xml");
-        authenticator = new SubHTTPBasicAuthenticator(NAMESPACE);
+        authenticator = new HTTPBasicAuthenticatorSubclass(NAMESPACE);
         p.addMapping("Port", new Integer(8080));
 
         Response r = authenticator.authenticate(p);

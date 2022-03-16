@@ -181,7 +181,7 @@ public class MockPhaseManager implements PhaseManager {
             throw new PhaseManagementException("");
         }
 
-        return new OperationCheckResult(null);
+        return new OperationCheckResult(canStart, canStart ? null : "fail");
     }
 
     /**
@@ -212,7 +212,7 @@ public class MockPhaseManager implements PhaseManager {
             throw new PhaseManagementException("");
         }
 
-        return new OperationCheckResult(null);
+        return new OperationCheckResult(canEnd, canEnd ? null : "fail");
     }
 
     /**

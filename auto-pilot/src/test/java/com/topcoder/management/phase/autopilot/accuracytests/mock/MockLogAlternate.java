@@ -33,56 +33,56 @@ public class MockLogAlternate extends MockLog {
 
     @Override
     public void log(Level level, Object message, ObjectFormatter objectFormatter) {
-
+        super.log(level, message);
     }
 
     @Override
     public void log(Level level, String messageFormat, Object arg1) {
-
+        super.log(level, messageFormat);
     }
 
     @Override
     public void log(Level level, String messageFormat, Object arg1, Object arg2) {
-
+        super.log(level, messageFormat);
     }
 
     @Override
     public void log(Level level, String messageFormat, Object arg1, Object arg2, Object arg3) {
-
+        super.log(level, messageFormat);
     }
 
     @Override
     public void log(Level level, String messageFormat, Object[] args) {
-
+        super.log(level, messageFormat);
     }
 
     @Override
     public void log(Level level, Throwable cause, Object message) {
-
+        super.log(level, message);
     }
 
     @Override
     public void log(Level level, Throwable cause, Object message, ObjectFormatter objectFormatter) {
-
+        super.log(level, message);
     }
 
     @Override
     public void log(Level level, Throwable cause, String messageFormat, Object arg1) {
-
+        super.log(level, messageFormat);
     }
 
     @Override
     public void log(Level level, Throwable cause, String messageFormat, Object arg1, Object arg2) {
-
+        super.log(level, messageFormat);
     }
 
     @Override
     public void log(Level level, Throwable cause, String messageFormat, Object arg1, Object arg2, Object arg3) {
-
+        super.log(level, messageFormat);
     }
 
     @Override
     public void log(Level level, Throwable cause, String messageFormat, Object[] args) {
-
+        super.log(level, messageFormat);
     }
 }
