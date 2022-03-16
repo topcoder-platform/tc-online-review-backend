@@ -6,6 +6,7 @@ package com.topcoder.management.phase.autopilot.impl;
 
 import java.util.Iterator;
 
+import com.topcoder.util.log.LogManager;
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
@@ -87,7 +88,7 @@ public class ActiveAutoPilotSourceTest extends TestCase {
      */
     public void testActiveAutoPilotSourceProjectManagerStringStringString() throws Exception {
         source = new ActiveAutoPilotSource(new ProjectManagerImpl("project_manager"), "Active",
-            "Autopilot Option", "On", null);
+            "Autopilot Option", "On", LogManager.getLog());
         assertTrue(source instanceof AutoPilotSource);
         assertTrue(source.getProjectManager() instanceof ProjectManagerImpl);
     }

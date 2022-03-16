@@ -8,6 +8,7 @@ import com.topcoder.management.phase.PhaseManager;
 import com.topcoder.management.phase.autopilot.AutoPilotResult;
 import com.topcoder.management.phase.autopilot.ConfigurationException;
 import com.topcoder.management.phase.autopilot.PhaseOperationException;
+import com.topcoder.management.phase.autopilot.accuracytests.TestDataFactory;
 import com.topcoder.management.phase.autopilot.impl.DefaultProjectPilot;
 import com.topcoder.project.phases.Phase;
 import com.topcoder.util.log.Log;
@@ -81,7 +82,11 @@ class DefaultProjectPilotSubclass extends DefaultProjectPilot {
      * here.</p>
      */
     public Log getLogger() {
-        return LogManager.getLog();
+        return TestDataFactory.getLog();
+    }
+
+    public Log getLog() {
+        return TestDataFactory.getLog();
     }
 
     /**

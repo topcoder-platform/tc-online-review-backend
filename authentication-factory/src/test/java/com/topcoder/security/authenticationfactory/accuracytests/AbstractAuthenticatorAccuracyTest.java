@@ -1,6 +1,7 @@
 package com.topcoder.security.authenticationfactory.accuracytests;
 
 import com.topcoder.security.authenticationfactory.AuthenticateException;
+import com.topcoder.security.authenticationfactory.HTTPBasicAuthenticatorSubclass;
 import com.topcoder.security.authenticationfactory.Principal;
 import com.topcoder.security.authenticationfactory.Response;
 import com.topcoder.security.authenticationfactory.http.basicimpl.HTTPBasicAuthenticator;
@@ -34,7 +35,7 @@ public class AbstractAuthenticatorAccuracyTest extends TestCase {
         TestUtil.clearAllNamespace();
 
         TestUtil.loadConfigFile(TestUtil.ACCURACY_TEST_DIR + "testConfig.xml");
-        authenticator = new HTTPBasicAuthenticator(NAMESPACE);
+        authenticator = new HTTPBasicAuthenticatorSubclass(NAMESPACE);
 
         // add the username and password, note that "UserName" and "Pwd" is the key defined in the property
         // "mappings" in the configuration namespace of DefaultKeyConverter
@@ -72,7 +73,7 @@ public class AbstractAuthenticatorAccuracyTest extends TestCase {
     public void testConverterMissingConverterSetting()
         throws Exception {
         TestUtil.loadConfigFile(TestUtil.ACCURACY_TEST_DIR + "testConfig_missing_principal.xml");
-        authenticator = new HTTPBasicAuthenticator(NAMESPACE);
+        authenticator = new HTTPBasicAuthenticatorSubclass(NAMESPACE);
 
         Response res = authenticator.authenticate(p);
         assertEquals("Not the expected authentication result.", true, res.isSuccessful());
@@ -97,7 +98,7 @@ public class AbstractAuthenticatorAccuracyTest extends TestCase {
      */
     public void testCacheNoCache() throws Exception {
         TestUtil.loadConfigFile(TestUtil.ACCURACY_TEST_DIR + "testConfig_missing_cache.xml");
-        authenticator = new HTTPBasicAuthenticator(NAMESPACE);
+        authenticator = new HTTPBasicAuthenticatorSubclass(NAMESPACE);
 
         Response r = authenticator.authenticate(p);
         Response r1 = authenticator.authenticate(p);

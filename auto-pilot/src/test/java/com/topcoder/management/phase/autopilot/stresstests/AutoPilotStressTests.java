@@ -8,6 +8,7 @@ import java.util.Iterator;
 
 import com.topcoder.management.phase.autopilot.AutoPilot;
 import com.topcoder.management.phase.autopilot.AutoPilotJob;
+import com.topcoder.management.phase.autopilot.accuracytests.TestDataFactory;
 import com.topcoder.util.config.ConfigManager;
 
 import junit.framework.TestCase;
@@ -40,12 +41,12 @@ public class AutoPilotStressTests extends TestCase {
      */
     protected void setUp() throws Exception {
         // Release AutoPilotJob.scheduler.
-        TestHelper.releaseSingletonInstance(AutoPilotJob.class, "scheduler");
+        TestHelper.releaseSingletonInstance(AutoPilotJob.class, "operator");
 
         tearDown();
         ConfigManager.getInstance().add("StressTests" + File.separator + "AutoPilot.xml");
         autoPilot = new AutoPilot();
-//        autoPilotJob = new AutoPilotJob(autoPilot, "add");
+        autoPilotJob = new AutoPilotJob(autoPilot, "add", TestDataFactory.getLog());
     }
 
     /**
@@ -68,20 +69,6 @@ public class AutoPilotStressTests extends TestCase {
             autoPilotJob.run();
         }
         System.out.println("Test AutoPilotJob#run() for " + RUN_NUM + " times.");
-        System.out.println("It took " + (System.currentTimeMillis() - current) + " ms.");
-        System.out.println();
-    }
-
-    /**
-     * Stress test for method <code>schedule(String, String, int)</code> of <code>AutoPilotJob</code>.
-     * @throws Exception to JUnit
-     */
-    public void testSchedule() throws Exception {
-        long current = System.currentTimeMillis();
-        for (int i = 0; i < RUN_NUM; ++i) {
-//            AutoPilotJob.schedule(AutoPilotJob.class.getName(), "MyJob", 1);
-        }
-        System.out.println("Test AutoPilotJob#schedule(String, String, int) for " + RUN_NUM + " times.");
         System.out.println("It took " + (System.currentTimeMillis() - current) + " ms.");
         System.out.println();
     }

@@ -80,7 +80,7 @@ public class MockPhaseManager implements PhaseManager {
      * @return always false
      */
     public OperationCheckResult canEnd(Phase phase) {
-        return new OperationCheckResult(null);
+        return new OperationCheckResult("fail");
     }
 
     /**
@@ -89,7 +89,7 @@ public class MockPhaseManager implements PhaseManager {
      * @return always false
      */
     public OperationCheckResult canStart(Phase phase) {
-        return new OperationCheckResult(null);
+        return new OperationCheckResult("fail");
     }
 
     /**

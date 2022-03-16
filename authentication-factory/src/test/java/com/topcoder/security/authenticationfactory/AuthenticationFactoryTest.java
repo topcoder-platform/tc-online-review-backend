@@ -77,7 +77,9 @@ public class AuthenticationFactoryTest extends TestCase {
      * Test getAuthenticator.
      * @throws AuthenticateException to JUnit
      */
-    public void testGetAuthenticator() throws AuthenticateException {
+    public void testGetAuthenticator() throws AuthenticateException, ConfigurationException {
+        ConfigHelper.cleanAndLoadConfig("factory.xml");
+        factory.refresh();
         Authenticator auth = factory.getAuthenticator("http");
         Principal p = new Principal(new Object());
 
@@ -115,6 +117,8 @@ public class AuthenticationFactoryTest extends TestCase {
         final String auth3 = "https";
         final String auth4 = "https2";
 
+        ConfigHelper.cleanAndLoadConfig("factory.xml");
+        factory.refresh();
         // in original config file, there are two authenticator 'http' and 'http2'
         assertNotNull(factory.getAuthenticator(auth1));
         assertNotNull(factory.getAuthenticator(auth2));

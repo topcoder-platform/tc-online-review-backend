@@ -10,6 +10,7 @@ import com.topcoder.management.phase.autopilot.impl.ActiveAutoPilotSource;
 import com.topcoder.management.project.Project;
 import com.topcoder.management.project.ProjectManager;
 import com.topcoder.search.builder.filter.Filter;
+import com.topcoder.util.log.LogManager;
 
 /**
  * <p>A subclass of <code>ActiveAutoPilotSource</code> class to be used to test the protected methods of the super
@@ -59,7 +60,7 @@ class ActiveAutoPilotSourceSubclass extends ActiveAutoPilotSource {
      * @throws IllegalArgumentException if any of the argument is null or the string arguments are empty (trimmed)
      */
     public ActiveAutoPilotSourceSubclass(ProjectManager projectManager, String activeStatusName, String extProp, String extPropVal) {
-        super(projectManager, activeStatusName, extProp, extPropVal, null);
+        super(projectManager, activeStatusName, extProp, extPropVal, LogManager.getLog());
     }
 
     /**

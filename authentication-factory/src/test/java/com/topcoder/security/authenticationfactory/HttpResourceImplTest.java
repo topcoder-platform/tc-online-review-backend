@@ -40,7 +40,7 @@ public class HttpResourceImplTest extends TestCase {
      * <p>
      * Represents an instance of httpURL String to be used for testing.</p>
      */
-    private static String httpURL = "http://www.topcoder.com";
+    private static String httpURL = "https://www.topcoder.com/challenges";
 
     /**
      * <p>
@@ -94,8 +94,8 @@ public class HttpResourceImplTest extends TestCase {
      */
     public void testHttpResourceImplAccuracy() {
         HttpResourceImpl test =
-            new HttpResourceImpl(conn, "http://www.topcoder.com");
-        assertTrue(test.getActualURL().equals("http://www.topcoder.com"));
+            new HttpResourceImpl(conn, "https://www.topcoder.com/challenges");
+        assertTrue(test.getActualURL().equals("https://www.topcoder.com/challenges"));
     } // end testHttpResourceImplAccuracy()
 
     /**
@@ -137,7 +137,7 @@ public class HttpResourceImplTest extends TestCase {
      *
      */
     public void testGetOriginalURLAccuracy() {
-        assertEquals(httpRes.getOriginalURL(), "http://www.topcoder.com");
+        assertEquals(httpRes.getOriginalURL(), "https://www.topcoder.com/challenges");
     } // end testGetOriginalURLAccuracy()
 
     /**
@@ -147,8 +147,8 @@ public class HttpResourceImplTest extends TestCase {
      *
      */
     public void testGetActualURLAccuracy() {
-        assertEquals("'http://www.topcoder.com' expected",
-                httpRes.getActualURL(), "http://www.topcoder.com");
+        assertEquals("'https://www.topcoder.com/challenges' expected",
+                httpRes.getActualURL(), "https://www.topcoder.com/challenges");
     } // end testGetActualURLAccuracy()
 
     /**
@@ -176,7 +176,7 @@ public class HttpResourceImplTest extends TestCase {
      *
      */
     public void testGetHeaderFieldAccuracy() {
-        String cookie = httpRes.getHeaderField("Set-CoOkie");
+        String cookie = httpRes.getHeaderField("Set-Cookie");
         // output the result into the standard err
         System.out.println(
                 "The SetCookie attribute in header field is: " + cookie);
@@ -220,7 +220,7 @@ public class HttpResourceImplTest extends TestCase {
      */
     public void testGetCookieAccuracy() throws AuthenticateException {
         HttpCookie httpCookie = httpRes.getCookie();
-        assertTrue(httpCookie.getName().startsWith("JSESSIONID"));
+        assertTrue(httpCookie.getName().startsWith("AWSALBCORS"));
         assertTrue(httpCookie.getPath().trim().equals("/"));
     } // end testGetCookieAccuracy()
 

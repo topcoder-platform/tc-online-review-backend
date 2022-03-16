@@ -20,6 +20,7 @@ import com.topcoder.project.phases.Project;
 import com.topcoder.util.config.ConfigManager;
 import com.topcoder.util.log.Log;
 import com.topcoder.util.log.LogException;
+import com.topcoder.util.log.LogManager;
 import com.topcoder.util.log.basic.BasicLog;
 import com.topcoder.util.objectfactory.InvalidClassSpecificationException;
 import com.topcoder.util.objectfactory.impl.IllegalReferenceException;
@@ -48,22 +49,6 @@ public class DefaultProjectPilotFailureTests extends FailureTestsHelper {
             fail("ConfigurationException should be thrown");
         } catch (ConfigurationException e) {
             assertTrue("Cause not as expected", e.getCause() instanceof SpecificationConfigurationException);
-        }
-    }
-
-    /**
-     * Tests constructor without the logger properly configured. ConfigurationException should be thrown.
-     *
-     * @throws Exception pass to JUnit.
-     */
-    public void testConstructor1ConfigNoLogger() throws Exception {
-        try {
-            unloadConfig();
-            ConfigManager.getInstance().add(CONFIG);
-            new DefaultProjectPilot();
-            fail("ConfigurationException should be thrown");
-        } catch (ConfigurationException e) {
-            assertTrue("Cause not as expected", e.getCause() instanceof LogException);
         }
     }
 
@@ -338,61 +323,45 @@ public class DefaultProjectPilotFailureTests extends FailureTestsHelper {
     }
 
     /**
-     * Tests constructor with a logger name does not exist. ConfigurationException should be thrown.
-     *
-     * @throws Exception pass to JUnit.
+     * Tests constructor with a null argument. IllegalArgumentException should be thrown.
      */
-    public void testConstructor2ConfigNoLogger() throws Exception {
+    public void testConstructor3Null1() {
         try {
-            unloadConfig();
-            ConfigManager.getInstance().add(CONFIG);
-            new DefaultProjectPilot(DefaultProjectPilot.class.getName(), PhaseManager.class.getName(), "c", "d", "e");
-            fail("ConfigurationException should be thrown");
-        } catch (ConfigurationException e) {
-            assertTrue("Cause not as expected", e.getCause() instanceof LogException);
+            Log logger = LogManager.getLog();
+            new DefaultProjectPilot(null, "a", "b", logger);
+            fail("IllegalArgumentException should be thrown");
+        } catch (IllegalArgumentException e) {
+            // ok
         }
     }
 
     /**
      * Tests constructor with a null argument. IllegalArgumentException should be thrown.
      */
-//    public void testConstructor3Null1() {
-//        try {
-//            Log logger = new BasicLog("");
-//            new DefaultProjectPilot(null, "a", "b", logger);
-//            fail("IllegalArgumentException should be thrown");
-//        } catch (IllegalArgumentException e) {
-//            // ok
-//        }
-//    }
-//
-//    /**
-//     * Tests constructor with a null argument. IllegalArgumentException should be thrown.
-//     */
-//    public void testConstructor3Null2() {
-//        try {
-//            PhaseManager phaseManager = new MockPhaseManager();
-//            Log logger = new BasicLog("");
-//            new DefaultProjectPilot(phaseManager, null, "b", logger);
-//            fail("IllegalArgumentException should be thrown");
-//        } catch (IllegalArgumentException e) {
-//            // ok
-//        }
-//    }
-//
-//    /**
-//     * Tests constructor with a null argument. IllegalArgumentException should be thrown.
-//     */
-//    public void testConstructor3Null3() {
-//        try {
-//            PhaseManager phaseManager = new MockPhaseManager();
-//            Log logger = new BasicLog("");
-//            new DefaultProjectPilot(phaseManager, "a", null, logger);
-//            fail("IllegalArgumentException should be thrown");
-//        } catch (IllegalArgumentException e) {
-//            // ok
-//        }
-//    }
+    public void testConstructor3Null2() {
+        try {
+            PhaseManager phaseManager = new MockPhaseManager();
+            Log logger = LogManager.getLog();
+            new DefaultProjectPilot(phaseManager, null, "b", logger);
+            fail("IllegalArgumentException should be thrown");
+        } catch (IllegalArgumentException e) {
+            // ok
+        }
+    }
+
+    /**
+     * Tests constructor with a null argument. IllegalArgumentException should be thrown.
+     */
+    public void testConstructor3Null3() {
+        try {
+            PhaseManager phaseManager = new MockPhaseManager();
+            Log logger = LogManager.getLog();
+            new DefaultProjectPilot(phaseManager, "a", null, logger);
+            fail("IllegalArgumentException should be thrown");
+        } catch (IllegalArgumentException e) {
+            // ok
+        }
+    }
 
     /**
      * Tests constructor with a null argument. IllegalArgumentException should be thrown.
@@ -410,58 +379,58 @@ public class DefaultProjectPilotFailureTests extends FailureTestsHelper {
     /**
      * Tests constructor with a empty string. IllegalArgumentException should be thrown.
      */
-//    public void testConstructor3EmptyString1() {
-//        try {
-//            PhaseManager phaseManager = new MockPhaseManager();
-//            Log logger = new BasicLog("");
-//            new DefaultProjectPilot(phaseManager, "", "b", logger);
-//            fail("IllegalArgumentException should be thrown");
-//        } catch (IllegalArgumentException e) {
-//            // ok
-//        }
-//    }
+    public void testConstructor3EmptyString1() {
+        try {
+            PhaseManager phaseManager = new MockPhaseManager();
+            Log logger = LogManager.getLog();;
+            new DefaultProjectPilot(phaseManager, "", "b", logger);
+            fail("IllegalArgumentException should be thrown");
+        } catch (IllegalArgumentException e) {
+            // ok
+        }
+    }
 
     /**
      * Tests constructor with a empty string. IllegalArgumentException should be thrown.
      */
-//    public void testConstructor3EmptyString2() {
-//        try {
-//            PhaseManager phaseManager = new MockPhaseManager();
-//            Log logger = new BasicLog("");
-//            new DefaultProjectPilot(phaseManager, "       ", "b", logger);
-//            fail("IllegalArgumentException should be thrown");
-//        } catch (IllegalArgumentException e) {
-//            // ok
-//        }
-//    }
-//
-//    /**
-//     * Tests constructor with a empty string. IllegalArgumentException should be thrown.
-//     */
-//    public void testConstructor3EmptyString3() {
-//        try {
-//            PhaseManager phaseManager = new MockPhaseManager();
-//            Log logger = new BasicLog("");
-//            new DefaultProjectPilot(phaseManager, "a", "", logger);
-//            fail("IllegalArgumentException should be thrown");
-//        } catch (IllegalArgumentException e) {
-//            // ok
-//        }
-//    }
-//
-//    /**
-//     * Tests constructor with a empty string. IllegalArgumentException should be thrown.
-//     */
-//    public void testConstructor3EmptyString4() {
-//        try {
-//            PhaseManager phaseManager = new MockPhaseManager();
-//            Log logger = new BasicLog("");
-//            new DefaultProjectPilot(phaseManager, "a", "  ", logger);
-//            fail("IllegalArgumentException should be thrown");
-//        } catch (IllegalArgumentException e) {
-//            // ok
-//        }
-//    }
+    public void testConstructor3EmptyString2() {
+        try {
+            PhaseManager phaseManager = new MockPhaseManager();
+            Log logger = LogManager.getLog();;
+            new DefaultProjectPilot(phaseManager, "       ", "b", logger);
+            fail("IllegalArgumentException should be thrown");
+        } catch (IllegalArgumentException e) {
+            // ok
+        }
+    }
+
+    /**
+     * Tests constructor with a empty string. IllegalArgumentException should be thrown.
+     */
+    public void testConstructor3EmptyString3() {
+        try {
+            PhaseManager phaseManager = new MockPhaseManager();
+            Log logger = LogManager.getLog();;
+            new DefaultProjectPilot(phaseManager, "a", "", logger);
+            fail("IllegalArgumentException should be thrown");
+        } catch (IllegalArgumentException e) {
+            // ok
+        }
+    }
+
+    /**
+     * Tests constructor with a empty string. IllegalArgumentException should be thrown.
+     */
+    public void testConstructor3EmptyString4() {
+        try {
+            PhaseManager phaseManager = new MockPhaseManager();
+            Log logger = LogManager.getLog();;
+            new DefaultProjectPilot(phaseManager, "a", "  ", logger);
+            fail("IllegalArgumentException should be thrown");
+        } catch (IllegalArgumentException e) {
+            // ok
+        }
+    }
 
     /**
      * Tests advancePhases with a null argument. IllegalArgumentException should be thrown.

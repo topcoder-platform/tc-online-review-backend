@@ -341,7 +341,7 @@ public class HTTPBasicAuthenticatorTest extends TestCase {
      * DoAuthenticate accuracy test.
      * @throws AuthenticateException to JUnit.
      */
-    public void testDoAuthenticate() throws AuthenticateException {
+    public void testDoAuthenticate() throws AuthenticateException, ConfigurationException {
         Principal p = new Principal(new Object());
 
         // change the username and password
@@ -349,7 +349,7 @@ public class HTTPBasicAuthenticatorTest extends TestCase {
         p.addMapping(USER, "user1");
         p.addMapping(PWD, "pass1".toCharArray());
 
-        com.topcoder.security.authenticationfactory.Response res = httpAuth.authenticate(p);
+        com.topcoder.security.authenticationfactory.Response res = new HTTPBasicAuthenticatorSubclass(NAMESPACE).authenticate(p);
         assertEquals(res.isSuccessful(), true);
     }
 
@@ -357,7 +357,7 @@ public class HTTPBasicAuthenticatorTest extends TestCase {
      * DoAuthenticate test, which will authenticate failed.
      * @throws AuthenticateException to JUnit.
      */
-    public void testDoAuthenticate2() throws AuthenticateException {
+    public void testDoAuthenticate2() throws AuthenticateException, ConfigurationException {
         Principal p = new Principal(new Object());
 
         // change the username and password with non-exist username
@@ -365,7 +365,7 @@ public class HTTPBasicAuthenticatorTest extends TestCase {
         p.addMapping(USER, "nouser");
         p.addMapping(PWD, "nouser".toCharArray());
 
-        com.topcoder.security.authenticationfactory.Response res = httpAuth.authenticate(p);
+        com.topcoder.security.authenticationfactory.Response res = new HTTPBasicAuthenticatorSubclass(NAMESPACE, false).authenticate(p);
         assertEquals(res.isSuccessful(), false);
     }
 

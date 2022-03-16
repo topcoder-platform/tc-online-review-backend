@@ -551,13 +551,13 @@ public class DefaultProjectPilotAccuracyTest extends TestCase {
         formatter.setTimeZone(TimeZone.getDefault());
 
         List log = MockLog.getMethodArguments("log_Level_Object");
-        Assert.assertEquals("A single audit record must be logged", 1, log.size());
+        Assert.assertEquals("A single audit record must be logged", 2, log.size());
         Map record = (Map) log.get(0);
         Assert.assertEquals("The audit record is not logged at INFO level", Level.INFO, record.get("1"));
         String message = (String) record.get("2");
         Assert.assertNotNull("The NULL message is logegd", message);
         String[] parts = message.split("-");
-        Assert.assertEquals("The audit record is not correct", 5, parts.length);
+        Assert.assertEquals("The audit record is not correct", 6, parts.length);
 
         try {
             formatter.parse(parts[0].trim());
@@ -566,13 +566,13 @@ public class DefaultProjectPilotAccuracyTest extends TestCase {
         }
 
         Assert.assertEquals("The logged project ID is not correct",
-                            String.valueOf(phase.getProject().getId()), parts[1].trim());
+                            "project " + phase.getProject().getId(), parts[1].trim());
         Assert.assertEquals("The logged phase ID and type are not correct",
-                            (phase.getId() + ":" + (phase.getPhaseType() == null ? "Null phase type"
+                            ("phase type " + (phase.getPhaseType() == null ? "Null phase type"
                             : phase.getPhaseType().getName())).toUpperCase(),
-                            parts[2].trim().toUpperCase());
-        Assert.assertEquals("The logged action is not correct", isEnd ? "END" : "START", parts[3].trim());
-        Assert.assertEquals("The logged operator is not correct", operator, parts[4].trim());
+                            parts[3].trim().toUpperCase());
+        Assert.assertEquals("The logged action is not correct", isEnd ? "END" : "START", parts[4].trim());
+        Assert.assertEquals("The logged operator is not correct", "operator " + operator, parts[5].trim());
     }
 
     /**

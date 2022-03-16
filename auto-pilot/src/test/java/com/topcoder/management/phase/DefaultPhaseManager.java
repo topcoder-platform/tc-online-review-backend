@@ -288,7 +288,7 @@ public class DefaultPhaseManager implements PhaseManager {
      */
     public OperationCheckResult canStart(Phase phase) throws PhaseManagementException {
         // your code here
-        return new OperationCheckResult(null);
+        return new OperationCheckResult("fail");
     }
 
     /**
@@ -325,7 +325,7 @@ public class DefaultPhaseManager implements PhaseManager {
      */
     public OperationCheckResult canEnd(Phase phase) throws PhaseManagementException {
         // your code here
-        return new OperationCheckResult(null);
+        return new OperationCheckResult("fail");
     }
 
     /**

@@ -66,7 +66,7 @@ class AbstractPhaseHandlerSubclass extends AbstractPhaseHandler {
      * @throws IllegalArgumentException if <code>phase</code> is <code>null</code>
      */
     public OperationCheckResult canPerform(Phase phase) throws PhaseHandlingException {
-        return new OperationCheckResult(null);
+        return new OperationCheckResult("fail");
     }
 
     /**

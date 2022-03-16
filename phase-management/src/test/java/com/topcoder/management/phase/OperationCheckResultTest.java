@@ -170,7 +170,7 @@ public class OperationCheckResultTest extends TestCase {
      */
     public void testConstructor_NullMessage() {
         try {
-            operationCheckResult = new OperationCheckResult(null);
+            operationCheckResult = new OperationCheckResult("fail");
             fail("IllegalArgumentException exception is expected.");
         } catch (IllegalArgumentException e) {
             // expected

@@ -25,7 +25,7 @@ import com.topcoder.util.config.ConfigManagerException;
  * @version 1.0
  * @since Authentication Factory 2.0
  */
-public class FailureTestCase extends TestCase {
+public abstract class FailureTestCase extends TestCase {
 
     /**
      * <p>A <code>File</code> referencing the directory under which the test files are to be placed.</p>
@@ -46,19 +46,6 @@ public class FailureTestCase extends TestCase {
      * <p>A <code>Properties</code> providing the configuration properties for failure tests.</p>
      */
     private Properties properties = null;
-
-    /**
-     * <p>Constructs new <code>FailureTestCase</code>. The properties are initialized from the <code>
-     * FailureTestsConfig.properties</code> file and the server instance is initialized but not started.</p>
-     */
-    protected FailureTestCase() {
-//        properties = new Properties();
-//        try {
-//            properties.load(new FileInputStream(new File(FAILURE_TEST_FILES_ROOT, "FailureTestsConfig.properties")));
-//        } catch (IOException e) {
-//            System.err.println("FailureTestsConfig.properties is not loaded.\n" + e);
-//        }
-    }
 
     /**
      * <p>Gets the value for specified configuration property.</p>

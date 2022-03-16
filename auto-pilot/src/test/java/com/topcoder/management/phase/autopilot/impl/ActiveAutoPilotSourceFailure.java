@@ -15,6 +15,7 @@ import com.topcoder.management.project.ProjectManagerImpl;
 import com.topcoder.search.builder.filter.Filter;
 import com.topcoder.util.config.ConfigManager;
 
+import com.topcoder.util.log.LogManager;
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
@@ -324,7 +325,7 @@ public class ActiveAutoPilotSourceFailure extends TestCase {
             }
         }, ActiveAutoPilotSource.DEFAULT_ACTIVE_STATUS_NAME,
             ActiveAutoPilotSource.DEFAULT_EXTPROP_AUTOPILOTSWITCH,
-            ActiveAutoPilotSource.DEFAULT_EXTPROP_AUTOPILOTSWITCH_VALUE, null);
+            ActiveAutoPilotSource.DEFAULT_EXTPROP_AUTOPILOTSWITCH_VALUE, LogManager.getLog());
 
         try {
             source.getProjectIds();

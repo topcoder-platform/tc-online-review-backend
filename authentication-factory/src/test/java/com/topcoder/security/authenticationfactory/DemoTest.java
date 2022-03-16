@@ -76,17 +76,6 @@ public class DemoTest extends TestCase {
         // get the authentication message if there is one
         System.out.println(response.getMessage());
 
-        // get the response details, we should know in advance it is an
-        // http authentication implementation
-        HttpResource resource = (HttpResource) response.getDetails();
-
-        // print the properties of HttpResource
-        System.out.println(resource.getOriginalURL());
-        System.out.println(resource.getActualURL());
-        System.out.println(resource.getContentType());
-        System.out.println(resource.getContent());
-        System.out.println(resource.getSetCookie());
-
         // authenticate it again
         Response r2 = auth.authenticate(principal);
         assertSame("because of cache, these two should be same", r2, response);
@@ -109,15 +98,6 @@ public class DemoTest extends TestCase {
 
         // get the authentication message if there is one
         System.out.println(response.getMessage());
-
-        // get the response details, we should know in advance it is an
-        // http authentication implementation
-        resource = (HttpResource) response.getDetails();
-        // print the properties of HttpResource
-        System.out.println(resource.getOriginalURL());
-        System.out.println(resource.getActualURL());
-        System.out.println(resource.getContentType());
-        System.out.println(resource.getSetCookie());
 
         // to turn off the caching functionality
         ConfigHelper.cleanAndLoadConfig("offcache.xml");

@@ -6,6 +6,7 @@ package com.topcoder.management.phase.autopilot;
 
 import java.util.Iterator;
 
+import com.topcoder.management.phase.autopilot.accuracytests.TestDataFactory;
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
@@ -156,7 +157,7 @@ public class DemoTest extends TestCase {
      */
     public void testCustomPilot() throws Exception {
         // create autopilot
-        AutoPilot pilot = new AutoPilot(new ActiveAutoPilotSource(), new NewPilot(), null);
+        AutoPilot pilot = new AutoPilot(new ActiveAutoPilotSource(), new NewPilot(), TestDataFactory.getLog());
 
         // advance phase for all active projects
         // with auto pilot switch on in its extended property
