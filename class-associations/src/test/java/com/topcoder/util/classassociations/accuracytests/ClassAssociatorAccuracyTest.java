@@ -1,7 +1,7 @@
 /*
- * ClassAssociatorAccuracyTests.java vesion 1.0 Created on Apr 2, 2004
+ * ClassAssociatorAccuracyTest.java vesion 1.0 Created on Apr 2, 2004
  * 
- * Copyright © 2004, TopCoder, Inc. All rights reserved
+ * Copyright ï¿½ 2004, TopCoder, Inc. All rights reserved
  * */
 package com.topcoder.util.classassociations.accuracytests;
 
@@ -21,7 +21,7 @@ class Aaa { }
 class Bbb extends Aaa { }
 class Ccc extends Aaa { }
 
-public class ClassAssociatorAccuracyTests extends TestCase {
+public class ClassAssociatorAccuracyTest extends TestCase {
     ClassAssociator ca = null; 
     Aaa aa = null;
     Bbb bb = null;

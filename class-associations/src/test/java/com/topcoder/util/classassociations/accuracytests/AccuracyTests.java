@@ -1,6 +1,6 @@
 /**
  *
- * Copyright © 2003, TopCoder, Inc. All rights reserved
+ * Copyright ï¿½ 2003, TopCoder, Inc. All rights reserved
  */
 package com.topcoder.util.classassociations.accuracytests;
 
@@ -19,8 +19,8 @@ public class AccuracyTests extends TestCase {
 
     public static Test suite() {
         final TestSuite suite = new TestSuite();
-        suite.addTestSuite(ClassAssociatorAccuracyTests.class);
-        suite.addTestSuite(DefaultAlgorithmAccuracyTests.class);
+        suite.addTestSuite(ClassAssociatorAccuracyTest.class);
+        suite.addTestSuite(DefaultAlgorithmAccuracyTest.class);
         return suite;
     }
 

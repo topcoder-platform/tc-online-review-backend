@@ -20,7 +20,7 @@ import com.topcoder.util.classassociations.DefaultAssociationAlgorithm;
  * @author valeriy
  * @version 1.0
  */
-public class DefaultAssociationAlgorithmTests extends TestCase {
+public class DefaultAssociationAlgorithmTest extends TestCase {
 
     /**
      * Tests DefaultAssociationAlgorithm.retrieveHandler() method with invalid parameters
@@ -51,7 +51,7 @@ public class DefaultAssociationAlgorithmTests extends TestCase {
     }
      
     public static Test suite() {
-        return new TestSuite(DefaultAssociationAlgorithmTests.class);
+        return new TestSuite(DefaultAssociationAlgorithmTest.class);
     }
     
 }

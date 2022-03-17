@@ -1,7 +1,7 @@
 /*
- * DefaultAlgorithmAccuracyTests.java vesion 1.0 Created on Apr 2, 2004
+ * DefaultAlgorithmAccuracyTest.java vesion 1.0 Created on Apr 2, 2004
  * 
- * Copyright © 2004, TopCoder, Inc. All rights reserved
+ * Copyright ï¿½ 2004, TopCoder, Inc. All rights reserved
  * */
 package com.topcoder.util.classassociations.accuracytests;
 
@@ -24,7 +24,7 @@ class ABbb extends Aaaa implements Ib { }
 class ACcc extends Aaaa implements Ia { }
 class ACDdd extends ACcc {}
 class Eee {}
-public class DefaultAlgorithmAccuracyTests extends TestCase {
+public class DefaultAlgorithmAccuracyTest extends TestCase {
     ClassAssociator ca = null; 
     Aaaa aa = null;
     ABbb bb = null;

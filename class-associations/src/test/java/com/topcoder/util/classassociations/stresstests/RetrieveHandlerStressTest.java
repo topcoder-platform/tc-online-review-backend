@@ -3,18 +3,17 @@
  */
 package com.topcoder.util.classassociations.stresstests;
 
-import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
 import com.topcoder.util.classassociations.*;
 
 /**
- * <p>This test case tests the retrieveClassHandler() method.</p>
+ * <p>This test case tests the retrieveHandler() method.</p>
  *
  * @author garyk
  * @version 1.0
  */
-public class RetrieveClassHandlerStressTests extends TestCase {
+public class RetrieveHandlerStressTest extends TestCase {
 	private static final int N = 20;
 	private static final long TIME = 3000;
     private static Object[] objs;
@@ -32,7 +31,7 @@ public class RetrieveClassHandlerStressTests extends TestCase {
 	 * @return a test suite that contains all test methods in the class
 	 */
 	public static TestSuite suite() {
-		return new TestSuite(RetrieveClassHandlerStressTests.class);
+		return new TestSuite(RetrieveHandlerStressTest.class);
 	}
 
     /*
@@ -118,9 +117,9 @@ public class RetrieveClassHandlerStressTests extends TestCase {
     }
 
     /*
-     * Test retrieveClassHandler() with classes setup with addAssociation() only
+     * Test retrieveHandler() with classes setup with addAssociation() only
      */
-    public void testRetrieveClassHandler1() throws Exception {
+    public void testRetrieveHandler1() throws Exception {
         Object handler;
         long time;
         long count1;
@@ -141,7 +140,7 @@ public class RetrieveClassHandlerStressTests extends TestCase {
 
         // check the handler from ca1
         time = elapsed(0);
-        handler = ca1.retrieveClassHandler(target1.getClass());
+        handler = ca1.retrieveHandler(target1);
         time = elapsed(time);
 
         assertTrue("Should return the correct handler", 
@@ -150,7 +149,7 @@ public class RetrieveClassHandlerStressTests extends TestCase {
 
         // check the handler from ca2
         time = elapsed(0);
-        handler = ca2.retrieveClassHandler(target2.getClass());
+        handler = ca2.retrieveHandler(target2);
         time = elapsed(time);
 
         assertTrue("Should return the correct handler", 
@@ -159,7 +158,7 @@ public class RetrieveClassHandlerStressTests extends TestCase {
 
         // check the handler from ca3
         time = elapsed(0);
-        handler = ca3.retrieveClassHandler(target3.getClass());
+        handler = ca3.retrieveHandler(target3);
         time = elapsed(time);
 
         assertTrue("Should return the correct handler", 
@@ -167,13 +166,13 @@ public class RetrieveClassHandlerStressTests extends TestCase {
 
 
         // count the number of executions in TIME ms
-        count1 = getRunningCount(ca1, target1.getClass(), TIME);
+        count1 = getRunningCount(ca1, target1, TIME);
         System.out.println("OK " + count1 + " number of executions");
 
-        count2 = getRunningCount(ca2, target2.getClass(), TIME);
+        count2 = getRunningCount(ca2, target2, TIME);
         System.out.println("OK " + count2 + " number of executions");
 
-        count3 = getRunningCount(ca3, target3.getClass(), TIME);
+        count3 = getRunningCount(ca3, target3, TIME);
         System.out.println("OK " + count3 + " number of executions");
 
         assertTrue("The number of " + N + " associations' executions should be "
@@ -190,10 +189,9 @@ public class RetrieveClassHandlerStressTests extends TestCase {
     }
 
     /*
-     * Test retrieveClassHandler() with classes setup with addGroupAssociation()
-     * only
+     * Test retrieveHandler() with classes setup with addGroupAssociation() only
      */
-    public void testRetrieveClassHandler2() throws Exception {
+    public void testRetrieveHandler2() throws Exception {
         Object handler;
         long time;
         long count1;
@@ -214,7 +212,7 @@ public class RetrieveClassHandlerStressTests extends TestCase {
 
         // check the handler from ca1
         time = elapsed(0);
-        handler = ca1.retrieveClassHandler(target1.getClass());
+        handler = ca1.retrieveHandler(target1);
         time = elapsed(time);
 
         assertTrue("Should return the correct handler", 
@@ -223,7 +221,7 @@ public class RetrieveClassHandlerStressTests extends TestCase {
 
         // check the handler from ca2
         time = elapsed(0);
-        handler = ca2.retrieveClassHandler(target2.getClass());
+        handler = ca2.retrieveHandler(target2);
         time = elapsed(time);
 
         assertTrue("Should return the correct handler", 
@@ -232,7 +230,7 @@ public class RetrieveClassHandlerStressTests extends TestCase {
 
         // check the handler from ca3
         time = elapsed(0);
-        handler = ca3.retrieveClassHandler(target3.getClass());
+        handler = ca3.retrieveHandler(target3);
         time = elapsed(time);
 
         assertTrue("Should return the correct handler", 
@@ -240,13 +238,13 @@ public class RetrieveClassHandlerStressTests extends TestCase {
 
 
         // count the number of executions in TIME ms
-        count1 = getRunningCount(ca1, target1.getClass(), TIME);
+        count1 = getRunningCount(ca1, target1, TIME);
         System.out.println("OK " + count1 + " number of executions");
 
-        count2 = getRunningCount(ca2, target2.getClass(), TIME);
+        count2 = getRunningCount(ca2, target2, TIME);
         System.out.println("OK " + count2 + " number of executions");
 
-        count3 = getRunningCount(ca3, target3.getClass(), TIME);
+        count3 = getRunningCount(ca3, target3, TIME);
         System.out.println("OK " + count3 + " number of executions");
 
         assertTrue(N + " associations must be at least 1.5X more executions "
@@ -261,11 +259,11 @@ public class RetrieveClassHandlerStressTests extends TestCase {
     }
 
     /*
-     * Test retrieveClassHandler() with classes setup with addGroupAssociation() 
-     * only and 3 instances of the ClassAssociator (one with each thread) 
-     * running at the same time
+     * Test retrieveHandler() with classes setup with addGroupAssociation() only
+     * and 3 instances of the ClassAssociator (one with each thread) running
+     * at the same time
      */
-    public void testRetrieveClassHandler3() throws Exception {
+    public void testRetrieveHandler3() throws Exception {
         Object handler;
         WorkingThread thread1;
         WorkingThread thread2;
@@ -284,7 +282,7 @@ public class RetrieveClassHandlerStressTests extends TestCase {
 
         // check the handler from ca1
         time = elapsed(0);
-        handler = ca1.retrieveClassHandler(target3.getClass());
+        handler = ca1.retrieveHandler(target3);
         time = elapsed(time);
 
         assertTrue("Should return the correct handler", 
@@ -293,7 +291,7 @@ public class RetrieveClassHandlerStressTests extends TestCase {
 
         // check the handler from ca2
         time = elapsed(0);
-        handler = ca2.retrieveClassHandler(target3.getClass());
+        handler = ca2.retrieveHandler(target3);
         time = elapsed(time);
 
         assertTrue("Should return the correct handler", 
@@ -302,16 +300,16 @@ public class RetrieveClassHandlerStressTests extends TestCase {
 
         // check the handler from ca3
         time = elapsed(0);
-        handler = ca3.retrieveClassHandler(target3.getClass());
+        handler = ca3.retrieveHandler(target3);
         time = elapsed(time);
 
         assertTrue("Should return the correct handler", 
             handler3.getClass().isInstance(handler));
 
 
-        thread1 = new WorkingThread(ca1, target3.getClass());
-        thread2 = new WorkingThread(ca2, target3.getClass());
-        thread3 = new WorkingThread(ca3, target3.getClass());
+        thread1 = new WorkingThread(ca1, target3);
+        thread2 = new WorkingThread(ca2, target3);
+        thread3 = new WorkingThread(ca3, target3);
 
         thread1.start();
         thread2.start();
@@ -351,11 +349,11 @@ public class RetrieveClassHandlerStressTests extends TestCase {
     }
 
     /*
-     * Test retrieveClassHandler() with classes setup with addAssociation() only
+     * Test retrieveHandler() with classes setup with addAssociation() only
      * and 3 instances of the ClassAssociator (one with each thread) running
      * at the same time
      */
-    public void testRetrieveClassHandler4() throws Exception {
+    public void testRetrieveHandler4() throws Exception {
         Object handler;
         WorkingThread thread1;
         WorkingThread thread2;
@@ -374,7 +372,7 @@ public class RetrieveClassHandlerStressTests extends TestCase {
 
         // check the handler from ca1
         time = elapsed(0);
-        handler = ca1.retrieveClassHandler(target3.getClass());
+        handler = ca1.retrieveHandler(target3);
         time = elapsed(time);
 
         assertTrue("Should return the correct handler", 
@@ -383,7 +381,7 @@ public class RetrieveClassHandlerStressTests extends TestCase {
 
         // check the handler from ca2
         time = elapsed(0);
-        handler = ca2.retrieveClassHandler(target3.getClass());
+        handler = ca2.retrieveHandler(target3);
         time = elapsed(time);
 
         assertTrue("Should return the correct handler", 
@@ -392,16 +390,16 @@ public class RetrieveClassHandlerStressTests extends TestCase {
 
         // check the handler from ca3
         time = elapsed(0);
-        handler = ca3.retrieveClassHandler(target3.getClass());
+        handler = ca3.retrieveHandler(target3);
         time = elapsed(time);
 
         assertTrue("Should return the correct handler", 
             handler3.getClass().isInstance(handler));
 
 
-        thread1 = new WorkingThread(ca1, target3.getClass());
-        thread2 = new WorkingThread(ca2, target3.getClass());
-        thread3 = new WorkingThread(ca3, target3.getClass());
+        thread1 = new WorkingThread(ca1, target3);
+        thread2 = new WorkingThread(ca2, target3);
+        thread3 = new WorkingThread(ca3, target3);
 
         thread1.start();
         thread2.start();
@@ -440,7 +438,7 @@ public class RetrieveClassHandlerStressTests extends TestCase {
                 && (((double)count3 / (double)count1) < 1.5));
     }
 
-    private long getRunningCount(ClassAssociator ca, Class target, long time) 
+    private long getRunningCount(ClassAssociator ca, Object target, long time) 
             throws Exception {
         WorkingThread thread = new WorkingThread(ca, target);
 
@@ -458,12 +456,12 @@ public class RetrieveClassHandlerStressTests extends TestCase {
 
     private class WorkingThread extends Thread {
         ClassAssociator ca;
-        Class target;
+        Object target;
         boolean isRunning;
         long count;
         private Throwable throwable;
 
-        public WorkingThread(ClassAssociator ca, Class target) {
+        public WorkingThread(ClassAssociator ca, Object target) {
             this.ca = ca;
             this.target = target;
             this.count = 0;
@@ -486,7 +484,7 @@ public class RetrieveClassHandlerStressTests extends TestCase {
         public void run() {
             try {
                 while (isRunning) {
-                    ca.retrieveClassHandler(target);
+                    ca.retrieveHandler(target);
 
                     count++;
                 }

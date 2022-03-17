@@ -10,7 +10,7 @@ import java.util.* ;
  * @version 1.0
  */
 
-public class EnumTests extends TestCase {
+public class EnumTest extends TestCase {
     private CommandLineUtility util = null ;
 
     /**

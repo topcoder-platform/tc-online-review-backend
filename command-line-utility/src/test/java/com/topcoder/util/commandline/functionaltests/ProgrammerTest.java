@@ -10,7 +10,7 @@ import java.util.* ;
  * @version 1.0
  */
 
-public class ProgrammerTests extends TestCase {
+public class ProgrammerTest extends TestCase {
     private CommandLineUtility util = null ;
 
     public void testDuplicateSwitches() {

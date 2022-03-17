@@ -10,7 +10,7 @@ import java.util.*;
  * @version 1.0
  */
 
-public class SpecificUnitTestDelimiter extends TestCase {
+public class SpecificDelimiterUnitTest extends TestCase {
     private CommandLineUtility util = null ;
     private Switch sw_d;
     private Switch sw_f;

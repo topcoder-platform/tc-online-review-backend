@@ -1,6 +1,6 @@
 /**
  *
- * Copyright © 2003, TopCoder, Inc. All rights reserved
+ * Copyright ï¿½ 2003, TopCoder, Inc. All rights reserved
  */
  package com.topcoder.util.classassociations.failuretests;
 
@@ -18,9 +18,9 @@ public class FailureTests extends TestCase {
 
     public static Test suite() {
         final TestSuite suite = new TestSuite();
-        suite.addTest(IllegalHandlerExceptionTests.suite());
-        suite.addTest(DefaultAssociationAlgorithmTests.suite());
-        suite.addTest(ClassAssociatorTests.suite());
+        suite.addTest(IllegalHandlerExceptionTest.suite());
+        suite.addTest(DefaultAssociationAlgorithmTest.suite());
+        suite.addTest(ClassAssociatorTest.suite());
         return suite;
     }
 
