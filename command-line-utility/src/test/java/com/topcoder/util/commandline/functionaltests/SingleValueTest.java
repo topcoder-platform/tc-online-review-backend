@@ -11,7 +11,7 @@ import java.util.Iterator;
  * @version 1.0
  */
 
-public class SingleValueTests extends TestCase {
+public class SingleValueTest extends TestCase {
     private CommandLineUtility util = null ;
 
     public void setUp() {

@@ -10,7 +10,7 @@ import java.util.*;
  * @version 1.0
  */
 
-public class SpecificUnitTestIgnore extends TestCase {
+public class SpecificIgnoreUnitTest extends TestCase {
     private CommandLineUtility util = null ;
     private Switch sw_d;
     private Switch sw_f;

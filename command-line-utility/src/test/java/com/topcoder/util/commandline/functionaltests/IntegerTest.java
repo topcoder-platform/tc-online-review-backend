@@ -10,7 +10,7 @@ import java.util.* ;
  * @version 1.0
  */
 
-public class IntegerTests extends TestCase {
+public class IntegerTest extends TestCase {
     private CommandLineUtility util = null ;
 
     /**

@@ -10,7 +10,7 @@ import java.util.* ;
  * @version 1.0
  */
 
-public class ParameterTests extends TestCase {
+public class ParameterTest extends TestCase {
     private CommandLineUtility util = null ;
 
     /**

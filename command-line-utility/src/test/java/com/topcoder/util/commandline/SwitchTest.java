@@ -10,7 +10,7 @@ import java.util.*;
  * @version 1.0
  */
 
-public class SwitchTests extends TestCase {
+public class SwitchTest extends TestCase {
     private Switch sw_d;
     private Switch sw_f;
     private Switch sw_roo;

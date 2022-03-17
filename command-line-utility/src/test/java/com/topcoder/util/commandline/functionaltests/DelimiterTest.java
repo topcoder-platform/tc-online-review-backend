@@ -10,7 +10,7 @@ import java.util.* ;
  * @version 1.0
  */
 
-public class DelimiterTests extends TestCase {
+public class DelimiterTest extends TestCase {
     private CommandLineUtility util = null ;
 
     public void setUp() {

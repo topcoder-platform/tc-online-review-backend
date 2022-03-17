@@ -10,7 +10,7 @@ import java.util.* ;
  * @version 1.0
  */
 
-public class ErrorHandlingTests extends TestCase {
+public class ErrorHandlingTest extends TestCase {
     private CommandLineUtility util = null ;
 
     /**

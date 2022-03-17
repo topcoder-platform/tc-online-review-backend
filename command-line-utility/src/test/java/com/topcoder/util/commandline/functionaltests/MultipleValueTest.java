@@ -10,7 +10,7 @@ import java.util.* ;
  * @version 1.0
  */
 
-public class MultipleValueTests extends TestCase {
+public class MultipleValueTest extends TestCase {
     private CommandLineUtility util = null ;
 
     public void setUp() {
