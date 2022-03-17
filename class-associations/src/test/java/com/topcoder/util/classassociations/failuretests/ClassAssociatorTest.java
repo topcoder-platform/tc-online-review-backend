@@ -23,7 +23,7 @@ import com.topcoder.util.classassociations.IllegalHandlerException;
  * @author valeriy
  * @version 1.0
  */
-public class ClassAssociatorTests extends TestCase {
+public class ClassAssociatorTest extends TestCase {
 
     /**
      * Tests ClassAssociator(Map, Map) constructor with invalid parameters
@@ -576,7 +576,7 @@ public class ClassAssociatorTests extends TestCase {
     }
     
     public static Test suite() {
-        return new TestSuite(ClassAssociatorTests.class);
+        return new TestSuite(ClassAssociatorTest.class);
     }
     
 }

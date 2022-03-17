@@ -19,7 +19,7 @@ import com.topcoder.util.classassociations.IllegalHandlerException;
  * @author valeriy
  * @version 1.0
  */
-public class IllegalHandlerExceptionTests extends TestCase {
+public class IllegalHandlerExceptionTest extends TestCase {
 
     /**
      * Tests IllegalHandlerException constructors with invalid parameters
@@ -35,7 +35,7 @@ public class IllegalHandlerExceptionTests extends TestCase {
     }
      
     public static Test suite() {
-        return new TestSuite(IllegalHandlerExceptionTests.class);
+        return new TestSuite(IllegalHandlerExceptionTest.class);
     }
     
 }
