@@ -407,7 +407,7 @@ public class ProjectPaymentAdjustmentCalculatorTest {
         String objectKey = (String) config.getPropertyValue("project_payment_calculator_key");
         ConfigurationObject ofConfig = config.getChild("object_factory_config");
         ConfigurationObject objectConfig = ofConfig.getChild(objectKey);
-        objectConfig.setPropertyValue("type", new Integer(23));
+        objectConfig.setPropertyValue("type", 23);
         new ProjectPaymentAdjustmentCalculator(config);
     }
 
@@ -837,7 +837,7 @@ public class ProjectPaymentAdjustmentCalculatorTest {
      */
     @Test(expected = IllegalArgumentException.class)
     public void testGetDefaultPayments_EmptyResourceRoleIDs() throws Exception {
-        calc.getDefaultPayments(230, new ArrayList<Long>());
+        calc.getDefaultPayments(230, new ArrayList<>());
     }
 
     /**

@@ -3,11 +3,6 @@
  */
 package com.topcoder.management.payment.calculator.impl;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-
 import junit.framework.Assert;
 import junit.framework.JUnit4TestAdapter;
 
@@ -95,7 +90,7 @@ public class HelperTest {
     @Test(expected = ProjectPaymentCalculatorConfigurationException.class)
     public void testGetStringProperty_InvalidType() throws Exception {
         ConfigurationObject config = new DefaultConfigurationObject("myConfig");
-        config.setPropertyValue("key", new Integer(2));
+        config.setPropertyValue("key", 2);
 
         Helper.getStringProperty(config, "key", true);
     }
@@ -181,71 +176,5 @@ public class HelperTest {
         config.addChild(child);
 
         Helper.getChildConfiguration(config, "child1");
-    }
-
-    /**
-     * <p>
-     * Accuracy test method for
-     * <code>Helper#closeDatabaseResources(Log, String, ResultSet, PreparedStatement, Connection)</code> .
-     * </p>
-     * <p>
-     * Verifies that all the resources are closed.
-     * </p>
-     *
-     * @throws Exception
-     *             to junit
-     */
-    @Test
-    public void testCloseDatabaseResources() throws Exception {
-        DefaultProjectPaymentCalculator calc = new DefaultProjectPaymentCalculator();
-        Connection conn = null;
-        ResultSet resultSet = null;
-        PreparedStatement statement = null;
-        try {
-            conn = calc.createConnection();
-            statement = conn.prepareStatement("SELECT resource_role_id FROM default_project_payment");
-            resultSet = statement.executeQuery();
-            resultSet.next();
-        } finally {
-            Helper.closeDatabaseResources(calc.getLogger(), "test", resultSet, statement, conn);
-            try {
-                resultSet.next();
-                Assert.fail("The result set is not closed");
-            } catch (SQLException e) {
-                // expected
-            }
-
-            try {
-                statement.executeQuery();
-                Assert.fail("The statement is not closed");
-            } catch (SQLException e) {
-                // expected
-            }
-
-            try {
-                conn.prepareStatement("SELECT resource_role_id FROM default_project_payment");
-                Assert.fail("The connection is not closed");
-            } catch (SQLException e) {
-                // expected
-            }
-        }
-    }
-
-    /**
-     * <p>
-     * Accuracy test method for
-     * <code>Helper#closeDatabaseResources(Log, String, ResultSet, PreparedStatement, Connection)</code> when all
-     * fields to close are null.
-     * </p>
-     * <p>
-     * Expects no error occurs as nothing is done.
-     * </p>
-     *
-     * @throws Exception
-     *             to junit
-     */
-    @Test
-    public void testCloseDatabaseResources_Null() throws Exception {
-        Helper.closeDatabaseResources(null, "test", null, null, null);
     }
 }

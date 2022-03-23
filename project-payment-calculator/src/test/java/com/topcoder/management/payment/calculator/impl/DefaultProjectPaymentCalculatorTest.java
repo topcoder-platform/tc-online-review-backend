@@ -503,21 +503,21 @@ public class DefaultProjectPaymentCalculatorTest {
      * @throws Exception
      *             to junit
      */
-//    @Test
-//    public void testGetDefaultPayments3() throws Exception {
-//        // get default payments
-//        Map<Long, BigDecimal> payments =
-//            calc.getDefaultPayments(231, Arrays.asList(
-//                DefaultProjectPaymentCalculator.MILESTONE_SCREENER_RESOURCE_ROLE_ID,
-//                DefaultProjectPaymentCalculator.MILESTONE_REVIEWER_RESOURCE_ROLE_ID));
-//
-//        // verify
-//        Assert.assertEquals("Incorrect number of payments", 2, payments.size());
-//        Assert.assertEquals("Incorrect payments for Milestone Screener", 22.0, payments.get(
-//            DefaultProjectPaymentCalculator.MILESTONE_SCREENER_RESOURCE_ROLE_ID).doubleValue(), 0);
-//        Assert.assertEquals("Incorrect payments for Milestone Reviewer", 31.0, payments.get(
-//            DefaultProjectPaymentCalculator.MILESTONE_REVIEWER_RESOURCE_ROLE_ID).doubleValue(), 0);
-//    }
+    @Test
+    public void testGetDefaultPayments3() throws Exception {
+        // get default payments
+        Map<Long, BigDecimal> payments =
+            calc.getDefaultPayments(231, Arrays.asList(
+                DefaultProjectPaymentCalculator.CHECKPOINT_SCREENER_RESOURCE_ROLE_ID,
+                DefaultProjectPaymentCalculator.CHECKPOINT_REVIEWER_RESOURCE_ROLE_ID));
+
+        // verify
+        Assert.assertEquals("Incorrect number of payments", 2, payments.size());
+        Assert.assertEquals("Incorrect payments for Milestone Screener", 22.0, payments.get(
+            DefaultProjectPaymentCalculator.CHECKPOINT_SCREENER_RESOURCE_ROLE_ID).doubleValue(), 0);
+        Assert.assertEquals("Incorrect payments for Milestone Reviewer", 31.0, payments.get(
+            DefaultProjectPaymentCalculator.CHECKPOINT_REVIEWER_RESOURCE_ROLE_ID).doubleValue(), 0);
+    }
 
     /**
      * <p>
@@ -698,7 +698,7 @@ public class DefaultProjectPaymentCalculatorTest {
      */
     @Test(expected = IllegalArgumentException.class)
     public void testGetDefaultPayments_EmptyResourceRoleIDs() throws Exception {
-        calc.getDefaultPayments(230, new ArrayList<Long>());
+        calc.getDefaultPayments(230, new ArrayList<>());
     }
 
     /**

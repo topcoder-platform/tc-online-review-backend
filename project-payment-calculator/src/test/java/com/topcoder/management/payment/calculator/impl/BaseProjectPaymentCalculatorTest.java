@@ -261,14 +261,8 @@ public class BaseProjectPaymentCalculatorTest {
      */
     @Test
     public void testCreateConnection() throws Exception {
-        Connection conn = null;
-        try {
-            conn = calc.createConnection();
+        try (Connection conn = calc.createConnection()) {
             Assert.assertNotNull("Connection is not created", conn);
-        } finally {
-            if (conn != null) {
-                conn.close();
-            }
         }
     }
 
@@ -290,14 +284,8 @@ public class BaseProjectPaymentCalculatorTest {
         calc = new BaseProjectPaymentCalculator(config) {
         };
 
-        Connection conn = null;
-        try {
-            conn = calc.createConnection();
+        try (Connection conn = calc.createConnection()) {
             Assert.assertNotNull("Connection is not created", conn);
-        } finally {
-            if (conn != null) {
-                conn.close();
-            }
         }
     }
 

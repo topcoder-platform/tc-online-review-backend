@@ -348,6 +348,7 @@ create table 'informix'.resource (
     resource_role_id INT not null,
     project_id INT,
     project_phase_id INT,
+    user_id DECIMAL(10,0),
     create_user VARCHAR(64) not null,
     create_date DATETIME YEAR TO FRACTION not null,
     modify_user VARCHAR(64) not null,
@@ -418,6 +419,27 @@ lock mode row;
 revoke all on default_project_payment from 'public';
 
 grant select,insert,update,delete on default_project_payment to public as 'informix';
+
+create table 'informix'.review (
+    review_id INT not null,
+    resource_id INT not null,
+    submission_id INT,
+    project_phase_id INT not null,
+    scorecard_id INT not null,
+    committed DECIMAL(1,0) not null,
+    score FLOAT,
+    initial_score DECIMAL(5,2),
+    create_user VARCHAR(64) not null,
+    create_date DATETIME YEAR TO FRACTION not null,
+    modify_user VARCHAR(64) not null,
+    modify_date DATETIME YEAR TO FRACTION not null
+    )
+    extent size 10000 next size 5000
+    lock mode row;
+
+revoke all on review from 'public';
+grant select,insert,update,delete on review to public as 'informix';
+
 
 ------ CONSTRAINTS
 
@@ -510,6 +532,9 @@ alter table 'informix'.default_project_payment add constraint primary key
     (project_category_id, resource_role_id)
     constraint default_project_payment_pk;
 
+alter table 'informix'.review add constraint primary key
+    (review_id)
+    constraint pk_review;
 
 ------ foreign keys
 alter table 'informix'.upload add constraint foreign key

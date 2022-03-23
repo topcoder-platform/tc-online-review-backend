@@ -17,6 +17,9 @@ import org.junit.Test;
 
 import com.topcoder.management.payment.calculator.impl.DefaultProjectPaymentCalculator;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+
 
 /**
  * <p>
@@ -105,8 +108,8 @@ public class DefaultProjectPaymentCalculatorTests extends BaseStressTest {
                 public void run() {
                     try {
                         Map<Long, BigDecimal> result =
-                            instance.getDefaultPayments(1, Arrays.asList(new Long[] {1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L,
-                                9L, 10L}));
+                            instance.getDefaultPayments(1, Arrays.asList(1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L,
+                                    9L, 10L));
                         assertEquals("default payments not found", 4, result.size());
                         assertEquals("default payments not found", 0, result.get(2L).compareTo(new BigDecimal(0)));
                         assertEquals("default payments not found", 0, result.get(4L).compareTo(new BigDecimal(0)));

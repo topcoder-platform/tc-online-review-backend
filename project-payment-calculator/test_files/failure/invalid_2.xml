@@ -19,7 +19,7 @@
                 <Value>com.informix.jdbc.IfxDriver</Value>
               </Property>
               <Property name="jdbc_url">
-                <Value>jdbc:informix-sqli:192.168.0.106:9088/sysadmin:informixserver=ol_informix1170</Value>
+                <Value>jdbc:informix-sqli:localhost:2021/tcs_catalog:informixserver=informixoltp_tcp</Value>
               </Property>
               <Property name="SelectMethod">
                 <Value>cursor</Value>
@@ -28,7 +28,7 @@
                 <Value>informix</Value>
               </Property>
               <Property name="password">
-                <Value>123456</Value>
+                <Value>1nf0rm1x</Value>
               </Property>
             </Property>
           </Property>
@@ -69,7 +69,7 @@
                 <Value>com.informix.jdbc.IfxDriver</Value>
               </Property>
               <Property name="jdbc_url">
-                <Value>jdbc:informix-sqli:192.168.0.106:9088/sysadmin:informixserver=ol_informix1170</Value>
+                <Value>jdbc:informix-sqli:localhost:2021/tcs_catalog:informixserver=informixoltp_tcp</Value>
               </Property>
               <Property name="SelectMethod">
                 <Value>cursor</Value>
@@ -78,7 +78,7 @@
                 <Value>informix</Value>
               </Property>
               <Property name="password">
-                <Value>123456</Value>
+                <Value>1nf0rm1x</Value>
               </Property>
             </Property>
           </Property>

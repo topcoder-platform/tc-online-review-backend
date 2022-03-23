@@ -5,7 +5,7 @@ package com.topcoder.management.payment.calculator.failuretests;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 
 import junit.framework.JUnit4TestAdapter;
 
@@ -149,7 +149,7 @@ public class ProjectPaymentAdjustmentCalculatorFailureTest {
                 + "config.xml"));
         obj = obj.getChild(ProjectPaymentAdjustmentCalculator.DEFAULT_CONFIG_NAMESPACE);
         ProjectPaymentAdjustmentCalculator instance = new ProjectPaymentAdjustmentCalculator(obj);
-        instance.getDefaultPayments(0, Arrays.asList(1L));
+        instance.getDefaultPayments(0, Collections.singletonList(1L));
     }
 
     /**
@@ -169,7 +169,7 @@ public class ProjectPaymentAdjustmentCalculatorFailureTest {
                 + "config.xml"));
         obj = obj.getChild(ProjectPaymentAdjustmentCalculator.DEFAULT_CONFIG_NAMESPACE);
         ProjectPaymentAdjustmentCalculator instance = new ProjectPaymentAdjustmentCalculator(obj);
-        instance.getDefaultPayments(-1, Arrays.asList(1L));
+        instance.getDefaultPayments(-1, Collections.singletonList(1L));
     }
 
     /**
@@ -189,7 +189,7 @@ public class ProjectPaymentAdjustmentCalculatorFailureTest {
                 + "config.xml"));
         obj = obj.getChild(ProjectPaymentAdjustmentCalculator.DEFAULT_CONFIG_NAMESPACE);
         ProjectPaymentAdjustmentCalculator instance = new ProjectPaymentAdjustmentCalculator(obj);
-        instance.getDefaultPayments(1, new ArrayList<Long>());
+        instance.getDefaultPayments(1, new ArrayList<>());
     }
 
     /**
@@ -209,6 +209,6 @@ public class ProjectPaymentAdjustmentCalculatorFailureTest {
                 + "config.xml"));
         obj = obj.getChild(ProjectPaymentAdjustmentCalculator.DEFAULT_CONFIG_NAMESPACE);
         ProjectPaymentAdjustmentCalculator instance = new ProjectPaymentAdjustmentCalculator(obj);
-        instance.getDefaultPayments(1, Arrays.asList((Long) null));
+        instance.getDefaultPayments(1, Collections.singletonList(null));
     }
 }
