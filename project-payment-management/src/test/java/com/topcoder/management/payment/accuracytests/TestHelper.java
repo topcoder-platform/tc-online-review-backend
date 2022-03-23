@@ -57,20 +57,6 @@ public final class TestHelper {
     }
 
     /**
-     * <p>Closes the given connection.</p>
-     *
-     * @param connection the given connection.
-     *
-     * @throws Exception to JUnit.
-     */
-    public static void closeConnection(Connection connection)
-        throws Exception {
-        if ((connection != null) && (!connection.isClosed())) {
-            connection.close();
-        }
-    }
-
-    /**
      * <p>Loads data into the database.</p>
      *
      * @param connection the connection.
@@ -104,18 +90,14 @@ public final class TestHelper {
         throws Exception {
         String[] values = readFile(file).split(";");
 
-        Statement statement = connection.createStatement();
-
-        try {
-            for (int i = 0; i < values.length; i++) {
-                String sql = values[i].trim();
+        try (Statement statement = connection.createStatement()) {
+            for (String value : values) {
+                String sql = value.trim();
 
                 if (sql.length() != 0) {
                     statement.executeUpdate(sql);
                 }
             }
-        } finally {
-            statement.close();
         }
     }
 
@@ -129,9 +111,8 @@ public final class TestHelper {
      * @throws IOException if any error occurs during reading.
      */
     private static String readFile(String fileName) throws IOException {
-        Reader reader = new FileReader(fileName);
 
-        try {
+        try (Reader reader = new FileReader(fileName)) {
             // Create a StringBuilder instance
             StringBuilder sb = new StringBuilder();
 
@@ -148,8 +129,6 @@ public final class TestHelper {
 
             // Return read content
             return sb.toString().replace("\r\n", "\n");
-        } finally {
-            reader.close();
         }
     }
 }

@@ -79,7 +79,7 @@ public class ProjectPaymentManagerImplFailureTests extends TestCase {
     	}catch(UnknownNamespaceException e) {
     	}
 		config.add("failure/SearchBundleManager.xml");
-        instance = new ProjectPaymentManagerImpl("failure/ProjectPaymentManagerImpl.properties", 
+        instance = new ProjectPaymentManagerImpl("failure/ProjectPaymentManagerImpl.properties",
         		"com.topcoder.management.payment.impl.ProjectPaymentManagerImpl");
 
         paymenttype.setProjectPaymentTypeId(1L);
@@ -124,7 +124,7 @@ public class ProjectPaymentManagerImplFailureTests extends TestCase {
     	}catch(UnknownNamespaceException e) {
     	}
 
-    	
+
     }
 
     /**
@@ -364,7 +364,7 @@ public class ProjectPaymentManagerImplFailureTests extends TestCase {
             //good
         }
     }
-    
+
 
 
     /**
@@ -400,7 +400,7 @@ public class ProjectPaymentManagerImplFailureTests extends TestCase {
             //good
         }
     }
-    
+
     /**
      * <p>
      * Tests ProjectPaymentManagerImpl#ProjectPaymentManagerImpl() for failure.
@@ -497,7 +497,7 @@ public class ProjectPaymentManagerImplFailureTests extends TestCase {
     	obj.setAmount(null);
     	obj.setCreateDate(new Date());
     	obj.setPactsPaymentId(1L);
-    	
+
     	obj.setProjectPaymentType(paymenttype);
     	obj.setResourceId(1L);
     	obj.setSubmissionId(2L);
@@ -521,7 +521,7 @@ public class ProjectPaymentManagerImplFailureTests extends TestCase {
     	obj.setAmount(new BigDecimal(-1));
     	obj.setCreateDate(new Date());
     	obj.setPactsPaymentId(1L);
-    	
+
     	obj.setProjectPaymentType(paymenttype);
     	obj.setResourceId(1L);
     	obj.setSubmissionId(2L);
@@ -532,7 +532,7 @@ public class ProjectPaymentManagerImplFailureTests extends TestCase {
             //good
         }
     }
-    
+
 
 
     /**
@@ -602,7 +602,7 @@ public class ProjectPaymentManagerImplFailureTests extends TestCase {
             //good
         }
     }
-    
+
 
     /**
      * <p>
@@ -616,7 +616,7 @@ public class ProjectPaymentManagerImplFailureTests extends TestCase {
     	obj.setAmount(new BigDecimal(1));
     	obj.setCreateDate(new Date());
     	obj.setPactsPaymentId(1L);
-    	
+
     	obj.setProjectPaymentType(paymenttype);
     	obj.setSubmissionId(2L);
         try {
@@ -626,7 +626,7 @@ public class ProjectPaymentManagerImplFailureTests extends TestCase {
             //good
         }
     }
-    
+
 
     /**
      * <p>
@@ -640,7 +640,7 @@ public class ProjectPaymentManagerImplFailureTests extends TestCase {
     	obj.setAmount(new BigDecimal(1));
     	obj.setCreateDate(new Date());
     	obj.setPactsPaymentId(1L);
-    	
+
     	obj.setProjectPaymentType(paymenttype);
     	obj.setResourceId(1L);
     	obj.setSubmissionId(2L);
@@ -651,7 +651,7 @@ public class ProjectPaymentManagerImplFailureTests extends TestCase {
             //good
         }
     }
-    
+
 
     /**
      * <p>
@@ -714,7 +714,7 @@ public class ProjectPaymentManagerImplFailureTests extends TestCase {
             //good
         }
     }
-    
+
 
     /**
      * <p>
@@ -761,7 +761,7 @@ public class ProjectPaymentManagerImplFailureTests extends TestCase {
             //good
         }
     }
-    
+
 
     /**
      * <p>
@@ -785,7 +785,7 @@ public class ProjectPaymentManagerImplFailureTests extends TestCase {
             //good
         }
     }
-    
+
 
     /**
      * <p>
@@ -810,7 +810,7 @@ public class ProjectPaymentManagerImplFailureTests extends TestCase {
             //good
         }
     }
-    
+
 
     /**
      * <p>
@@ -871,8 +871,8 @@ public class ProjectPaymentManagerImplFailureTests extends TestCase {
             //good
         }
     }
-    
-    
+
+
 
     /**
      * <p>
@@ -889,9 +889,9 @@ public class ProjectPaymentManagerImplFailureTests extends TestCase {
             //good
         }
     }
-    
-    
-    
+
+
+
     /**
      * <p>
      * Tests ProjectPaymentManagerImpl#search(Filter) for failure.

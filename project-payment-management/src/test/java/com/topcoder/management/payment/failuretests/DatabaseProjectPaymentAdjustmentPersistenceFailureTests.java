@@ -87,7 +87,7 @@ public class DatabaseProjectPaymentAdjustmentPersistenceFailureTests extends Tes
             //good
         }
     }
-    
+
     /**
      * <p>
      * Tests DatabaseProjectPaymentAdjustmentPersistence#save(ProjectPaymentAdjustment) for failure.
@@ -129,7 +129,7 @@ public class DatabaseProjectPaymentAdjustmentPersistenceFailureTests extends Tes
         }
     }
 
-    
+
     /**
      * <p>
      * Tests DatabaseProjectPaymentAdjustmentPersistence#save(ProjectPaymentAdjustment) for failure.
@@ -148,7 +148,7 @@ public class DatabaseProjectPaymentAdjustmentPersistenceFailureTests extends Tes
             //good
         }
     }
-    
+
     /**
      * <p>
      * Tests DatabaseProjectPaymentAdjustmentPersistence#save(ProjectPaymentAdjustment) for failure.
@@ -167,7 +167,7 @@ public class DatabaseProjectPaymentAdjustmentPersistenceFailureTests extends Tes
             //good
         }
     }
-    
+
     /**
      * <p>
      * Tests DatabaseProjectPaymentAdjustmentPersistence#save(ProjectPaymentAdjustment) for failure.
@@ -187,7 +187,7 @@ public class DatabaseProjectPaymentAdjustmentPersistenceFailureTests extends Tes
             //good
         }
     }
-    
+
     /**
      * <p>
      * Tests DatabaseProjectPaymentAdjustmentPersistence#save(ProjectPaymentAdjustment) for failure.
@@ -207,7 +207,7 @@ public class DatabaseProjectPaymentAdjustmentPersistenceFailureTests extends Tes
             //good
         }
     }
-    
+
     /**
      * <p>
      * Tests DatabaseProjectPaymentAdjustmentPersistence#save(ProjectPaymentAdjustment) for failure.
@@ -228,7 +228,7 @@ public class DatabaseProjectPaymentAdjustmentPersistenceFailureTests extends Tes
             //good
         }
     }
-    
+
     /**
      * <p>
      * Tests DatabaseProjectPaymentAdjustmentPersistence#retrieveByProjectId(long) for failure.
@@ -276,7 +276,7 @@ public class DatabaseProjectPaymentAdjustmentPersistenceFailureTests extends Tes
             //good
         }
     }
-    
+
     /**
      * <p>
      * Tests DatabaseProjectPaymentAdjustmentPersistence#configure(ConfigurationObject) for failure.

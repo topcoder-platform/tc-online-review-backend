@@ -129,7 +129,7 @@ public class ProjectPaymentAdjustmentManagerImplTests {
             }
 
             if (adjust.getResourceRoleId() == 4) {
-                assertTrue("payment adjustment must be found", 300 == adjust.getMultiplier().doubleValue());
+                assertTrue("payment adjustment must be found", 300 == adjust.getMultiplier());
                 assertEquals("payment adjustment must be found", null, adjust.getFixedAmount());
             }
         }

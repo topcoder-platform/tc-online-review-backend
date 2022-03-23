@@ -95,14 +95,9 @@ final class StressHelper {
      *             to JUnit.
      */
     static void executeSql(String sql) throws Exception {
-        Connection conn = getConnection();
-        Statement stmt = null;
-        try {
-            stmt = conn.createStatement();
+        try (Connection conn = getConnection();
+             Statement stmt = conn.createStatement()) {
             stmt.executeUpdate(sql);
-        } finally {
-            closeStatement(stmt);
-            closeConnection(conn);
         }
     }
 
@@ -142,7 +137,9 @@ final class StressHelper {
      *             to JUnit.
      */
     static void clearDB() throws Exception {
-        executeSQL(getConnection(), "test_files/stress/clear.sql");
+        try (Connection connection = getConnection()) {
+            executeSQL(connection, "test_files/stress/clear.sql");
+        }
     }
 
     /**
@@ -155,17 +152,13 @@ final class StressHelper {
      *             to JUnit.
      */
     static int getFirstIndex(String sql) throws Exception {
-        Connection conn = getConnection();
-        PreparedStatement stmt = null;
-        try {
-            stmt = conn.prepareStatement(sql);
-            ResultSet rs = stmt.executeQuery();
-            rs.next();
-            int count = rs.getInt(1);
-            return count;
-        } finally {
-            closeStatement(stmt);
-            closeConnection(conn);
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                rs.next();
+                return rs.getInt(1);
+            }
         }
     }
 
@@ -215,21 +208,15 @@ final class StressHelper {
      *             to JUnit.
      */
     private static void executeSQL(Connection connection, String file) throws Exception {
-        Statement stmt = null;
-        try {
-            stmt = connection.createStatement();
+        try (Statement stmt = connection.createStatement()) {
 
             String[] values = readFile(file).split(";");
 
-            for (int i = 0; i < values.length; i++) {
-                String sql = values[i].trim();
+            for (String value : values) {
+                String sql = value.trim();
                 if ((sql.length() != 0) && (!sql.startsWith("#"))) {
                     stmt.executeUpdate(sql);
                 }
-            }
-        } finally {
-            if (stmt != null) {
-                stmt.close();
             }
         }
     }
@@ -248,9 +235,8 @@ final class StressHelper {
      *             if any error occurs during reading.
      */
     private static String readFile(String fileName) throws IOException {
-        Reader reader = new FileReader(fileName);
 
-        try {
+        try (Reader reader = new FileReader(fileName)) {
             // Create a StringBuilder instance
             StringBuilder sb = new StringBuilder();
 
@@ -267,13 +253,8 @@ final class StressHelper {
 
             // Return read content
             return sb.toString();
-        } finally {
-            try {
-                reader.close();
-            } catch (IOException ioe) {
-                // Ignore
-            }
         }
+        // Ignore
     }
 
     /**
@@ -290,23 +271,13 @@ final class StressHelper {
      *             i any error occurs
      */
     private static Properties loadPropertiesFromFile(String fileName) throws IOException {
-        FileInputStream input = null;
 
-        try {
-            input = new FileInputStream(fileName);
+        try (FileInputStream input = new FileInputStream(fileName)) {
 
             Properties props = new Properties();
             props.load(input);
 
             return props;
-        } finally {
-            if (input != null) {
-                try {
-                    input.close();
-                } catch (IOException e) {
-                    // ignores exception
-                }
-            }
         }
     }
 }

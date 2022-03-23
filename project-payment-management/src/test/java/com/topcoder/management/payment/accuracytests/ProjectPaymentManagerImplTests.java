@@ -200,7 +200,7 @@ public class ProjectPaymentManagerImplTests {
         assertTrue("should be deleted", result);
         persisted = instance.retrieve(id);
         assertNull("should not exist", persisted);
-        // delete an non-exist one
+        // delete non-exist one
         result = instance.delete(100);
         assertFalse("should return false", result);
     }

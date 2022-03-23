@@ -6,11 +6,8 @@ package com.topcoder.management.payment.impl;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
 
 import junit.framework.JUnit4TestAdapter;
 
@@ -220,51 +217,6 @@ public class HelperUnitTests extends BaseUnitTests {
 
         assertNotNull("'getConnection' should be correct.", Helper.getConnection(log, "signature", persistence
             .getDbConnectionFactory(), persistence.getConnectionName(), false));
-    }
-
-    /**
-     * <p>
-     * Tests accuracy of <code>closeStatement(Log log, String signature, Statement statement)</code>.<br>
-     * The result should be correct.
-     * </p>
-     *
-     * @throws Exception
-     *             to JUnit.
-     */
-    @Test
-    public void test_closeStatement() throws Exception {
-        clearDB();
-
-        PreparedStatement preparedStatement = getConnection().prepareStatement(
-            "select * from project_payment_adjustment");
-        Helper.closeStatement(log, "signature", preparedStatement);
-
-        try {
-            preparedStatement.executeQuery();
-
-            fail("SQLException is expected.");
-        } catch (SQLException e) {
-            // Good
-        }
-    }
-
-    /**
-     * <p>
-     * Tests accuracy of <code>closeConnection(Log log, String signature, Connection connection)</code>.<br>
-     * The result should be correct.
-     * </p>
-     *
-     * @throws Exception
-     *             to JUnit.
-     */
-    @Test
-    public void test_closeConnection() throws Exception {
-        clearDB();
-
-        Connection connection = getConnection();
-        Helper.closeConnection(log, "signature", connection);
-
-        assertTrue("'closeConnection' should be correct.", connection.isClosed());
     }
 
     /**

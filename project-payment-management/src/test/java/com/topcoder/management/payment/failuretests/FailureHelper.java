@@ -28,10 +28,7 @@ public class FailureHelper extends TestCase {
 
     /**
      * Clear the database.
-     * 
-     * @param connection
-     *            the connection.
-     * 
+     *
      * @throws Exception
      *             to JUnit.
      */
@@ -41,23 +38,17 @@ public class FailureHelper extends TestCase {
 
     /**
      * Clear the database.
-     * 
-     * @param connection
-     *            the connection.
-     * 
+     *
      * @throws Exception
      *             to JUnit.
      */
     protected static void prepareDB( ) throws Exception {
         executeSQL(getConnection(), "test_files/failure/data.sql");
     }
-    
+
     /**
      * Clear the database.
-     * 
-     * @param connection
-     *            the connection.
-     * 
+     *
      * @throws Exception
      *             to JUnit.
      */
@@ -76,47 +67,43 @@ public class FailureHelper extends TestCase {
     }
     /**
      * Executes the SQL statements from file.
-     * 
+     *
      * @param connection
      *            the connection.
      * @param file
      *            the file.
-     * 
+     *
      * @throws Exception
      *             to JUnit.
      */
     private static void executeSQL(Connection connection, String file) throws Exception {
         String[] values = readFile(file).split(";");
 
-        Statement statement = connection.createStatement();
-        try {
+        try (Statement statement = connection.createStatement()) {
 
-            for (int i = 0; i < values.length; i++) {
-                String sql = values[i].trim();
+            for (String value : values) {
+                String sql = value.trim();
                 if ((sql.length() != 0) && (!sql.startsWith("#"))) {
                     statement.executeUpdate(sql);
                 }
             }
-        } finally {
-            statement.close();
         }
     }
 
     /**
      * Reads file to a string.
-     * 
+     *
      * @param fileName
      *            the name of the file to read.
-     * 
+     *
      * @return a string represents the content.
-     * 
+     *
      * @throws IOException
      *             if any IO error occurs.
      */
     private static String readFile(String fileName) throws IOException {
-        Reader reader = new FileReader(fileName);
 
-        try {
+        try (Reader reader = new FileReader(fileName)) {
             StringBuilder sb = new StringBuilder();
             char[] buffer = new char[1024];
             int k = 0;
@@ -124,12 +111,7 @@ public class FailureHelper extends TestCase {
                 sb.append(buffer, 0, k);
             }
             return sb.toString().replace("\r\n", "\n");
-        } finally {
-            try {
-                reader.close();
-            } catch (IOException ioe) {
-                // Ignore
-            }
         }
+        // Ignore
     }
 }
