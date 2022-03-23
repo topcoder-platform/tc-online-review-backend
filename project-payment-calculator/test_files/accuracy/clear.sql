@@ -1,3 +1,4 @@
+DELETE FROM 'informix'.review;
 DELETE FROM 'informix'.default_project_payment;
 DELETE FROM 'informix'.project_payment_adjustment;
 DELETE FROM 'informix'.project_payment;
