@@ -3,20 +3,19 @@
  */
 package com.topcoder.management.payment.calculator;
 
+import com.topcoder.configuration.ConfigurationObject;
+import com.topcoder.configuration.persistence.ConfigurationFileManager;
+import com.topcoder.db.connectionfactory.DBConnectionFactory;
+import com.topcoder.db.connectionfactory.DBConnectionFactoryImpl;
+import com.topcoder.management.payment.calculator.impl.DefaultProjectPaymentCalculator;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-
-import com.topcoder.configuration.ConfigurationObject;
-import com.topcoder.configuration.persistence.ConfigurationFileManager;
-import com.topcoder.db.connectionfactory.DBConnectionFactory;
-import com.topcoder.db.connectionfactory.DBConnectionFactoryImpl;
-import com.topcoder.management.payment.calculator.impl.DefaultProjectPaymentCalculator;
+import java.sql.Statement;
 
 
 /**
@@ -131,32 +130,17 @@ public final class TestHelper {
      */
     private static void executeUpdate(String sqlFile) throws Exception {
         String[] queries = readFile(sqlFile).split(";");
-        Connection conn = null;
-        try {
-            conn = getConnection();
+        try (Connection conn = getConnection();
+             Statement statement = conn.createStatement()) {
+
             conn.setAutoCommit(false);
-            for (int i = 0; i < queries.length; i++) {
-                String query = queries[i].trim();
-                if (query.length() == 0) {
+            for (String query : queries) {
+                if (query.trim().length() == 0) {
                     continue;
                 }
-                PreparedStatement pstmt = conn.prepareStatement(query);
-                pstmt.executeUpdate();
-                pstmt.close();
+                statement.executeUpdate(query);
             }
             conn.commit();
-        } catch (SQLException e) {
-            if (conn != null) {
-                try {
-                    conn.rollback();
-                } catch (SQLException e1) {
-                    // ignore
-                }
-            }
-            e.printStackTrace();
-            throw e;
-        } finally {
-            close(conn);
         }
     }
 
@@ -174,20 +158,10 @@ public final class TestHelper {
     private static String readFile(String file) throws IOException {
         StringBuilder builder = new StringBuilder();
         char[] buffer = new char[8192];
-        BufferedReader reader = null;
-        try {
-            reader = new BufferedReader(new FileReader(file));
+        try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
             int read = 0;
             while ((read = reader.read(buffer)) != -1) {
                 builder.append(buffer, 0, read);
-            }
-        } finally {
-            if (reader != null) {
-                try {
-                    reader.close();
-                } catch (IOException e) {
-                    // ignored
-                }
             }
         }
         return builder.toString();
@@ -210,23 +184,5 @@ public final class TestHelper {
         ConfigurationObject dbConfig = config.getChild("db_connection_factory_config");
         DBConnectionFactory connectionFactory = new DBConnectionFactoryImpl(dbConfig);
         return connectionFactory.createConnection();
-    }
-
-    /**
-     * <p>
-     * Close database connection.
-     * </p>
-     *
-     * @param conn
-     *            the connection to close.
-     */
-    private static void close(Connection conn) {
-        if (conn != null) {
-            try {
-                conn.close();
-            } catch (SQLException e) {
-                // ignore
-            }
-        }
     }
 }

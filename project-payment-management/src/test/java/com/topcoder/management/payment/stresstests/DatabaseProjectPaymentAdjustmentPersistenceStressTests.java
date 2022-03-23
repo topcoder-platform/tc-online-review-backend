@@ -64,9 +64,9 @@ public class DatabaseProjectPaymentAdjustmentPersistenceStressTests extends Test
         for (int i = 0; i < NUM; i++) {
             projectPaymentAdjustment[i] = new ProjectPaymentAdjustment();
             projectPaymentAdjustment[i].setFixedAmount(null);
-            projectPaymentAdjustment[i].setMultiplier(new Double(i));
-            projectPaymentAdjustment[i].setProjectId(new Long(i));
-            projectPaymentAdjustment[i].setResourceRoleId(new Long(i));
+            projectPaymentAdjustment[i].setMultiplier((double) i);
+            projectPaymentAdjustment[i].setProjectId((long) i);
+            projectPaymentAdjustment[i].setResourceRoleId((long) i);
 
             StressHelper.executeSql("INSERT INTO 'informix'.resource_role_lu(resource_role_id,phase_type_id,name,"
                     + "description,create_user,create_date,modify_user,modify_date)" + " VALUES (" + i
@@ -82,7 +82,7 @@ public class DatabaseProjectPaymentAdjustmentPersistenceStressTests extends Test
         assertEquals("The result should be correct.", 1, result.size());
         List<ProjectPaymentAdjustment> result2 = instance.retrieveByProjectId(NUM);
         assertEquals("The result should be correct.", 0, result2.size());
-        System.out.println(String.format("testsaveStress took %s ms", System.currentTimeMillis() - startTime));
+        System.out.printf("testsaveStress took %s ms%n", System.currentTimeMillis() - startTime);
     }
 
     /**
@@ -111,7 +111,7 @@ public class DatabaseProjectPaymentAdjustmentPersistenceStressTests extends Test
             List<ProjectPaymentAdjustment> result = instance.retrieveByProjectId(1L);
             assertEquals("The result should be correct.", 1, result.size());
         }
-        System.out.println(String.format("testretrieveByProjectIdStress took %s ms", System.currentTimeMillis()
-                - startTime));
+        System.out.printf("testretrieveByProjectIdStress took %s ms%n", System.currentTimeMillis()
+                - startTime);
     }
 }

@@ -5,8 +5,6 @@ package com.topcoder.management.payment.calculator.stresstests;
 
 import java.util.Date;
 
-import junit.framework.TestCase;
-
 
 /**
  * <p>
@@ -19,9 +17,9 @@ import junit.framework.TestCase;
  * @author gjw99
  * @version 1.0
  */
-public class BaseStressTest extends TestCase {
+public class BaseStressTest {
     /** The test count. */
-    protected static int testCount = 100;
+    protected static int testCount = 20;
 
     /** time started to test. */
     protected long start = 0;

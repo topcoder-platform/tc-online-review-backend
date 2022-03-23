@@ -13,7 +13,6 @@ import com.topcoder.util.datavalidator.AbstractObjectValidator;
  * @author sparemax
  * @version 1.0
  */
-@SuppressWarnings("serial")
 public class MockValidator extends AbstractObjectValidator {
     /**
      * <p>

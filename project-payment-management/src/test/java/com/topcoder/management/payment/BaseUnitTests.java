@@ -181,11 +181,8 @@ public abstract class BaseUnitTests {
      *             if any error occurs.
      */
     protected void executeUpdate(String sql) throws Exception {
-        Statement statement = connection.createStatement();
-        try {
+        try (Statement statement = connection.createStatement()) {
             statement.executeUpdate(sql);
-        } finally {
-            statement.close();
         }
     }
 
@@ -298,21 +295,14 @@ public abstract class BaseUnitTests {
      *             to JUnit.
      */
     private static void executeSQL(Connection connection, String file) throws Exception {
-        Statement stmt = null;
-        try {
-            stmt = connection.createStatement();
-
+        try (Statement stmt = connection.createStatement()) {
             String[] values = readFile(file).split(";");
 
-            for (int i = 0; i < values.length; i++) {
-                String sql = values[i].trim();
+            for (String value : values) {
+                String sql = value.trim();
                 if ((sql.length() != 0) && (!sql.startsWith("#"))) {
                     stmt.executeUpdate(sql);
                 }
-            }
-        } finally {
-            if (stmt != null) {
-                stmt.close();
             }
         }
     }
@@ -331,9 +321,7 @@ public abstract class BaseUnitTests {
      *             if any error occurs during reading.
      */
     private static String readFile(String fileName) throws IOException {
-        Reader reader = new FileReader(fileName);
-
-        try {
+        try (Reader reader = new FileReader(fileName)) {
             // Create a StringBuilder instance
             StringBuilder sb = new StringBuilder();
 
@@ -350,12 +338,6 @@ public abstract class BaseUnitTests {
 
             // Return read content
             return sb.toString();
-        } finally {
-            try {
-                reader.close();
-            } catch (IOException ioe) {
-                // Ignore
-            }
         }
     }
 

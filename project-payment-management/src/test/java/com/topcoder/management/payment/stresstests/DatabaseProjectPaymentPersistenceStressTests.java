@@ -88,7 +88,7 @@ public class DatabaseProjectPaymentPersistenceStressTests extends TestCase {
         int lastIndex = StressHelper
                 .getFirstIndex("select project_payment_id from project_payment order by project_payment_id desc");
         assertEquals("The result should be correct.", NUM - 1, lastIndex - firstIndex);
-        System.out.println(String.format("testcreateStress took %s ms", System.currentTimeMillis() - startTime));
+        System.out.printf("testcreateStress took %s ms%n", System.currentTimeMillis() - startTime);
     }
 
     /**
@@ -104,7 +104,7 @@ public class DatabaseProjectPaymentPersistenceStressTests extends TestCase {
         int firstIndex = StressHelper
                 .getFirstIndex("select project_payment_id from project_payment order by project_payment_id asc");
 
-        projectPayment.setProjectPaymentId(new Long(firstIndex));
+        projectPayment.setProjectPaymentId((long) firstIndex);
 
         long startTime = System.currentTimeMillis();
         for (int i = 0; i < NUM; i++) {
@@ -114,7 +114,7 @@ public class DatabaseProjectPaymentPersistenceStressTests extends TestCase {
             ProjectPayment result = instance.retrieve(firstIndex);
             assertEquals("The result should be correct.", i, result.getAmount().intValue());
         }
-        System.out.println(String.format("testupdateStress took %s ms", System.currentTimeMillis() - startTime));
+        System.out.printf("testupdateStress took %s ms%n", System.currentTimeMillis() - startTime);
     }
 
     /**
@@ -137,7 +137,7 @@ public class DatabaseProjectPaymentPersistenceStressTests extends TestCase {
             assertEquals("The result should be correct.", 1, result.getProjectPaymentType().getProjectPaymentTypeId()
                     .intValue());
         }
-        System.out.println(String.format("testretrieveStress took %s ms", System.currentTimeMillis() - startTime));
+        System.out.printf("testretrieveStress took %s ms%n", System.currentTimeMillis() - startTime);
     }
 
     /**
@@ -164,7 +164,7 @@ public class DatabaseProjectPaymentPersistenceStressTests extends TestCase {
 
         int index = StressHelper.getFirstIndex("select count(*) from project_payment");
         assertEquals("The result should be correct.", 0, index);
-        System.out.println(String.format("testdeleteStress took %s ms", System.currentTimeMillis() - startTime));
+        System.out.printf("testdeleteStress took %s ms%n", System.currentTimeMillis() - startTime);
     }
 
     /**
@@ -177,10 +177,10 @@ public class DatabaseProjectPaymentPersistenceStressTests extends TestCase {
         for (int i = 0; i < NUM; i++) {
             projectPayment[i] = new ProjectPayment();
             ProjectPaymentType projectPaymentType = new ProjectPaymentType();
-            projectPaymentType.setProjectPaymentTypeId(new Long(i + 1));
+            projectPaymentType.setProjectPaymentTypeId((long) (i + 1));
             projectPayment[i].setProjectPaymentType(projectPaymentType);
-            projectPayment[i].setResourceId(new Long(i + 1));
-            projectPayment[i].setSubmissionId(new Long(i + 1));
+            projectPayment[i].setResourceId((long) (i + 1));
+            projectPayment[i].setSubmissionId((long) (i + 1));
             projectPayment[i].setAmount(BigDecimal.valueOf(3L));
             projectPayment[i].setPactsPaymentId(4L);
             projectPayment[i].setCreateDate(new Date());

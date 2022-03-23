@@ -42,7 +42,7 @@ public class ProjectPaymentAdjustmentManagerImplFailureTests extends TestCase {
      *
      */
     protected void setUp() throws Exception {
-        instance = new ProjectPaymentAdjustmentManagerImpl("failure/ProjectPaymentAdjustmentManagerImpl.properties", 
+        instance = new ProjectPaymentAdjustmentManagerImpl("failure/ProjectPaymentAdjustmentManagerImpl.properties",
         		"com.topcoder.management.payment.impl.ProjectPaymentAdjustmentManagerImpl");
     }
 
@@ -162,7 +162,7 @@ public class ProjectPaymentAdjustmentManagerImplFailureTests extends TestCase {
             //good
         }
     }
-    
+
 
     /**
      * <p>
@@ -214,7 +214,7 @@ public class ProjectPaymentAdjustmentManagerImplFailureTests extends TestCase {
             //good
         }
     }
-    
+
 
 
     /**
@@ -250,7 +250,7 @@ public class ProjectPaymentAdjustmentManagerImplFailureTests extends TestCase {
             //good
         }
     }
-    
+
     /**
      * <p>
      * Tests ProjectPaymentAdjustmentManagerImpl#ProjectPaymentAdjustmentManagerImpl() for failure.
@@ -319,7 +319,7 @@ public class ProjectPaymentAdjustmentManagerImplFailureTests extends TestCase {
     }
 
 
-    
+
     /**
      * <p>
      * Tests DatabaseProjectPaymentAdjustmentPersistence#save(ProjectPaymentAdjustment) for failure.
@@ -335,7 +335,7 @@ public class ProjectPaymentAdjustmentManagerImplFailureTests extends TestCase {
             //good
         }
     }
-    
+
     /**
      * <p>
      * Tests DatabaseProjectPaymentAdjustmentPersistence#save(ProjectPaymentAdjustment) for failure.
@@ -356,7 +356,7 @@ public class ProjectPaymentAdjustmentManagerImplFailureTests extends TestCase {
         }
     }
 
-    
+
     /**
      * <p>
      * Tests DatabaseProjectPaymentAdjustmentPersistence#save(ProjectPaymentAdjustment) for failure.
@@ -375,7 +375,7 @@ public class ProjectPaymentAdjustmentManagerImplFailureTests extends TestCase {
             //good
         }
     }
-    
+
     /**
      * <p>
      * Tests DatabaseProjectPaymentAdjustmentPersistence#save(ProjectPaymentAdjustment) for failure.
@@ -394,7 +394,7 @@ public class ProjectPaymentAdjustmentManagerImplFailureTests extends TestCase {
             //good
         }
     }
-    
+
     /**
      * <p>
      * Tests DatabaseProjectPaymentAdjustmentPersistence#save(ProjectPaymentAdjustment) for failure.
@@ -414,7 +414,7 @@ public class ProjectPaymentAdjustmentManagerImplFailureTests extends TestCase {
             //good
         }
     }
-    
+
     /**
      * <p>
      * Tests DatabaseProjectPaymentAdjustmentPersistence#save(ProjectPaymentAdjustment) for failure.
@@ -434,7 +434,7 @@ public class ProjectPaymentAdjustmentManagerImplFailureTests extends TestCase {
             //good
         }
     }
-    
+
     /**
      * <p>
      * Tests DatabaseProjectPaymentAdjustmentPersistence#save(ProjectPaymentAdjustment) for failure.
@@ -455,7 +455,7 @@ public class ProjectPaymentAdjustmentManagerImplFailureTests extends TestCase {
             //good
         }
     }
-    
+
     /**
      * <p>
      * Tests DatabaseProjectPaymentAdjustmentPersistence#retrieveByProjectId(long) for failure.
@@ -471,7 +471,7 @@ public class ProjectPaymentAdjustmentManagerImplFailureTests extends TestCase {
             //good
         }
     }
-    
+
     /**
      * <p>
      * Tests ProjectPaymentAdjustmentManagerImpl#ProjectPaymentManagerImpl() for failure.

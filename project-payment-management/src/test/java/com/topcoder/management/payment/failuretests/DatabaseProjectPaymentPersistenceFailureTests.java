@@ -103,7 +103,7 @@ public class DatabaseProjectPaymentPersistenceFailureTests extends TestCase {
     	obj.setAmount(null);
     	obj.setCreateDate(new Date());
     	obj.setPactsPaymentId(1L);
-    	
+
     	obj.setProjectPaymentType(paymenttype);
     	obj.setResourceId(1L);
     	obj.setSubmissionId(2L);
@@ -127,7 +127,7 @@ public class DatabaseProjectPaymentPersistenceFailureTests extends TestCase {
     	obj.setAmount(new BigDecimal(-1));
     	obj.setCreateDate(new Date());
     	obj.setPactsPaymentId(1L);
-    	
+
     	obj.setProjectPaymentType(paymenttype);
     	obj.setResourceId(1L);
     	obj.setSubmissionId(2L);
@@ -138,7 +138,7 @@ public class DatabaseProjectPaymentPersistenceFailureTests extends TestCase {
             //good
         }
     }
-    
+
 
 
     /**
@@ -208,7 +208,7 @@ public class DatabaseProjectPaymentPersistenceFailureTests extends TestCase {
             //good
         }
     }
-    
+
 
     /**
      * <p>
@@ -222,7 +222,7 @@ public class DatabaseProjectPaymentPersistenceFailureTests extends TestCase {
     	obj.setAmount(new BigDecimal(1));
     	obj.setCreateDate(new Date());
     	obj.setPactsPaymentId(1L);
-    	
+
     	obj.setProjectPaymentType(paymenttype);
     	obj.setSubmissionId(2L);
         try {
@@ -232,7 +232,7 @@ public class DatabaseProjectPaymentPersistenceFailureTests extends TestCase {
             //good
         }
     }
-    
+
 
     /**
      * <p>
@@ -246,7 +246,7 @@ public class DatabaseProjectPaymentPersistenceFailureTests extends TestCase {
     	obj.setAmount(new BigDecimal(1));
     	obj.setCreateDate(new Date());
     	obj.setPactsPaymentId(1L);
-    	
+
     	obj.setProjectPaymentType(paymenttype);
     	obj.setResourceId(1L);
     	obj.setSubmissionId(2L);
@@ -257,7 +257,7 @@ public class DatabaseProjectPaymentPersistenceFailureTests extends TestCase {
             //good
         }
     }
-    
+
 
     /**
      * <p>
@@ -272,7 +272,7 @@ public class DatabaseProjectPaymentPersistenceFailureTests extends TestCase {
     	obj.setAmount(new BigDecimal(1));
     	obj.setCreateDate(new Date());
     	obj.setPactsPaymentId(1L);
-    	
+
     	obj.setProjectPaymentType(paymenttype);
     	obj.setResourceId(1L);
     	obj.setSubmissionId(2L);
@@ -283,10 +283,10 @@ public class DatabaseProjectPaymentPersistenceFailureTests extends TestCase {
             //good
         }
     }
-    
-    
-    
-    
+
+
+
+
     /**
      * <p>
      * Tests DatabaseProjectPaymentPersistence#update(ProjectPayment) for failure.
@@ -348,7 +348,7 @@ public class DatabaseProjectPaymentPersistenceFailureTests extends TestCase {
             //good
         }
     }
-    
+
 
     /**
      * <p>
@@ -395,7 +395,7 @@ public class DatabaseProjectPaymentPersistenceFailureTests extends TestCase {
             //good
         }
     }
-    
+
 
     /**
      * <p>
@@ -419,7 +419,7 @@ public class DatabaseProjectPaymentPersistenceFailureTests extends TestCase {
             //good
         }
     }
-    
+
 
     /**
      * <p>
@@ -444,7 +444,7 @@ public class DatabaseProjectPaymentPersistenceFailureTests extends TestCase {
             //good
         }
     }
-    
+
 
     /**
      * <p>
@@ -470,8 +470,8 @@ public class DatabaseProjectPaymentPersistenceFailureTests extends TestCase {
             //good
         }
     }
-    
-    
+
+
 
 
     /**
@@ -549,8 +549,8 @@ public class DatabaseProjectPaymentPersistenceFailureTests extends TestCase {
             //good
         }
     }
-    
-    
+
+
 
     /**
      * <p>
@@ -599,7 +599,7 @@ public class DatabaseProjectPaymentPersistenceFailureTests extends TestCase {
             //good
         }
     }
-    
+
     /**
      * <p>
      * Tests DatabaseProjectPaymentPersistence#configure(ConfigurationObject) for failure.

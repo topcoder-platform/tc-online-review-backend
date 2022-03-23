@@ -55,7 +55,7 @@ public class ProjectPaymentManagerImplStressTests extends TestCase {
         ConfigManager cm = ConfigManager.getInstance();
 
         for (Iterator<String> it = cm.getAllNamespaces(); it.hasNext();) {
-            String nameSpace = it.next().toString();
+            String nameSpace = it.next();
             cm.removeNamespace(nameSpace);
         }
 
@@ -89,6 +89,6 @@ public class ProjectPaymentManagerImplStressTests extends TestCase {
             List<ProjectPayment> res = instance.search(filter);
             assertEquals("The result should be correct.", 1, res.size());
         }
-        System.out.println(String.format("testsearchStress took %s ms", System.currentTimeMillis() - startTime));
+        System.out.printf("testsearchStress took %s ms%n", System.currentTimeMillis() - startTime);
     }
 }

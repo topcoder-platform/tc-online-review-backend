@@ -1,3 +1,4 @@
+drop table 'informix'.review;
 drop table 'informix'.default_project_payment;
 drop table 'informix'.project_payment_adjustment;
 drop table 'informix'.project_payment;

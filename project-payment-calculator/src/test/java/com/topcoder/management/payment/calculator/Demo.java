@@ -177,15 +177,13 @@ public class Demo {
 
         // Get the default payments for the primary screener and reviewer for the project identified
         // by projectId = 230
-        List<Long> resourceRoleIDs = new ArrayList<Long>();
+        List<Long> resourceRoleIDs = new ArrayList<>();
         resourceRoleIDs.add(DefaultProjectPaymentCalculator.PRIMARY_SCREENER_RESOURCE_ROLE_ID);
         resourceRoleIDs.add(DefaultProjectPaymentCalculator.REVIEWER_RESOURCE_ROLE_ID);
 
         Map<Long, BigDecimal> result = calculator.getDefaultPayments(230, resourceRoleIDs);
         System.out.println("Default payment: ");
-        for (Long roleId : result.keySet()) {
-            System.out.println("Payment for role " + roleId + " = " + result.get(roleId));
-        }
+        result.forEach((roleId, payment) -> System.out.println("Payment for role " + roleId + " = " + payment));
 
         // The returned Map will contain two entries :
         // The first element : key = 2, BigDecimal value = 10 = 0 + (0.0 + 0.01*2)*500
@@ -227,8 +225,6 @@ public class Demo {
         // first element : key = 2, value = 14 (adjusted to the value of fixed_amount)
         // second element : key = 4, value = 22 (adjusted to the value of fixed_amount).
         // third element : key = 8, value = (10 + (0.00 + 0.00*0)*500 ) * 2 = 20 (multiplier == 2)
-        for (Long roleId : adjustedPayments.keySet()) {
-            System.out.println("Adjusted Payment for role " + roleId + " = " + adjustedPayments.get(roleId));
-        }
+        adjustedPayments.forEach((roleId, adjustedPayment) -> System.out.println("Adjusted Payment for role " + roleId + " = " + adjustedPayment));
     }
 }

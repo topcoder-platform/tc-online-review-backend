@@ -7,7 +7,6 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.Reader;
 import java.sql.Connection;
-import java.sql.SQLException;
 import java.sql.Statement;
 
 import junit.framework.Test;
@@ -94,31 +93,13 @@ public class AccuracyHelper extends TestCase {
     private static void executeSQL(String file) throws Exception {
         String[] values = readFile(file).split(";");
 
-        Connection conn = null;
-
-        try {
-            conn = getConnection();
-            Statement statement = conn.createStatement();
-            for (int i = 0; i < values.length; i++) {
-                String sql = values[i].trim();
+        try (Connection conn = getConnection();
+             Statement statement = conn.createStatement()) {
+            for (String value : values) {
+                String sql = value.trim();
                 if ((sql.length() != 0) && (!sql.startsWith("#"))) {
                     statement.executeUpdate(sql);
                 }
-            }
-            statement.close();
-        } catch (SQLException e) {
-            if (conn != null) {
-                try {
-                    conn.rollback();
-                } catch (SQLException e1) {
-                    // ignore
-                }
-            }
-            e.printStackTrace();
-            throw e;
-        } finally {
-            if (conn != null) {
-                conn.close();
             }
         }
     }
@@ -133,9 +114,7 @@ public class AccuracyHelper extends TestCase {
      *             if any IO error occurs.
      */
     private static String readFile(String fileName) throws IOException {
-        Reader reader = new FileReader(fileName);
-
-        try {
+        try (Reader reader = new FileReader(fileName)) {
             StringBuilder sb = new StringBuilder();
             char[] buffer = new char[1024];
             int k = 0;
@@ -143,12 +122,6 @@ public class AccuracyHelper extends TestCase {
                 sb.append(buffer, 0, k);
             }
             return sb.toString().replace("\r\n", "\n");
-        } finally {
-            try {
-                reader.close();
-            } catch (IOException ioe) {
-                // Ignore
-            }
         }
     }
 }
