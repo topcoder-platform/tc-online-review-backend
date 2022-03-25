@@ -10,6 +10,7 @@ import com.topcoder.management.phase.autopilot.ConfigurationException;
 import com.topcoder.management.phase.autopilot.PhaseOperationException;
 import com.topcoder.management.phase.autopilot.accuracytests.TestDataFactory;
 import com.topcoder.management.phase.autopilot.impl.DefaultProjectPilot;
+import com.topcoder.management.project.ProjectManager;
 import com.topcoder.project.phases.Phase;
 import com.topcoder.util.log.Log;
 import com.topcoder.util.log.LogManager;
@@ -50,8 +51,8 @@ class DefaultProjectPilotSubclass extends DefaultProjectPilot {
      * or the logger
      */
     public DefaultProjectPilotSubclass(String namespace, String phaseManagerKey, String scheduledStatusName,
-                                       String openStatusName, String logName) throws ConfigurationException {
-        super(namespace, phaseManagerKey, scheduledStatusName, openStatusName, logName);
+                                       String openStatusName, String logName, String projectManager) throws ConfigurationException {
+        super(namespace, phaseManagerKey, scheduledStatusName, openStatusName, logName, projectManager);
     }
 
     /**
@@ -65,8 +66,8 @@ class DefaultProjectPilotSubclass extends DefaultProjectPilot {
      * (trimmed) string
      */
     public DefaultProjectPilotSubclass(PhaseManager phaseManager, String scheduledStatusName, String openStatusName,
-                                       Log logger) {
-        super(phaseManager, scheduledStatusName, openStatusName, logger);
+                                       Log logger, ProjectManager projectManager) {
+        super(phaseManager, scheduledStatusName, openStatusName, logger, projectManager);
     }
 
     /**

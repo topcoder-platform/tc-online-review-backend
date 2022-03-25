@@ -118,11 +118,13 @@ public class DefaultProjectPilotAccuracyTest extends TestCase {
                                                                   TestDataFactory.PHASE_MANAGER_CONFIG_PROPERTY,
                                                                   TestDataFactory.SCHEDULED_PHASE_STATUS,
                                                                   TestDataFactory.OPEN_PHASE_STATUS,
-                                                                  TestDataFactory.LOG_NAME);
+                                                                  TestDataFactory.LOG_NAME,
+                TestDataFactory.PROJECT_MANAGER_CONFIG_PROPERTY);
         this.testedInstances[2] = new DefaultProjectPilotSubclass(TestDataFactory.getPhaseManager(),
                                                                   TestDataFactory.SCHEDULED_PHASE_STATUS,
                                                                   TestDataFactory.OPEN_PHASE_STATUS,
-                                                                  TestDataFactory.getLog());
+                                                                  TestDataFactory.getLog(),
+                TestDataFactory.getProjectManager());
     }
 
     /**
