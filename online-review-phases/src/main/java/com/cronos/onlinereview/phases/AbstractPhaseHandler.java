@@ -1058,8 +1058,12 @@ public abstract class AbstractPhaseHandler implements PhaseHandler {
 
         String[] rolesArray = schemeProperty.getProperty(PROP_ROLES).getValues();
         if (rolesArray != null && rolesArray.length > 0) {
-            List<String> roles = java.util.Arrays.asList(rolesArray);
-            roles.remove("Client Manager");
+            List<String> roles = new ArrayList<>();
+            for (String role: rolesArray) {
+                if (!role.equals("Client Manager")) {
+                    roles.add(role);
+                }
+            }
             emailScheme.setRoles(roles);
         }
 
