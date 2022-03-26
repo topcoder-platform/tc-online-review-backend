@@ -150,7 +150,7 @@ public class AutoPilotTest extends TestCase {
             "project_manager"), "Active", "Autopilot Option", "On", LogManager.getLog());
         ProjectPilot projectPilot = new DefaultProjectPilot(new DefaultPhaseManager2("pm2"),
             DefaultProjectPilot.DEFAULT_SCHEDULED_STATUS_NAME,
-            DefaultProjectPilot.DEFAULT_OPEN_STATUS_NAME, LogManager.getLog("ProjetPilot"));
+            DefaultProjectPilot.DEFAULT_OPEN_STATUS_NAME, LogManager.getLog("ProjetPilot"), null);
         autoPilot = new AutoPilot(autoPilotSource, projectPilot, LogManager.getLog());
     }
 

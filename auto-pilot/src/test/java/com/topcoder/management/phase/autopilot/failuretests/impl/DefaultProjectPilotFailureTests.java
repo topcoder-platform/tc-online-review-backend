@@ -59,7 +59,7 @@ public class DefaultProjectPilotFailureTests extends FailureTestsHelper {
      */
     public void testConstructor2Null1() throws Exception {
         try {
-            new DefaultProjectPilot(null, "b", "c", "d", "e");
+            new DefaultProjectPilot(null, "b", "c", "d", "e", null);
             fail("IllegalArgumentException should be thrown");
         } catch (IllegalArgumentException e) {
             // ok
@@ -73,7 +73,7 @@ public class DefaultProjectPilotFailureTests extends FailureTestsHelper {
      */
     public void testConstructor2Null2() throws Exception {
         try {
-            new DefaultProjectPilot("a", null, "c", "d", "e");
+            new DefaultProjectPilot("a", null, "c", "d", "e", null);
             fail("IllegalArgumentException should be thrown");
         } catch (IllegalArgumentException e) {
             // ok
@@ -87,7 +87,7 @@ public class DefaultProjectPilotFailureTests extends FailureTestsHelper {
      */
     public void testConstructor2Null3() throws Exception {
         try {
-            new DefaultProjectPilot("a", "b", null, "d", "e");
+            new DefaultProjectPilot("a", "b", null, "d", "e", null);
             fail("IllegalArgumentException should be thrown");
         } catch (IllegalArgumentException e) {
             // ok
@@ -101,7 +101,7 @@ public class DefaultProjectPilotFailureTests extends FailureTestsHelper {
      */
     public void testConstructor2Null4() throws Exception {
         try {
-            new DefaultProjectPilot("a", "b", "c", null, "e");
+            new DefaultProjectPilot("a", "b", "c", null, "e", null);
             fail("IllegalArgumentException should be thrown");
         } catch (IllegalArgumentException e) {
             // ok
@@ -115,7 +115,7 @@ public class DefaultProjectPilotFailureTests extends FailureTestsHelper {
      */
     public void testConstructor2Null5() throws Exception {
         try {
-            new DefaultProjectPilot("a", "b", "c", "d", null);
+            new DefaultProjectPilot("a", "b", "c", "d", null, null);
             fail("IllegalArgumentException should be thrown");
         } catch (IllegalArgumentException e) {
             // ok
@@ -129,7 +129,7 @@ public class DefaultProjectPilotFailureTests extends FailureTestsHelper {
      */
     public void testConstructor2EmptyString1() throws Exception {
         try {
-            new DefaultProjectPilot("", "b", "c", "d", "e");
+            new DefaultProjectPilot("", "b", "c", "d", "e", null);
             fail("IllegalArgumentException should be thrown");
         } catch (IllegalArgumentException e) {
             // ok
@@ -143,7 +143,7 @@ public class DefaultProjectPilotFailureTests extends FailureTestsHelper {
      */
     public void testConstructor2EmptyString2() throws Exception {
         try {
-            new DefaultProjectPilot("  ", "b", "c", "d", "e");
+            new DefaultProjectPilot("  ", "b", "c", "d", "e", null);
             fail("IllegalArgumentException should be thrown");
         } catch (IllegalArgumentException e) {
             // ok
@@ -157,7 +157,7 @@ public class DefaultProjectPilotFailureTests extends FailureTestsHelper {
      */
     public void testConstructor2EmptyString3() throws Exception {
         try {
-            new DefaultProjectPilot("a", "", "c", "d", "e");
+            new DefaultProjectPilot("a", "", "c", "d", "e", null);
             fail("IllegalArgumentException should be thrown");
         } catch (IllegalArgumentException e) {
             // ok
@@ -171,7 +171,7 @@ public class DefaultProjectPilotFailureTests extends FailureTestsHelper {
      */
     public void testConstructor2EmptyString4() throws Exception {
         try {
-            new DefaultProjectPilot("a", "  ", "c", "d", "e");
+            new DefaultProjectPilot("a", "  ", "c", "d", "e", null);
             fail("IllegalArgumentException should be thrown");
         } catch (IllegalArgumentException e) {
             // ok
@@ -185,7 +185,7 @@ public class DefaultProjectPilotFailureTests extends FailureTestsHelper {
      */
     public void testConstructor2EmptyString5() throws Exception {
         try {
-            new DefaultProjectPilot("a", "b", "", "d", "e");
+            new DefaultProjectPilot("a", "b", "", "d", "e", null);
             fail("IllegalArgumentException should be thrown");
         } catch (IllegalArgumentException e) {
             // ok
@@ -199,7 +199,7 @@ public class DefaultProjectPilotFailureTests extends FailureTestsHelper {
      */
     public void testConstructor2EmptyString6() throws Exception {
         try {
-            new DefaultProjectPilot("a", "b", " ", "d", "e");
+            new DefaultProjectPilot("a", "b", " ", "d", "e", null);
             fail("IllegalArgumentException should be thrown");
         } catch (IllegalArgumentException e) {
             // ok
@@ -213,7 +213,7 @@ public class DefaultProjectPilotFailureTests extends FailureTestsHelper {
      */
     public void testConstructor2EmptyString7() throws Exception {
         try {
-            new DefaultProjectPilot("a", "b", "c", "", "e");
+            new DefaultProjectPilot("a", "b", "c", "", "e", null);
             fail("IllegalArgumentException should be thrown");
         } catch (IllegalArgumentException e) {
             // ok
@@ -227,7 +227,7 @@ public class DefaultProjectPilotFailureTests extends FailureTestsHelper {
      */
     public void testConstructor2EmptyString8() throws Exception {
         try {
-            new DefaultProjectPilot("a", "b", "c", "   ", "e");
+            new DefaultProjectPilot("a", "b", "c", "   ", "e", null);
             fail("IllegalArgumentException should be thrown");
         } catch (IllegalArgumentException e) {
             // ok
@@ -241,7 +241,7 @@ public class DefaultProjectPilotFailureTests extends FailureTestsHelper {
      */
     public void testConstructor2EmptyString9() throws Exception {
         try {
-            new DefaultProjectPilot("a", "b", "c", "d", "");
+            new DefaultProjectPilot("a", "b", "c", "d", "", null);
             fail("IllegalArgumentException should be thrown");
         } catch (IllegalArgumentException e) {
             // ok
@@ -255,7 +255,7 @@ public class DefaultProjectPilotFailureTests extends FailureTestsHelper {
      */
     public void testConstructor2EmptyString10() throws Exception {
         try {
-            new DefaultProjectPilot("a", "b", "c", "d", " ");
+            new DefaultProjectPilot("a", "b", "c", "d", " ", null);
             fail("IllegalArgumentException should be thrown");
         } catch (IllegalArgumentException e) {
             // ok
@@ -267,7 +267,7 @@ public class DefaultProjectPilotFailureTests extends FailureTestsHelper {
      */
     public void testConstructor2ConfigNoNamespace() {
         try {
-            new DefaultProjectPilot("BadNamespace", "b", "c", "d", "e");
+            new DefaultProjectPilot("BadNamespace", "b", "c", "d", "e", null);
             fail("ConfigurationException should be thrown");
         } catch (ConfigurationException e) {
             assertTrue("Cause not as expected", e.getCause() instanceof SpecificationConfigurationException);
@@ -283,7 +283,7 @@ public class DefaultProjectPilotFailureTests extends FailureTestsHelper {
         throws Exception {
         try {
             loadConfig();
-            new DefaultProjectPilot(DefaultProjectPilot.class.getName(), "b", "c", "d", "e");
+            new DefaultProjectPilot(DefaultProjectPilot.class.getName(), "b", "c", "d", "e", null);
             fail("ConfigurationException should be thrown");
         } catch (ConfigurationException e) {
             assertTrue("Cause not as expected", e.getCause() instanceof InvalidClassSpecificationException);
@@ -299,7 +299,7 @@ public class DefaultProjectPilotFailureTests extends FailureTestsHelper {
         try {
             loadConfig();
             new DefaultProjectPilot(DefaultProjectPilot.class.getName() + ".Loop", PhaseManager.class.getName(), "c",
-                "d", "e");
+                "d", "e", null);
             fail("ConfigurationException should be thrown");
         } catch (ConfigurationException e) {
             assertTrue("Cause not as expected", e.getCause() instanceof IllegalReferenceException);
@@ -315,7 +315,7 @@ public class DefaultProjectPilotFailureTests extends FailureTestsHelper {
         try {
             loadConfig();
             new DefaultProjectPilot(DefaultProjectPilot.class.getName() + ".WrongType",
-                PhaseManager.class.getName(), "c", "d", "e");
+                PhaseManager.class.getName(), "c", "d", "e", null);
             fail("ConfigurationException should be thrown");
         } catch (ConfigurationException e) {
             // ok
@@ -328,7 +328,7 @@ public class DefaultProjectPilotFailureTests extends FailureTestsHelper {
     public void testConstructor3Null1() {
         try {
             Log logger = LogManager.getLog();
-            new DefaultProjectPilot(null, "a", "b", logger);
+            new DefaultProjectPilot(null, "a", "b", logger, null);
             fail("IllegalArgumentException should be thrown");
         } catch (IllegalArgumentException e) {
             // ok
@@ -342,7 +342,7 @@ public class DefaultProjectPilotFailureTests extends FailureTestsHelper {
         try {
             PhaseManager phaseManager = new MockPhaseManager();
             Log logger = LogManager.getLog();
-            new DefaultProjectPilot(phaseManager, null, "b", logger);
+            new DefaultProjectPilot(phaseManager, null, "b", logger, null);
             fail("IllegalArgumentException should be thrown");
         } catch (IllegalArgumentException e) {
             // ok
@@ -356,7 +356,7 @@ public class DefaultProjectPilotFailureTests extends FailureTestsHelper {
         try {
             PhaseManager phaseManager = new MockPhaseManager();
             Log logger = LogManager.getLog();
-            new DefaultProjectPilot(phaseManager, "a", null, logger);
+            new DefaultProjectPilot(phaseManager, "a", null, logger, null);
             fail("IllegalArgumentException should be thrown");
         } catch (IllegalArgumentException e) {
             // ok
@@ -369,7 +369,7 @@ public class DefaultProjectPilotFailureTests extends FailureTestsHelper {
     public void testConstructor3Null4() {
         try {
             PhaseManager phaseManager = new MockPhaseManager();
-            new DefaultProjectPilot(phaseManager, "a", "b", null);
+            new DefaultProjectPilot(phaseManager, "a", "b", null, null);
             fail("IllegalArgumentException should be thrown");
         } catch (IllegalArgumentException e) {
             // ok
@@ -383,7 +383,7 @@ public class DefaultProjectPilotFailureTests extends FailureTestsHelper {
         try {
             PhaseManager phaseManager = new MockPhaseManager();
             Log logger = LogManager.getLog();;
-            new DefaultProjectPilot(phaseManager, "", "b", logger);
+            new DefaultProjectPilot(phaseManager, "", "b", logger, null);
             fail("IllegalArgumentException should be thrown");
         } catch (IllegalArgumentException e) {
             // ok
@@ -397,7 +397,7 @@ public class DefaultProjectPilotFailureTests extends FailureTestsHelper {
         try {
             PhaseManager phaseManager = new MockPhaseManager();
             Log logger = LogManager.getLog();;
-            new DefaultProjectPilot(phaseManager, "       ", "b", logger);
+            new DefaultProjectPilot(phaseManager, "       ", "b", logger, null);
             fail("IllegalArgumentException should be thrown");
         } catch (IllegalArgumentException e) {
             // ok
@@ -411,7 +411,7 @@ public class DefaultProjectPilotFailureTests extends FailureTestsHelper {
         try {
             PhaseManager phaseManager = new MockPhaseManager();
             Log logger = LogManager.getLog();;
-            new DefaultProjectPilot(phaseManager, "a", "", logger);
+            new DefaultProjectPilot(phaseManager, "a", "", logger, null);
             fail("IllegalArgumentException should be thrown");
         } catch (IllegalArgumentException e) {
             // ok
@@ -425,7 +425,7 @@ public class DefaultProjectPilotFailureTests extends FailureTestsHelper {
         try {
             PhaseManager phaseManager = new MockPhaseManager();
             Log logger = LogManager.getLog();;
-            new DefaultProjectPilot(phaseManager, "a", "  ", logger);
+            new DefaultProjectPilot(phaseManager, "a", "  ", logger, null);
             fail("IllegalArgumentException should be thrown");
         } catch (IllegalArgumentException e) {
             // ok

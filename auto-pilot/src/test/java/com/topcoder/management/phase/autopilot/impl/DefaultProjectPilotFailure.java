@@ -56,7 +56,7 @@ public class DefaultProjectPilotFailure extends TestCase {
 
     /**
      * <p>
-     * Create Project pilot instance for test cases.
+     * Create Project pilot instance for test casesDefaultProjectPilotFailureTests.
      * </p>
      * @return the ProjectPilot instance.
      * @throws Exception - to JUnit.
@@ -91,7 +91,7 @@ public class DefaultProjectPilotFailure extends TestCase {
      */
     public void testDefaultProjectPilotStringStringStringStringStringNullNamespace() throws Exception {
         try {
-            new DefaultProjectPilot(null, "pmkey", "scheduledStatusName", "openStatusName", "logName");
+            new DefaultProjectPilot(null, "pmkey", "scheduledStatusName", "openStatusName", "logName", null);
             fail("null namespace");
         } catch (IllegalArgumentException e) {
             // Good.
@@ -106,7 +106,7 @@ public class DefaultProjectPilotFailure extends TestCase {
      */
     public void testDefaultProjectPilotStringStringStringStringStringEmptyName() throws Exception {
         try {
-            new DefaultProjectPilot(" \r\t\n", "pmkey", "scheduledStatusName", "openStatusName", "logName");
+            new DefaultProjectPilot(" \r\t\n", "pmkey", "scheduledStatusName", "openStatusName", "logName", null);
             fail("empty namespace");
         } catch (IllegalArgumentException e) {
             // Good.
@@ -121,7 +121,7 @@ public class DefaultProjectPilotFailure extends TestCase {
      */
     public void testDefaultProjectPilotStringStringStringStringStringNullPmkey() throws Exception {
         try {
-            new DefaultProjectPilot("namespace", null, "scheduledStatusName", "openStatusName", "logName");
+            new DefaultProjectPilot("namespace", null, "scheduledStatusName", "openStatusName", "logName", null);
             fail("null pmkey");
         } catch (IllegalArgumentException e) {
             // Good.
@@ -136,7 +136,7 @@ public class DefaultProjectPilotFailure extends TestCase {
      */
     public void testDefaultProjectPilotStringStringStringStringStringEmptyPmkey() throws Exception {
         try {
-            new DefaultProjectPilot("namespace", " \r\t\n", "scheduledStatusName", "openStatusName", "logName");
+            new DefaultProjectPilot("namespace", " \r\t\n", "scheduledStatusName", "openStatusName", "logName", null);
             fail("empty pmkey");
         } catch (IllegalArgumentException e) {
             // Good.
@@ -151,7 +151,7 @@ public class DefaultProjectPilotFailure extends TestCase {
      */
     public void testDefaultProjectPilotStringStringStringStringStringNullScheduledStatusName() throws Exception {
         try {
-            new DefaultProjectPilot("namespace", "pmkey", null, "openStatusName", "logName");
+            new DefaultProjectPilot("namespace", "pmkey", null, "openStatusName", "logName", null);
             fail("null scheduledStatusName");
         } catch (IllegalArgumentException e) {
             // Good.
@@ -166,7 +166,7 @@ public class DefaultProjectPilotFailure extends TestCase {
      */
     public void testDefaultProjectPilotStringStringStringStringStringEmptyScheduledStatusName() throws Exception {
         try {
-            new DefaultProjectPilot("namespace", "pmkey", " \r\t\n", "openStatusName", "logName");
+            new DefaultProjectPilot("namespace", "pmkey", " \r\t\n", "openStatusName", "logName", null);
             fail("empty scheduledStatusName");
         } catch (IllegalArgumentException e) {
             // Good.
@@ -181,7 +181,7 @@ public class DefaultProjectPilotFailure extends TestCase {
      */
     public void testDefaultProjectPilotStringStringStringStringStringNullOpenStatusName() throws Exception {
         try {
-            new DefaultProjectPilot("namespace", "pmkey", "scheduledStatusName", null, "logName");
+            new DefaultProjectPilot("namespace", "pmkey", "scheduledStatusName", null, "logName", null);
             fail("null openStatusName");
         } catch (IllegalArgumentException e) {
             // Good.
@@ -196,7 +196,7 @@ public class DefaultProjectPilotFailure extends TestCase {
      */
     public void testDefaultProjectPilotStringStringStringStringStringEmptyOpenStatusName() throws Exception {
         try {
-            new DefaultProjectPilot("namespace", "pmkey", "scheduledStatusName", " \r\t\n", "logName");
+            new DefaultProjectPilot("namespace", "pmkey", "scheduledStatusName", " \r\t\n", "logName", null);
             fail("empty openStatusName");
         } catch (IllegalArgumentException e) {
             // Good.
@@ -211,7 +211,7 @@ public class DefaultProjectPilotFailure extends TestCase {
      */
     public void testDefaultProjectPilotStringStringStringStringStringNullLogName() throws Exception {
         try {
-            new DefaultProjectPilot("namespace", "pmkey", "scheduledStatusName", "openStatusName", null);
+            new DefaultProjectPilot("namespace", "pmkey", "scheduledStatusName", "openStatusName", null, null);
             fail("null logName");
         } catch (IllegalArgumentException e) {
             // Good.
@@ -226,7 +226,7 @@ public class DefaultProjectPilotFailure extends TestCase {
      */
     public void testDefaultProjectPilotStringStringStringStringStringEmptyLogName() throws Exception {
         try {
-            new DefaultProjectPilot("namespace", "pmkey", "scheduledStatusName", "openStatusName", " \r\t\n");
+            new DefaultProjectPilot("namespace", "pmkey", "scheduledStatusName", "openStatusName", " \r\t\n", null);
             fail("empty logName");
         } catch (IllegalArgumentException e) {
             // Good.
@@ -241,7 +241,7 @@ public class DefaultProjectPilotFailure extends TestCase {
      */
     public void testDefaultProjectPilotPhaseManagerStringStringLogNullPhaseManager() throws Exception {
         try {
-            new DefaultProjectPilot(null, "scheduledStatusName", "openStatusName", createLog());
+            new DefaultProjectPilot(null, "scheduledStatusName", "openStatusName", createLog(), null);
             fail("null phase manager");
         } catch (IllegalArgumentException e) {
             // Good.
@@ -256,7 +256,7 @@ public class DefaultProjectPilotFailure extends TestCase {
      */
     public void testDefaultProjectPilotPhaseManagerStringStringLogNullScheduledStatusName() throws Exception {
         try {
-            new DefaultProjectPilot(new DefaultPhaseManager("pm"), null, "openStatusName", createLog());
+            new DefaultProjectPilot(new DefaultPhaseManager("pm"), null, "openStatusName", createLog(), null);
             fail("null scheduledStatusName");
         } catch (IllegalArgumentException e) {
             // Good.
@@ -271,7 +271,7 @@ public class DefaultProjectPilotFailure extends TestCase {
      */
     public void testDefaultProjectPilotPhaseManagerStringStringLogEmptyScheduledStatusName() throws Exception {
         try {
-            new DefaultProjectPilot(new DefaultPhaseManager("pm"), " \r\t\n", "openStatusName", createLog());
+            new DefaultProjectPilot(new DefaultPhaseManager("pm"), " \r\t\n", "openStatusName", createLog(), null);
             fail("empty scheduledStatusName");
         } catch (IllegalArgumentException e) {
             // Good.
@@ -286,7 +286,7 @@ public class DefaultProjectPilotFailure extends TestCase {
      */
     public void testDefaultProjectPilotPhaseManagerStringStringLogNullOpenStatusName() throws Exception {
         try {
-            new DefaultProjectPilot(new DefaultPhaseManager("pm"), "scheduledStatusName", null, createLog());
+            new DefaultProjectPilot(new DefaultPhaseManager("pm"), "scheduledStatusName", null, createLog(), null);
             fail("null openStatusName");
         } catch (IllegalArgumentException e) {
             // Good.
@@ -301,7 +301,7 @@ public class DefaultProjectPilotFailure extends TestCase {
      */
     public void testDefaultProjectPilotPhaseManagerStringStringLogEmptyOpenStatusName() throws Exception {
         try {
-            new DefaultProjectPilot(new DefaultPhaseManager("pm"), "scheduledStatusName", " \r\t\n", createLog());
+            new DefaultProjectPilot(new DefaultPhaseManager("pm"), "scheduledStatusName", " \r\t\n", createLog(), null);
             fail("empty openStatusName");
         } catch (IllegalArgumentException e) {
             // Good.
@@ -316,7 +316,7 @@ public class DefaultProjectPilotFailure extends TestCase {
      */
     public void testDefaultProjectPilotPhaseManagerStringStringLogNullLog() throws Exception {
         try {
-            new DefaultProjectPilot(new DefaultPhaseManager("pm"), "scheduledStatusName", "openStatusName", null);
+            new DefaultProjectPilot(new DefaultPhaseManager("pm"), "scheduledStatusName", "openStatusName", null, null);
             fail("null log");
         } catch (IllegalArgumentException e) {
             // Good.
@@ -351,7 +351,7 @@ public class DefaultProjectPilotFailure extends TestCase {
     /**
      * Test method for {@link DefaultProjectPilot#advancePhases(long, String)}.
      * Fails if empty operator.
-     * @throws Exception - to JUnit.
+     * @throws Exception - to JUnitDefaultProjectPilotFailureTests.
      */
     public void testAdvancePhasesEmptyOperator() throws Exception {
         try {
