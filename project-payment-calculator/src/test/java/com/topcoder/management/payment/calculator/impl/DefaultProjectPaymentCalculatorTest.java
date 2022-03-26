@@ -698,7 +698,7 @@ public class DefaultProjectPaymentCalculatorTest {
      */
     @Test(expected = IllegalArgumentException.class)
     public void testGetDefaultPayments_EmptyResourceRoleIDs() throws Exception {
-        calc.getDefaultPayments(230, new ArrayList<>());
+        calc.getDefaultPayments(230L, new ArrayList<Long>());
     }
 
     /**

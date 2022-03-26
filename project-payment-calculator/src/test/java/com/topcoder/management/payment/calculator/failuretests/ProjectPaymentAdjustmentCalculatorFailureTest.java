@@ -189,7 +189,7 @@ public class ProjectPaymentAdjustmentCalculatorFailureTest {
                 + "config.xml"));
         obj = obj.getChild(ProjectPaymentAdjustmentCalculator.DEFAULT_CONFIG_NAMESPACE);
         ProjectPaymentAdjustmentCalculator instance = new ProjectPaymentAdjustmentCalculator(obj);
-        instance.getDefaultPayments(1, new ArrayList<>());
+        instance.getDefaultPayments(1L, new ArrayList<Long>());
     }
 
     /**
@@ -209,6 +209,6 @@ public class ProjectPaymentAdjustmentCalculatorFailureTest {
                 + "config.xml"));
         obj = obj.getChild(ProjectPaymentAdjustmentCalculator.DEFAULT_CONFIG_NAMESPACE);
         ProjectPaymentAdjustmentCalculator instance = new ProjectPaymentAdjustmentCalculator(obj);
-        instance.getDefaultPayments(1, Collections.singletonList(null));
+        instance.getDefaultPayments(1L, Collections.singletonList((Long)null));
     }
 }
