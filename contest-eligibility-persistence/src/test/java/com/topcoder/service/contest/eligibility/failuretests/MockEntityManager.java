@@ -3,13 +3,14 @@
  */
 package com.topcoder.service.contest.eligibility.failuretests;
 
-import javax.persistence.EntityManager;
-import javax.persistence.EntityTransaction;
-import javax.persistence.FlushModeType;
-import javax.persistence.LockModeType;
-import javax.persistence.PersistenceException;
-import javax.persistence.Query;
-import javax.persistence.TransactionRequiredException;
+import javax.persistence.*;
+import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaDelete;
+import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.CriteriaUpdate;
+import javax.persistence.metamodel.Metamodel;
+import java.util.List;
+import java.util.Map;
 
 /**
  * <p>
@@ -133,6 +134,21 @@ public class MockEntityManager implements EntityManager {
         return manager.find(arg0, arg1);
     }
 
+    @Override
+    public <T> T find(Class<T> aClass, Object o, Map<String, Object> map) {
+        return null;
+    }
+
+    @Override
+    public <T> T find(Class<T> aClass, Object o, LockModeType lockModeType) {
+        return null;
+    }
+
+    @Override
+    public <T> T find(Class<T> aClass, Object o, LockModeType lockModeType, Map<String, Object> map) {
+        return null;
+    }
+
     /**
      * <p>
      * Mock implementation.
@@ -190,6 +206,11 @@ public class MockEntityManager implements EntityManager {
         manager.lock(arg0, arg1);
     }
 
+    @Override
+    public void lock(Object o, LockModeType lockModeType, Map<String, Object> map) {
+
+    }
+
     /**
      * <p>
      * Mock implementation.
@@ -201,6 +222,21 @@ public class MockEntityManager implements EntityManager {
         manager.refresh(arg0);
     }
 
+    @Override
+    public void refresh(Object o, Map<String, Object> map) {
+
+    }
+
+    @Override
+    public void refresh(Object o, LockModeType lockModeType) {
+
+    }
+
+    @Override
+    public void refresh(Object o, LockModeType lockModeType, Map<String, Object> map) {
+
+    }
+
     /**
      * <p>
      * Mock implementation.
@@ -208,6 +244,11 @@ public class MockEntityManager implements EntityManager {
      */
     public void clear() {
         manager.clear();
+    }
+
+    @Override
+    public void detach(Object o) {
+
     }
 
     /**
@@ -220,6 +261,21 @@ public class MockEntityManager implements EntityManager {
      */
     public boolean contains(Object arg0) {
         return manager.contains(arg0);
+    }
+
+    @Override
+    public LockModeType getLockMode(Object o) {
+        return null;
+    }
+
+    @Override
+    public void setProperty(String s, Object o) {
+
+    }
+
+    @Override
+    public Map<String, Object> getProperties() {
+        return null;
     }
 
     /**
@@ -242,6 +298,26 @@ public class MockEntityManager implements EntityManager {
         return manager.createQuery(arg0);
     }
 
+    @Override
+    public <T> TypedQuery<T> createQuery(CriteriaQuery<T> criteriaQuery) {
+        return null;
+    }
+
+    @Override
+    public Query createQuery(CriteriaUpdate criteriaUpdate) {
+        return null;
+    }
+
+    @Override
+    public Query createQuery(CriteriaDelete criteriaDelete) {
+        return null;
+    }
+
+    @Override
+    public <T> TypedQuery<T> createQuery(String s, Class<T> aClass) {
+        return null;
+    }
+
     /**
      * <p>
      * Mock implementation.
@@ -260,6 +336,11 @@ public class MockEntityManager implements EntityManager {
         }
 
         return manager.createNamedQuery(arg0);
+    }
+
+    @Override
+    public <T> TypedQuery<T> createNamedQuery(String s, Class<T> aClass) {
+        return null;
     }
 
     /**
@@ -325,6 +406,26 @@ public class MockEntityManager implements EntityManager {
         return manager.createNativeQuery(arg0, arg1);
     }
 
+    @Override
+    public StoredProcedureQuery createNamedStoredProcedureQuery(String s) {
+        return null;
+    }
+
+    @Override
+    public StoredProcedureQuery createStoredProcedureQuery(String s) {
+        return null;
+    }
+
+    @Override
+    public StoredProcedureQuery createStoredProcedureQuery(String s, Class... classes) {
+        return null;
+    }
+
+    @Override
+    public StoredProcedureQuery createStoredProcedureQuery(String s, String... strings) {
+        return null;
+    }
+
     /**
      * <p>
      * Mock implementation.
@@ -332,6 +433,16 @@ public class MockEntityManager implements EntityManager {
      */
     public void joinTransaction() {
         manager.joinTransaction();
+    }
+
+    @Override
+    public boolean isJoinedToTransaction() {
+        return false;
+    }
+
+    @Override
+    public <T> T unwrap(Class<T> aClass) {
+        return null;
     }
 
     /**
@@ -374,6 +485,41 @@ public class MockEntityManager implements EntityManager {
      */
     public EntityTransaction getTransaction() {
         return manager.getTransaction();
+    }
+
+    @Override
+    public EntityManagerFactory getEntityManagerFactory() {
+        return null;
+    }
+
+    @Override
+    public CriteriaBuilder getCriteriaBuilder() {
+        return null;
+    }
+
+    @Override
+    public Metamodel getMetamodel() {
+        return null;
+    }
+
+    @Override
+    public <T> EntityGraph<T> createEntityGraph(Class<T> aClass) {
+        return null;
+    }
+
+    @Override
+    public EntityGraph<?> createEntityGraph(String s) {
+        return null;
+    }
+
+    @Override
+    public EntityGraph<?> getEntityGraph(String s) {
+        return null;
+    }
+
+    @Override
+    public <T> List<EntityGraph<? super T>> getEntityGraphs(Class<T> aClass) {
+        return null;
     }
 
     /**
