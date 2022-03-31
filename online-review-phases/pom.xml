@@ -221,11 +221,9 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>com.topcoder</groupId>
+            <groupId>com.topcoder.thirdpart</groupId>
             <artifactId>User</artifactId>
             <version>1.0-SNAPSHOT</version>
-            <scope>system</scope>
-            <systemPath>${basedir}/../libs/User.jar</systemPath>
         </dependency>
     </dependencies>
 

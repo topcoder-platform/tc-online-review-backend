@@ -140,11 +140,9 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>com.topcoder</groupId>
+            <groupId>com.topcoder.thirdpart</groupId>
             <artifactId>tcwebcommon</artifactId>
             <version>1.0-SNAPSHOT</version>
-            <scope>system</scope>
-            <systemPath>${basedir}/../libs/tcwebcommon.jar</systemPath>
         </dependency>
         <dependency>
             <groupId>junit</groupId>

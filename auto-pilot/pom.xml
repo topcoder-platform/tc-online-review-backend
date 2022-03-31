@@ -114,18 +114,14 @@
             <version>2.8.4</version>
         </dependency>
         <dependency>
-            <groupId>com.topcoder</groupId>
-            <artifactId>core-api</artifactId>
+            <groupId>com.topcoder.thirdpart</groupId>
+            <artifactId>core.api</artifactId>
             <version>1.0-SNAPSHOT</version>
-            <scope>system</scope>
-            <systemPath>${basedir}/../libs/core.api.jar</systemPath>
         </dependency>
         <dependency>
-            <groupId>com.topcoder</groupId>
-            <artifactId>job-scheduler</artifactId>
+            <groupId>com.topcoder.thirdpart</groupId>
+            <artifactId>job_scheduler</artifactId>
             <version>1.0-SNAPSHOT</version>
-            <scope>system</scope>
-            <systemPath>${basedir}/../libs/job_scheduler.jar</systemPath>
         </dependency>
         <dependency>
             <groupId>junit</groupId>
