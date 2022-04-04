@@ -80,7 +80,6 @@
         <module>user-project-data-store</module>
         <module>weighted-calculator</module>
         <module>workdays</module>
-        <module>tech-core-api</module>
     </modules>
 
     <properties>
