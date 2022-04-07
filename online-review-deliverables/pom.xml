@@ -65,9 +65,9 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>ifxjdbc</groupId>
-            <artifactId>ifxjdbc</artifactId>
-            <version>20050429</version>
+            <groupId>com.ibm.informix</groupId>
+            <artifactId>jdbc</artifactId>
+            <version>4.50.7.1</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
