@@ -19,9 +19,9 @@
             <version>1.0-SNAPSHOT</version>
         </dependency>
         <dependency>
-            <groupId>ldapjdk</groupId>
-            <artifactId>ldapjdk</artifactId>
-            <version>20000524</version>
+            <groupId>com.topcoder.thirdpart</groupId>
+            <artifactId>ldapjdk-20000524</artifactId>
+            <version>1.0-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>junit</groupId>
@@ -30,12 +30,4 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
-
-    <repositories>
-        <repository>
-            <id>ldaprepo</id>
-            <url>https://nexus.pentaho.org/content/groups/omni/</url>
-        </repository>
-    </repositories>
-
 </project>

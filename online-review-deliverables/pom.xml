@@ -71,11 +71,4 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
-    <repositories>
-        <repository>
-            <id>ldaprepo</id>
-            <url>https://nexus.pentaho.org/content/groups/omni/</url>
-        </repository>
-    </repositories>
-
 </project>
