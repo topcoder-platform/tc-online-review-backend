@@ -17,6 +17,7 @@ import java.util.Set;
 
 import com.topcoder.service.contest.eligibility.ContestEligibility;
 import com.topcoder.service.contest.eligibility.dao.ContestEligibilityManager;
+import com.topcoder.service.contest.eligibility.dao.ContestEligibilityManagerLocal;
 import com.topcoder.service.contest.eligibility.dao.ContestEligibilityPersistenceException;
 import org.apache.log4j.Logger;
 
@@ -59,7 +60,7 @@ public class ContestEligibilityServiceBean implements ContestEligibilityServiceL
      * <code>Contest Eligibility Validation EJB</code>.
      * </p>
      */
-    @EJB(name = "ejb/contest_eligibility_validation")
+    @EJB(beanInterface = ContestEligibilityValidationManagerLocal.class)
     private ContestEligibilityValidationManager contestEligibilityValidationManager = null;
 
     /**
@@ -68,7 +69,7 @@ public class ContestEligibilityServiceBean implements ContestEligibilityServiceL
      * <code>Contest Eligibility Persistence EJB</code>.
      * </p>
      */
-    @EJB(name = "ejb/contest_eligibility_persistence")
+    @EJB(beanInterface = ContestEligibilityManagerLocal.class)
     private ContestEligibilityManager contestEligibilityManager = null;
    
     /**
