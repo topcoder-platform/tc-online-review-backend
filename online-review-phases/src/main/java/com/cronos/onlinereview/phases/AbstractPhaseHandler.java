@@ -6,6 +6,8 @@ package com.cronos.onlinereview.phases;
 import java.text.MessageFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import com.cronos.onlinereview.external.ExternalUser;
 import com.cronos.onlinereview.external.RetrievalException;
@@ -268,6 +270,8 @@ public abstract class AbstractPhaseHandler implements PhaseHandler {
 
     /** format for the email timestamp. Will format as "Fri, Jul 28, 2006 01:34 PM EST". */
     private static final String EMAIL_TIMESTAMP_FORMAT = "EEE, MMM d, yyyy hh:mm a z";
+
+    private static final ExecutorService THREAD_POOL = Executors.newFixedThreadPool(20);
 
     /**
      * <p>
@@ -657,13 +661,24 @@ public abstract class AbstractPhaseHandler implements PhaseHandler {
             TemplateFields subjectRoot = setTemplateFieldValues(docGenerator.getFields(subjectTemplate), user, project,
                     phase, values, bStart);
 
-            TCSEmailMessage message = new TCSEmailMessage();
+            final TCSEmailMessage message = new TCSEmailMessage();
             message.setSubject(docGenerator.applyTemplate(subjectRoot));
             message.setBody(docGenerator.applyTemplate(bodyRoot));
             message.setFromAddress(emailOptions.getFromAddress());
             message.setToAddress(user.getEmail(), TCSEmailMessage.TO);
             message.setContentType("text/html");
-            EmailEngine.send(message);
+            THREAD_POOL.execute(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        EmailEngine.send(message);
+                    } catch (ConfigManagerException e) {
+                        log.log(Level.ERROR, e, "There was a configuration error.");
+                    } catch (SendingException e) {
+                        log.log(Level.ERROR, e, "Problem with sending email.");
+                    }
+                }
+            });
         } catch (TemplateSourceException e) {
             throw new PhaseHandlingException("Problem with template source", e);
         } catch (TemplateFormatException e) {
@@ -674,10 +689,6 @@ public abstract class AbstractPhaseHandler implements PhaseHandler {
             throw new PhaseHandlingException("Problem with email address", e);
         } catch (TemplateDataFormatException e) {
             throw new PhaseHandlingException("Problem with template data format", e);
-        } catch (SendingException e) {
-            throw new PhaseHandlingException("Problem with sending email", e);
-        } catch (ConfigManagerException e) {
-            throw new PhaseHandlingException("There was a configuration error", e);
         } catch (Throwable e) {
             throw new PhaseHandlingException("Problem with sending email", e);
         }
