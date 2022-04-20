@@ -92,11 +92,11 @@ public class TCContext {
      */
     public static InitialContext getContext(String initialContextFactory, String providerUrl) throws NamingException {
         //log.debug("get context for " + initialContextFactory + " on " +  providerUrl);
-        if (initialContextFactory == null || "".equals(initialContextFactory)) {
+        if (initialContextFactory == null || "".equals(initialContextFactory.trim())) {
             return new InitialContext();
         }
         Hashtable env = new Hashtable();
-        env.put(Context.INITIAL_CONTEXT_FACTORY, initialContextFactory);
+        env.put(Context.INITIAL_CONTEXT_FACTORY, initialContextFactory.trim());
         env.put(Context.PROVIDER_URL, providerUrl);
         env.put("jnp.disableDiscovery","true");//stop jboss from multicasting
         //todo comment this in when we're all on jboss.

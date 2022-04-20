@@ -282,7 +282,8 @@ public class PropertyFilePersistence implements ConfigurationPersistence {
                 }
                 String[] str = line.split(seperateChar);
                 if (str.length != 2 || str[0].trim().length() == 0 || str[1].trim().length() == 0) {
-                    throw new ConfigurationParserException("Incorrect properties file formatting.");
+                    // ignore lines with no value
+                    continue;
                 }
                 // ignore the list delimiter line
                 if (str[0].trim().toLowerCase().endsWith(delimiterString)) {
