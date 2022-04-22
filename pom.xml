@@ -10,7 +10,6 @@
     <packaging>pom</packaging>
     <modules>
         <module>authentication-factory</module>
-        <module>auto-pilot</module>
         <module>base-exception</module>
         <module>class-associations</module>
         <module>command-line-utility</module>
