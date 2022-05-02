@@ -1,1487 +1,2694 @@
+/*
+ * Copyright (C) 2007 - 2012 TopCoder Inc., All Rights Reserved.
+ */
 package com.topcoder.onlinereview.component.project.management;
 
+import com.topcoder.onlinereview.component.id.DBHelper;
+import com.topcoder.onlinereview.component.id.IDGenerationException;
+import com.topcoder.onlinereview.component.id.IDGenerator;
+import com.topcoder.onlinereview.component.project.management.Helper.DataType;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
+import javax.persistence.EntityManager;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
+import java.util.stream.Collectors;
 
+import static com.google.common.collect.Lists.newArrayList;
+import static com.topcoder.onlinereview.util.CommonUtils.executeSql;
+import static com.topcoder.onlinereview.util.CommonUtils.executeSqlWithParam;
+import static com.topcoder.onlinereview.util.CommonUtils.getBoolean;
+import static com.topcoder.onlinereview.util.CommonUtils.getDate;
+import static com.topcoder.onlinereview.util.CommonUtils.getDouble;
+import static com.topcoder.onlinereview.util.CommonUtils.getInt;
+import static com.topcoder.onlinereview.util.CommonUtils.getLong;
+import static com.topcoder.onlinereview.util.CommonUtils.getString;
+
+/**
+ * This class contains operations to create/update/retrieve project instances from the Informix
+ * database. It also provides methods to retrieve database look up table values. It implements the
+ * ProjectPersistence interface to provide a plug-in persistence for Informix database. It is used
+ * by the ProjectManagerImpl class. The constructor takes a namespace parameter to initialize
+ * database connection.
+ *
+ * <p>Note that in this class, delete operation is not supported. To delete a project, its status is
+ * set to 'Deleted'. Create and update operations here work on the project and its related items as
+ * well. It means creating/updating a project would involve creating/updating its properties.
+ *
+ * <p>This abstract class does not manage the connection itself. It contains three abstract methods
+ * which should be implemented by concrete subclass to manage the connection:
+ *
+ * <ul>
+ *   <li><code>openConnection()</code> is used to acquire and open the connection.
+ *   <li><code>closeConnection()</code> is used to dispose the connection if the queries are
+ *       executed successfully.
+ *   <li><code>closeConnectionOnError()</code> is used to handle the error if the SQL operation
+ *       fails.
+ * </ul>
+ *
+ * The transaction handling logic should be implemented in subclasses while the <code>Statement
+ * </code>s and <code>ResultSet</code>s are handled in this abstract class.
+ *
+ * <p>Version 1.1.3 (End Of Project Analysis Release Assembly v1.0)
+ *
+ * <ul>
+ *   <li>Updated {@link #getAllProjectTypes()} method and relevant constant strings to populate
+ *       project type entities with new <code>generic</code> property.
+ *   <li>Updated {@link #getAllProjectCategories()} method and relevant constant strings to populate
+ *       project type entities with new <code>generic</code> property.
+ * </ul>
+ *
+ * <p>Updated in version 1.2. Add CRUD methods for following entities, it also maintain the
+ * relationships between project and following entities.
+ *
+ * <ul>
+ *   <li>FileType
+ *   <li>Prize
+ *   <li>ProjectStudioSpecification
+ * </ul>
+ *
+ * It also adds a method to get projects by direct project id.
+ *
+ * <p>Sample Usage: Firstly, you need to set up the configuration according to the CS. Then, you can
+ * use the component as the following codes shown:
+ *
+ * <pre>
+ * // get the sample project object
+ * Project project = TestHelper.getSampleProject1();
+ *
+ * persistence.createProject(project, &quot;user&quot;);
+ *
+ * long projectId = project.getId();
+ *
+ * // get projects by directProjectId
+ * Project[] projects = persistence.getProjectsByDirectProjectId(1);
+ *
+ * FileType fileType = TestHelper.createFileType(&quot;description 1&quot;, &quot;extension 1&quot;, true, false, 1);
+ *
+ * // create FileType entity
+ * fileType = persistence.createFileType(fileType, &quot;admin&quot;);
+ *
+ * // update FileType entity
+ * fileType.setBundledFile(true);
+ * fileType.setSort(2);
+ * fileType.setExtension(&quot;extension3&quot;);
+ * persistence.updateFileType(fileType, &quot;admin&quot;);
+ *
+ * // remove FileType entity
+ * persistence.removeFileType(fileType, &quot;admin&quot;);
+ *
+ * fileType = TestHelper.createFileType(&quot;description 2&quot;, &quot;extension 2&quot;, true, false, 1);
+ * persistence.createFileType(fileType, &quot;admin&quot;);
+ *
+ * // get all FileTypes
+ * FileType[] fileTypes = persistence.getAllFileTypes();
+ *
+ * // get all FileTypes by project id
+ * fileTypes = persistence.getProjectFileTypes(projectId);
+ *
+ * // update relationship for project and FileTypes
+ * persistence.updateProjectFileTypes(1, Arrays.asList(fileTypes), &quot;admin&quot;);
+ *
+ * // get all PrizeTypes
+ * PrizeType[] prizeTypes = persistence.getPrizeTypes();
+ *
+ * Prize prize = TestHelper.createPrize(1, 600.00, 5);
+ *
+ * // create Prize entity
+ * prize = persistence.createPrize(prize, &quot;admin&quot;);
+ *
+ * // update Prize entity
+ * prize.setPlace(2);
+ * prize.setNumberOfSubmissions(10);
+ * persistence.updatePrize(prize, &quot;admin&quot;);
+ *
+ * // remove Prize entity
+ * persistence.removePrize(prize, &quot;admin&quot;);
+ *
+ * // get all Prizes by project id
+ * Prize[] prizes = persistence.getProjectPrizes(projectId);
+ *
+ * // update relationship for project and Prizes
+ * persistence.updateProjectPrizes(1, Arrays.asList(prizes), &quot;admin&quot;);
+ *
+ * ProjectStudioSpecification spec = TestHelper.
+ * createProjectStudioSpecification(&quot;goal1&quot;, &quot;targetAudience&quot;,
+ *     &quot;roundOneIntroduction1&quot;);
+ * // create ProjectStudioSpecification entity
+ * spec = persistence.createProjectStudioSpecification(spec, &quot;admin&quot;);
+ *
+ * // update ProjectStudioSpecification entity
+ * spec.setSubmittersLockedBetweenRounds(false);
+ * spec.setGoals(&quot;goal&quot;);
+ * persistence.updateProjectStudioSpecification(spec, &quot;admin&quot;);
+ *
+ * // remove ProjectStudioSpecification entity
+ * persistence.removeProjectStudioSpecification(spec, &quot;admin&quot;);
+ *
+ * // get all ProjectStudioSpecification by project id
+ * spec = persistence.getProjectStudioSpecification(1);
+ *
+ * // update relationship for project and ProjectStudioSpecification
+ * persistence.updateStudioSpecificationForProject(spec, 1, &quot;admin&quot;);
+ * </pre>
+ *
+ * <p>Thread Safety: This class is thread safe because it is immutable.
+ *
+ * <p>Version 1.2.1 (Milestone Support Assembly 1.0) Change notes:
+ *
+ * <ol>
+ *   <li>Replaced references to <code>prize_type_lu.description</code> column with reference to
+ *       <code>prize_type_lu.prize_type_desc</code> column to match actual DB schema.
+ *   <li>Updated the logic to support optional file types, prizes and spec for project.
+ *   <li>Fixed the issue with connection leaking in {@link #getProjectStudioSpecification(long)}
+ *       method.
+ * </ol>
+ *
+ * <p>Version 1.2.2 (Online Review Replatforming Release 2) Change notes:
+ *
+ * @author tuenm, urtks, bendlund, fuyun, flytoj2ee, VolodymyrK
+ * @version 1.2.4
+ * @since 1.0
+ */
 @Slf4j
 @Component
 public class ProjectPersistence {
-    public static final String PROJECT_ID_SEQUENCE_NAME = "project_id_seq";
-    public static final String PROJECT_AUDIT_ID_SEQUENCE_NAME = "project_audit_id_seq";
-    private static final String FILE_TYPE_ID_SEQUENCE_NAME = "file_type_id_seq";
-    private static final String PRIZE_ID_SEQUENCE_NAME = "prize_id_seq";
-    private static final String STUDIO_SPEC_ID_SEQUENCE_NAME = "studio_spec_id_seq";
-    private static final String CONNECTION_NAME_PARAMETER = "ConnectionName";
-    private static final String CONNECTION_FACTORY_NAMESPACE_PARAMETER = "ConnectionFactoryNS";
-    private static final String PROJECT_ID_SEQUENCE_NAME_PARAMETER = "ProjectIdSequenceName";
-    private static final String PROJECT_AUDIT_ID_SEQUENCE_NAME_PARAMETER = "ProjectAuditIdSequenceName";
-    private static final String FILE_TYPE_ID_SEQUENCE_NAME_PARAMETER = "FileTypeIdGeneratorSequenceName";
-    private static final String PRIZE_ID_SEQUENCE_NAME_PARAMETER = "PrizeIdGeneratorSequenceName";
-    private static final String STUDIO_SPEC_ID_SEQUENCE_NAME_PARAMETER = "StudioSpecIdGeneratorSequenceName";
-    private static final String QUERY_ALL_PROJECT_TYPES_SQL = "SELECT project_type_id, name, description, is_generic FROM project_type_lu";
-    private static final DataType[] QUERY_ALL_PROJECT_TYPES_COLUMN_TYPES;
-    private static final String QUERY_ALL_PROJECT_CATEGORIES_SQL = "SELECT category.project_category_id, category.name, category.description, type.project_type_id, type.name, type.description, type.is_generic FROM project_category_lu AS category JOIN project_type_lu AS type ON category.project_type_id = type.project_type_id";
-    private static final DataType[] QUERY_ALL_PROJECT_CATEGORIES_COLUMN_TYPES;
-    private static final String QUERY_ALL_PROJECT_STATUSES_SQL = "SELECT project_status_id, name, description FROM project_status_lu";
-    private static final DataType[] QUERY_ALL_PROJECT_STATUSES_COLUMN_TYPES;
-    private static final String QUERY_ALL_PROJECT_PROPERTY_TYPES_SQL = "SELECT project_info_type_id, name, description FROM project_info_type_lu";
-    private static final DataType[] QUERY_ALL_PROJECT_PROPERTY_TYPES_COLUMN_TYPES;
-    private static final String QUERY_PROJECTS_SQL = "SELECT project.project_id, status.project_status_id, status.name, category.project_category_id, category.name, type.project_type_id, type.name, project.create_user, project.create_date, project.modify_user, project.modify_date, category.description, project.tc_direct_project_id, tcdp.name as tc_direct_project_name FROM project JOIN project_status_lu AS status ON project.project_status_id=status.project_status_id JOIN project_category_lu AS category ON project.project_category_id=category.project_category_id JOIN project_type_lu AS type ON category.project_type_id=type.project_type_id LEFT OUTER JOIN tc_direct_project AS tcdp ON tcdp.project_id=project.tc_direct_project_id WHERE project.project_id IN ";
-    private static final DataType[] QUERY_PROJECTS_COLUMN_TYPES;
-    private static final String QUERY_PROJECT_PROPERTIES_SQL = "SELECT info.project_id, info_type.name, info.value FROM project_info AS info JOIN project_info_type_lu AS info_type ON info.project_info_type_id=info_type.project_info_type_id WHERE info.project_id IN ";
-    private static final String QUERY_ONE_PROJECT_PROPERTIES_SQL = "SELECT info.project_id, info_type.name, info.value FROM project_info AS info JOIN project_info_type_lu AS info_type ON info.project_info_type_id=info_type.project_info_type_id WHERE info.project_id = ?";
-    private static final DataType[] QUERY_PROJECT_PROPERTIES_COLUMN_TYPES;
-    private static final String QUERY_PROJECT_PROPERTY_IDS_SQL = "SELECT project_info_type_id FROM project_info WHERE project_id=?";
-    private static final String QUERY_PROJECT_PROPERTY_IDS_AND_VALUES_SQL = "SELECT project_info_type_id, value FROM project_info WHERE project_id=?";
-    private static final DataType[] QUERY_PROJECT_PROPERTY_IDS_COLUMN_TYPES;
-    private static final DataType[] QUERY_PROJECT_PROPERTY_IDS_AND_VALUES_COLUMN_TYPES;
-    private static final String CREATE_PROJECT_SQL = "INSERT INTO project (project_id, project_status_id, project_category_id, create_user, create_date, modify_user, modify_date, tc_direct_project_id) VALUES (?, ?, ?, ?, CURRENT, ?, CURRENT, ?)";
-    private static final String CREATE_PROJECT_PROPERTY_SQL = "INSERT INTO project_info (project_id, project_info_type_id, value, create_user, create_date, modify_user, modify_date) VALUES (?, ?, ?, ?, CURRENT, ?, CURRENT)";
-    private static final String CREATE_PROJECT_AUDIT_SQL = "INSERT INTO project_audit (project_audit_id, project_id, update_reason, create_user, create_date, modify_user, modify_date) VALUES (?, ?, ?, ?, CURRENT, ?, CURRENT)";
-    private static final String UPDATE_PROJECT_SQL = "UPDATE project SET project_status_id=?, project_category_id=?, modify_user=?, modify_date=?, tc_direct_project_id=? WHERE project_id=?";
-    private static final String UPDATE_PROJECT_PROPERTY_SQL = "UPDATE project_info SET value=?, modify_user=?, modify_date=CURRENT WHERE project_id=? AND project_info_type_id=?";
-    private static final String DELETE_PROJECT_PROPERTIES_SQL = "DELETE FROM project_info WHERE project_id=? AND project_info_type_id IN ";
-    private static final int AUDIT_CREATE_TYPE = 1;
-    private static final int AUDIT_DELETE_TYPE = 2;
-    private static final int AUDIT_UPDATE_TYPE = 3;
-    private static final String PROJECT_INFO_AUDIT_INSERT_SQL = "INSERT INTO project_info_audit (project_id, project_info_type_id, value, audit_action_type_id, action_date, action_user_id) VALUES (?, ?, ?, ?, ?, ?)";
-    private static final String QUERY_FILE_TYPES_SQL = "SELECT type.file_type_id, type.description, type.sort, type.image_file, type.extension, type.bundled_file FROM file_type_lu AS type JOIN project_file_type_xref AS xref ON type.file_type_id=xref.file_type_id WHERE xref.project_id=";
-    private static final DataType[] QUERY_FILE_TYPES_COLUMN_TYPES;
-    private static final String QUERY_PRIZES_SQL = "SELECT prize.prize_id, prize.place, prize.prize_amount, prize.number_of_submissions, prize_type.prize_type_id, prize_type.prize_type_desc FROM prize AS prize JOIN prize_type_lu AS prize_type ON prize.prize_type_id=prize_type.prize_type_id WHERE prize.project_id=";
-    private static final DataType[] QUERY_PRIZES_COLUMN_TYPES;
-    private static final String CREATE_PRIZE_SQL = "INSERT INTO prize (prize_id, project_id, place, prize_amount, prize_type_id, number_of_submissions, create_user, create_date, modify_user, modify_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-    private static final String UPDATE_PRIZE_SQL = "UPDATE prize SET place=?, prize_amount=?, prize_type_id=?, number_of_submissions=?, modify_user=?, modify_date=?, project_id=? WHERE prize_id=";
-    private static final String DELETE_PRIZE_SQL = "DELETE FROM prize WHERE prize_id=?";
-    private static final String QUERY_ALL_PRIZE_TYPES_SQL = "SELECT prize_type_id, prize_type_desc FROM prize_type_lu";
-    private static final DataType[] QUERY_ALL_PRIZE_TYPES_COLUMN_TYPES;
-    private static final String QUERY_ALL_FILE_TYPES_SQL = "SELECT file_type_id, description, sort, image_file, extension, bundled_file FROM file_type_lu";
-    private static final DataType[] QUERY_ALL_FILE_TYPES_COLUMN_TYPES;
-    private static final String DELETE_PROJECT_FILE_TYPE_XREF_SQL = "DELETE FROM project_file_type_xref WHERE file_type_id=?";
-    private static final String DELETE_FILE_TYPE_SQL = "DELETE FROM file_type_lu WHERE file_type_id=?";
-    private static final String UPDATE_FILE_TYPE_SQL = "UPDATE file_type_lu SET description=?, sort=?, image_file=?, extension=?, bundled_file=?, modify_user=?, modify_date=? WHERE file_type_id=";
-    private static final String CREATE_FILE_TYPE_SQL = "INSERT INTO file_type_lu (file_type_id, description, sort, image_file, extension, bundled_file, create_user, create_date, modify_user, modify_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-    private static final String DELETE_PROJECT_FILE_TYPES_XREF__WITH_PROJECT_ID_SQL = "DELETE FROM project_file_type_xref WHERE project_id=?";
-    private static final String INSERT_PROJECT_FILE_TYPES_XREF_SQL = "INSERT INTO project_file_type_xref (project_id, file_type_id) VALUES (?, ?)";
-    private static final String CREATE_STUDIO_SPEC_SQL = "INSERT INTO project_studio_specification (project_studio_spec_id, goals, target_audience, branding_guidelines, disliked_design_websites, other_instructions, winning_criteria, submitters_locked_between_rounds, round_one_introduction, round_two_introduction, colors, fonts, layout_and_size, create_user, create_date, modify_user, modify_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-    private static final String UPDATE_STUDIO_SPEC_SQL = "UPDATE project_studio_specification SET goals=?, target_audience=?, branding_guidelines=?, disliked_design_websites=?, other_instructions=?, winning_criteria=?, submitters_locked_between_rounds=?, round_one_introduction=?, round_two_introduction=?, colors=?, fonts=?, layout_and_size=?, modify_user=?, modify_date=? WHERE project_studio_spec_id=";
-    private static final String DELETE_STUDIO_SPEC_SQL = "DELETE FROM project_studio_specification WHERE project_studio_spec_id=?";
-    private static final String SET_PROJECT_STUDIO_SPEC_SQL = "UPDATE project SET project_studio_spec_id=NULL WHERE project_studio_spec_id=?";
-    private static final String QUERY_STUDIO_SPEC_SQL = "SELECT spec.project_studio_spec_id, spec.goals, spec.target_audience, spec.branding_guidelines, spec.disliked_design_websites, spec.other_instructions, spec.winning_criteria, spec.submitters_locked_between_rounds, spec.round_one_introduction, spec.round_two_introduction, spec.colors, spec.fonts, spec.layout_and_size FROM project_studio_specification AS spec JOIN project AS project ON project.project_studio_spec_id=spec.project_studio_spec_id WHERE project.project_id=";
-    private static final DataType[] QUERY_STUDIO_SPEC_COLUMN_TYPES;
-    private static final String SET_PROJECT_STUDIO_SPEC_WITH_PROJECT_SQL = "UPDATE project SET project_studio_spec_id=? WHERE project.project_id=";
-    private static final String QUERY_PROJECT_IDS_SQL = "SELECT DISTINCT project_id FROM project WHERE tc_direct_project_id=";
-    private static final DataType[] QUERY_PROJECT_IDS__COLUMN_TYPES;
-    private static final String QUERY_PROJECT_IDS_WITH_STUDIO_SPEC_SQL = "SELECT DISTINCT project_id FROM project WHERE project_studio_spec_id=";
-    private static final String QUERY_PROJECT_IDS_WITH_FILE_TYPE_SQL = "SELECT DISTINCT project_id FROM project_file_type_xref WHERE file_type_id=";
-    private static final String QUERY_PROJECT_IDS_WITH_PRIZE_SQL = "SELECT project_id FROM prize WHERE prize_id=";
-    private final DBConnectionFactory factory;
-    private final String connectionName;
-    private final IDGenerator projectIdGenerator;
-    private final IDGenerator projectAuditIdGenerator;
-    private final IDGenerator fileTypeIdGenerator;
-    private final IDGenerator prizeIdGenerator;
-    private final IDGenerator studioSpecIdGenerator;
+  /**
+   * Represents the default value for Project Id sequence name. It is used to create id generator
+   * for project. This value will be overridden by 'ProjectIdSequenceName' configuration parameter
+   * if it exist.
+   */
+  public static final String PROJECT_ID_SEQUENCE_NAME = "project_id_seq";
 
-    protected AbstractInformixProjectPersistence(String namespace) throws ConfigurationException, PersistenceException {
-        Helper.assertStringNotNullNorEmpty(namespace, "namespace");
-        ConfigManager cm = ConfigManager.getInstance();
-        String factoryNamespace = Helper.getConfigurationParameterValue(cm, namespace, "ConnectionFactoryNS", true, this.getLogger());
+  /**
+   * Represents the default value for project audit id sequence name. It is used to create id
+   * generator for project audit. This value will be overridden by 'ProjectAuditIdSequenceName'
+   * configuration parameter if it exist.
+   */
+  public static final String PROJECT_AUDIT_ID_SEQUENCE_NAME = "project_audit_id_seq";
 
-        try {
-            this.factory = new DBConnectionFactoryImpl(factoryNamespace);
-        } catch (Exception var15) {
-            throw new ConfigurationException("Unable to create a new instance of DBConnectionFactoryImpl class from namespace [" + factoryNamespace + "].", var15);
+  /**
+   * Represents the default value for file type id sequence name. It is used to create id generator
+   * for file type. This value will be overridden by 'FileTypeIdGeneratorSequenceName' configuration
+   * parameter if it exist.
+   *
+   * @since 1.2
+   */
+  private static final String FILE_TYPE_ID_SEQUENCE_NAME = "file_type_id_seq";
+
+  /**
+   * Represents the default value for prize id sequence name. It is used to create id generator for
+   * prize. This value will be overridden by 'PrizeIdGeneratorSequenceName' configuration parameter
+   * if it exist.
+   *
+   * @since 1.2
+   */
+  private static final String PRIZE_ID_SEQUENCE_NAME = "prize_id_seq";
+
+  /**
+   * Represents the default value for studio spec id sequence name. It is used to create id
+   * generator for studio spec. This value will be overridden by 'StudioSpecIdGeneratorSequenceName'
+   * configuration parameter if it exist.
+   *
+   * @since 1.2
+   */
+  private static final String STUDIO_SPEC_ID_SEQUENCE_NAME = "studio_spec_id_seq";
+
+  /** Represents the name of connection name parameter in configuration. */
+  private static final String CONNECTION_NAME_PARAMETER = "ConnectionName";
+
+  /** Represents the name of connection factory namespace parameter in configuration. */
+  private static final String CONNECTION_FACTORY_NAMESPACE_PARAMETER = "ConnectionFactoryNS";
+
+  /** Represents the name of project id sequence name parameter in configuration. */
+  private static final String PROJECT_ID_SEQUENCE_NAME_PARAMETER = "ProjectIdSequenceName";
+
+  /** Represents the name of project audit id sequence name parameter in configuration. */
+  private static final String PROJECT_AUDIT_ID_SEQUENCE_NAME_PARAMETER =
+      "ProjectAuditIdSequenceName";
+
+  /**
+   * Represents the name of file type id sequence name parameter in configuration.
+   *
+   * @since 1.2
+   */
+  private static final String FILE_TYPE_ID_SEQUENCE_NAME_PARAMETER =
+      "FileTypeIdGeneratorSequenceName";
+
+  /**
+   * Represents the name of prize id sequence name parameter in configuration.
+   *
+   * @since 1.2
+   */
+  private static final String PRIZE_ID_SEQUENCE_NAME_PARAMETER = "PrizeIdGeneratorSequenceName";
+
+  /**
+   * Represents the name of studio spec id sequence name parameter in configuration.
+   *
+   * @since 1.2
+   */
+  private static final String STUDIO_SPEC_ID_SEQUENCE_NAME_PARAMETER =
+      "StudioSpecIdGeneratorSequenceName";
+  /** Represents the sql statement to query all project types. */
+  private static final String QUERY_ALL_PROJECT_TYPES_SQL =
+      "SELECT " + "project_type_id, name, description, is_generic FROM project_type_lu";
+
+  /**
+   * Represents the column types for the result set which is returned by executing the sql statement
+   * to query all project types.
+   */
+  private static final DataType[] QUERY_ALL_PROJECT_TYPES_COLUMN_TYPES =
+      new DataType[] {
+        Helper.LONG_TYPE, Helper.STRING_TYPE, Helper.STRING_TYPE, Helper.BOOLEAN_TYPE
+      };
+
+  /** Represents the sql statement to query all project categories. */
+  private static final String QUERY_ALL_PROJECT_CATEGORIES_SQL =
+      "SELECT "
+          + "category.project_category_id, category.name as category_name,"
+          + "category.description as category_description, "
+          + "type.project_type_id, type.name as type_name, type.description as type_description, type.is_generic "
+          + "FROM project_category_lu AS category "
+          + "JOIN project_type_lu AS type "
+          + "ON category.project_type_id = type.project_type_id";
+
+  /**
+   * Represents the column types for the result set which is returned by executing the sql statement
+   * to query all project categories.
+   */
+  private static final DataType[] QUERY_ALL_PROJECT_CATEGORIES_COLUMN_TYPES =
+      new DataType[] {
+        Helper.LONG_TYPE,
+        Helper.STRING_TYPE,
+        Helper.STRING_TYPE,
+        Helper.LONG_TYPE,
+        Helper.STRING_TYPE,
+        Helper.STRING_TYPE,
+        Helper.BOOLEAN_TYPE
+      };
+
+  /** Represents the sql statement to query all project statuses. */
+  private static final String QUERY_ALL_PROJECT_STATUSES_SQL =
+      "SELECT " + "project_status_id, name, description FROM project_status_lu";
+
+  /**
+   * Represents the column types for the result set which is returned by executing the sql statement
+   * to query all project statuses.
+   */
+  private static final DataType[] QUERY_ALL_PROJECT_STATUSES_COLUMN_TYPES =
+      new DataType[] {Helper.LONG_TYPE, Helper.STRING_TYPE, Helper.STRING_TYPE};
+
+  /** Represents the sql statement to query all project property types. */
+  private static final String QUERY_ALL_PROJECT_PROPERTY_TYPES_SQL =
+      "SELECT " + "project_info_type_id, name, description FROM project_info_type_lu";
+
+  /**
+   * Represents the column types for the result set which is returned by executing the sql statement
+   * to query all project property types.
+   */
+  private static final DataType[] QUERY_ALL_PROJECT_PROPERTY_TYPES_COLUMN_TYPES =
+      new DataType[] {Helper.LONG_TYPE, Helper.STRING_TYPE, Helper.STRING_TYPE};
+
+  /** Represents the sql statement to query projects. */
+  private static final String QUERY_PROJECTS_SQL =
+      "SELECT "
+          + "project.project_id, status.project_status_id, status.name as status_name, "
+          + "category.project_category_id, category.name as category_name, type.project_type_id, type.name as type_name, "
+          + "project.create_user, project.create_date, project.modify_user, project.modify_date, category.description,"
+          + " project.tc_direct_project_id, tcdp.name as tc_direct_project_name "
+          + "FROM project JOIN project_status_lu AS status ON project.project_status_id=status.project_status_id "
+          + "JOIN project_category_lu AS category ON project.project_category_id=category.project_category_id "
+          + "JOIN project_type_lu AS type ON category.project_type_id=type.project_type_id "
+          + "LEFT OUTER JOIN tc_direct_project AS tcdp ON tcdp.project_id=project.tc_direct_project_id "
+          + "WHERE project.project_id IN ";
+
+  /**
+   * Represents the column types for the result set which is returned by executing the sql statement
+   * to query projects.
+   */
+  private static final DataType[] QUERY_PROJECTS_COLUMN_TYPES =
+      new DataType[] {
+        Helper.LONG_TYPE,
+        Helper.LONG_TYPE,
+        Helper.STRING_TYPE,
+        Helper.LONG_TYPE,
+        Helper.STRING_TYPE,
+        Helper.LONG_TYPE,
+        Helper.STRING_TYPE,
+        Helper.STRING_TYPE,
+        Helper.DATE_TYPE,
+        Helper.STRING_TYPE,
+        Helper.DATE_TYPE,
+        Helper.STRING_TYPE,
+        Helper.LONG_TYPE,
+        Helper.STRING_TYPE
+      };
+
+  /** Represents the sql statement to query project properties. */
+  private static final String QUERY_PROJECT_PROPERTIES_SQL =
+      "SELECT "
+          + "info.project_id, info_type.name, info.value "
+          + "FROM project_info AS info "
+          + "JOIN project_info_type_lu AS info_type "
+          + "ON info.project_info_type_id=info_type.project_info_type_id "
+          + "WHERE info.project_id IN ";
+
+  /** Represents the sql statement to query project properties. */
+  private static final String QUERY_ONE_PROJECT_PROPERTIES_SQL =
+      "SELECT "
+          + "info.project_id, info_type.name, info.value "
+          + "FROM project_info AS info "
+          + "JOIN project_info_type_lu AS info_type "
+          + "ON info.project_info_type_id=info_type.project_info_type_id "
+          + "WHERE info.project_id = ?";
+
+  /**
+   * Represents the column types for the result set which is returned by executing the sql statement
+   * to query project properties.
+   */
+  private static final DataType[] QUERY_PROJECT_PROPERTIES_COLUMN_TYPES =
+      new DataType[] {Helper.LONG_TYPE, Helper.STRING_TYPE, Helper.STRING_TYPE};
+
+  /** Represents the sql statement to query project property ids. */
+  private static final String QUERY_PROJECT_PROPERTY_IDS_SQL =
+      "SELECT " + "project_info_type_id FROM project_info WHERE project_id=?";
+
+  /** Represents the sql statement to query project property ids and values. */
+  private static final String QUERY_PROJECT_PROPERTY_IDS_AND_VALUES_SQL =
+      "SELECT " + "project_info_type_id, value FROM project_info WHERE project_id=?";
+
+  /**
+   * Represents the column types for the result set which is returned by executing the sql statement
+   * to query project property ids.
+   */
+  private static final DataType[] QUERY_PROJECT_PROPERTY_IDS_COLUMN_TYPES =
+      new DataType[] {Helper.LONG_TYPE};
+
+  /**
+   * Represents the column types for the result set which is returned by executing the sql statement
+   * to query project property ids and values.
+   */
+  private static final DataType[] QUERY_PROJECT_PROPERTY_IDS_AND_VALUES_COLUMN_TYPES =
+      new DataType[] {Helper.LONG_TYPE, Helper.STRING_TYPE};
+
+  /** Represents the sql statement to create project. */
+  private static final String CREATE_PROJECT_SQL =
+      "INSERT INTO project "
+          + "(project_id, project_status_id, project_category_id, "
+          + "create_user, create_date, modify_user, modify_date, tc_direct_project_id) "
+          + "VALUES (?, ?, ?, ?, CURRENT, ?, CURRENT, ?)";
+
+  /** Represents the sql statement to create project property. */
+  private static final String CREATE_PROJECT_PROPERTY_SQL =
+      "INSERT INTO project_info "
+          + "(project_id, project_info_type_id, value, "
+          + "create_user, create_date, modify_user, modify_date) "
+          + "VALUES (?, ?, ?, ?, CURRENT, ?, CURRENT)";
+
+  /** Represents the sql statement to create project audit. */
+  private static final String CREATE_PROJECT_AUDIT_SQL =
+      "INSERT INTO project_audit "
+          + "(project_audit_id, project_id, update_reason, "
+          + "create_user, create_date, modify_user, modify_date) "
+          + "VALUES (?, ?, ?, ?, CURRENT, ?, CURRENT)";
+
+  /** Represents the sql statement to update project. */
+  private static final String UPDATE_PROJECT_SQL =
+      "UPDATE project "
+          + "SET project_status_id=?, project_category_id=?, modify_user=?, modify_date=?, tc_direct_project_id=? "
+          + "WHERE project_id=?";
+
+  /** Represents the sql statement to update project property. */
+  private static final String UPDATE_PROJECT_PROPERTY_SQL =
+      "UPDATE project_info "
+          + "SET value=?, modify_user=?, modify_date=CURRENT "
+          + "WHERE project_id=? AND project_info_type_id=?";
+
+  /** Represents the sql statement to delete project properties. */
+  private static final String DELETE_PROJECT_PROPERTIES_SQL =
+      "DELETE FROM project_info " + "WHERE project_id=? AND project_info_type_id IN ";
+
+  /**
+   * Represents the audit creation type.
+   *
+   * @since 1.1.2
+   */
+  private static final int AUDIT_CREATE_TYPE = 1;
+
+  /**
+   * Represents the audit deletion type.
+   *
+   * @since 1.1.2
+   */
+  private static final int AUDIT_DELETE_TYPE = 2;
+
+  /**
+   * Represents the audit update type.
+   *
+   * @since 1.1.2
+   */
+  private static final int AUDIT_UPDATE_TYPE = 3;
+
+  /**
+   * Represents the SQL statement to audit project info.
+   *
+   * @since 1.1.2
+   */
+  private static final String PROJECT_INFO_AUDIT_INSERT_SQL =
+      "INSERT INTO project_info_audit "
+          + "(project_id, project_info_type_id, value, audit_action_type_id, action_date, action_user_id) "
+          + "VALUES (?, ?, ?, ?, ?, ?)";
+
+  /**
+   * Represents the sql statement to query file types.
+   *
+   * @since 1.2
+   */
+  private static final String QUERY_FILE_TYPES_SQL =
+      "SELECT "
+          + "type.file_type_id, type.description, type.sort, type.image_file,"
+          + " type.extension, type.bundled_file "
+          + "FROM file_type_lu AS type "
+          + "JOIN project_file_type_xref AS xref "
+          + "ON type.file_type_id=xref.file_type_id "
+          + "WHERE xref.project_id=";
+
+  /**
+   * Represents the column types for the result set which is returned by executing the sql statement
+   * to query file types.
+   *
+   * @since 1.2
+   */
+  private static final DataType[] QUERY_FILE_TYPES_COLUMN_TYPES = {
+    Helper.LONG_TYPE,
+    Helper.STRING_TYPE,
+    Helper.LONG_TYPE,
+    Helper.BOOLEAN_TYPE,
+    Helper.STRING_TYPE,
+    Helper.BOOLEAN_TYPE
+  };
+
+  /**
+   * Represents the sql statement to query prizes.
+   *
+   * @since 1.2
+   */
+  private static final String QUERY_PRIZES_SQL =
+      "SELECT "
+          + "prize.prize_id, prize.place, prize.prize_amount, prize.number_of_submissions, "
+          + "prize_type.prize_type_id, prize_type.prize_type_desc "
+          + "FROM prize AS prize "
+          + "JOIN prize_type_lu AS prize_type ON prize.prize_type_id=prize_type.prize_type_id "
+          + "WHERE prize.project_id=";
+
+  /**
+   * Represents the column types for the result set which is returned by executing the sql statement
+   * to query prizes.
+   *
+   * @since 1.2
+   */
+  private static final DataType[] QUERY_PRIZES_COLUMN_TYPES = {
+    Helper.LONG_TYPE,
+    Helper.LONG_TYPE,
+    Helper.Double_TYPE,
+    Helper.LONG_TYPE,
+    Helper.LONG_TYPE,
+    Helper.STRING_TYPE
+  };
+
+  /**
+   * Represents the sql statement to insert prize to the prize table.
+   *
+   * @since 1.2
+   */
+  private static final String CREATE_PRIZE_SQL =
+      "INSERT INTO prize "
+          + "(prize_id, project_id, place, prize_amount, prize_type_id, number_of_submissions, "
+          + "create_user, create_date, modify_user, modify_date) "
+          + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+  /**
+   * Represents the sql statement to update prize to the prize table.
+   *
+   * @since 1.2
+   */
+  private static final String UPDATE_PRIZE_SQL =
+      "UPDATE prize "
+          + "SET place=?, prize_amount=?, prize_type_id=?, number_of_submissions=?, modify_user=?, modify_date=?, "
+          + "project_id=? WHERE prize_id=";
+
+  /**
+   * Represents the sql statement to delete the prize by the specified prize id.
+   *
+   * @since 1.2
+   */
+  private static final String DELETE_PRIZE_SQL = "DELETE FROM prize WHERE prize_id=?";
+  /**
+   * Represents the sql statement to query prize types from the prize_type_lu table.
+   *
+   * @since 1.2
+   */
+  private static final String QUERY_ALL_PRIZE_TYPES_SQL =
+      "SELECT prize_type_id, prize_type_desc FROM prize_type_lu";
+  /**
+   * Represents the column types for the result set which is returned by querying prize types from
+   * the prize_type_lu table.
+   *
+   * @since 1.2
+   */
+  private static final DataType[] QUERY_ALL_PRIZE_TYPES_COLUMN_TYPES = {
+    Helper.LONG_TYPE, Helper.STRING_TYPE
+  };
+  /**
+   * Represents the sql statement to query file types from the file_type_lu table.
+   *
+   * @since 1.2
+   */
+  private static final String QUERY_ALL_FILE_TYPES_SQL =
+      "SELECT file_type_id, description, sort, image_file, "
+          + "extension, bundled_file FROM file_type_lu";
+  /**
+   * Represents the column types for the result set which is returned by querying file types from
+   * the file_type_lu table.
+   *
+   * @since 1.2
+   */
+  private static final DataType[] QUERY_ALL_FILE_TYPES_COLUMN_TYPES = {
+    Helper.LONG_TYPE,
+    Helper.STRING_TYPE,
+    Helper.LONG_TYPE,
+    Helper.BOOLEAN_TYPE,
+    Helper.STRING_TYPE,
+    Helper.BOOLEAN_TYPE
+  };
+
+  /**
+   * Represents the sql statement to delete the project file types reference by the specified file
+   * type id.
+   *
+   * @since 1.2
+   */
+  private static final String DELETE_PROJECT_FILE_TYPE_XREF_SQL =
+      "DELETE FROM project_file_type_xref " + "WHERE file_type_id=?";
+  /**
+   * Represents the sql statement to delete the file types by the specified file type id.
+   *
+   * @since 1.2
+   */
+  private static final String DELETE_FILE_TYPE_SQL =
+      "DELETE FROM file_type_lu WHERE file_type_id=?";
+  /**
+   * Represents the sql statement to update the file types by the specified file type id.
+   *
+   * @since 1.2
+   */
+  private static final String UPDATE_FILE_TYPE_SQL =
+      "UPDATE file_type_lu "
+          + "SET description=?, sort=?, image_file=?, extension=?, bundled_file=?, modify_user=?, modify_date=? "
+          + "WHERE file_type_id=";
+  /**
+   * Represents the sql statement to create the file type.
+   *
+   * @since 1.2
+   */
+  private static final String CREATE_FILE_TYPE_SQL =
+      "INSERT INTO file_type_lu "
+          + "(file_type_id, description, sort, image_file, extension, bundled_file, "
+          + "create_user, create_date, modify_user, modify_date) "
+          + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
+  /**
+   * Represents the sql statement to insert the project file types reference with the provided
+   * project id.
+   *
+   * @since 1.2
+   */
+  private static final String DELETE_PROJECT_FILE_TYPES_XREF__WITH_PROJECT_ID_SQL =
+      "DELETE FROM project_file_type_xref " + "WHERE project_id=?";
+  /**
+   * Represents the sql statement to insert the project file types reference data.
+   *
+   * @since 1.2
+   */
+  private static final String INSERT_PROJECT_FILE_TYPES_XREF_SQL =
+      "INSERT INTO project_file_type_xref (project_id, file_type_id) VALUES (?, ?)";
+
+  /**
+   * Represents the sql statement to create studio specification data.
+   *
+   * @since 1.2
+   */
+  private static final String CREATE_STUDIO_SPEC_SQL =
+      "INSERT INTO project_studio_specification (project_studio_spec_id, "
+          + "goals, target_audience, branding_guidelines, disliked_design_websites, other_instructions, "
+          + "winning_criteria, submitters_locked_between_rounds, round_one_introduction, round_two_introduction, "
+          + "colors, fonts, layout_and_size, create_user, create_date, modify_user, modify_date)"
+          + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
+  /**
+   * Represents the sql statement to update studio specification data.
+   *
+   * @since 1.2
+   */
+  private static final String UPDATE_STUDIO_SPEC_SQL =
+      "UPDATE project_studio_specification "
+          + "SET goals=?, target_audience=?, branding_guidelines=?, disliked_design_websites=?, "
+          + "other_instructions=?, winning_criteria=?, submitters_locked_between_rounds=?, "
+          + "round_one_introduction=?, round_two_introduction=?, colors=?, fonts=?, "
+          + "layout_and_size=?, modify_user=?, modify_date=? "
+          + "WHERE project_studio_spec_id=";
+
+  /**
+   * Represents the sql statement to delete studio specification data with the specified project
+   * studio specification id.
+   *
+   * @since 1.2
+   */
+  private static final String DELETE_STUDIO_SPEC_SQL =
+      "DELETE FROM project_studio_specification " + "WHERE project_studio_spec_id=?";
+
+  /**
+   * Represents the sql statement to set studio specification id to null for project table with the
+   * specified project studio specification id.
+   *
+   * @since 1.2
+   */
+  private static final String SET_PROJECT_STUDIO_SPEC_SQL =
+      "UPDATE project SET project_studio_spec_id=" + "NULL WHERE project_studio_spec_id=?";
+  /**
+   * Represents the sql statement to query studio specification data with the specified project id.
+   *
+   * @since 1.2
+   */
+  private static final String QUERY_STUDIO_SPEC_SQL =
+      "SELECT "
+          + "spec.project_studio_spec_id, spec.goals, spec.target_audience, "
+          + "spec.branding_guidelines, spec.disliked_design_websites, spec.other_instructions, "
+          + "spec.winning_criteria, spec.submitters_locked_between_rounds, "
+          + "spec.round_one_introduction, spec.round_two_introduction, spec.colors, "
+          + "spec.fonts, spec.layout_and_size "
+          + "FROM project_studio_specification AS spec JOIN project AS project "
+          + "ON project.project_studio_spec_id=spec.project_studio_spec_id "
+          + "WHERE project.project_id=";
+  /**
+   * Represents the data types for the result set by querying studio specification data with the
+   * specified project id.
+   *
+   * @since 1.2
+   */
+  private static final DataType[] QUERY_STUDIO_SPEC_COLUMN_TYPES =
+      new DataType[] {
+        Helper.LONG_TYPE,
+        Helper.STRING_TYPE,
+        Helper.STRING_TYPE,
+        Helper.STRING_TYPE,
+        Helper.STRING_TYPE,
+        Helper.STRING_TYPE,
+        Helper.STRING_TYPE,
+        Helper.BOOLEAN_TYPE,
+        Helper.STRING_TYPE,
+        Helper.STRING_TYPE,
+        Helper.STRING_TYPE,
+        Helper.STRING_TYPE,
+        Helper.STRING_TYPE
+      };
+
+  /**
+   * Represents the sql statement to set studio specification id for project table with the
+   * specified project id.
+   *
+   * @since 1.2
+   */
+  private static final String SET_PROJECT_STUDIO_SPEC_WITH_PROJECT_SQL =
+      "UPDATE project SET project_studio_spec_id=" + "? WHERE project.project_id=";
+
+  /**
+   * Represents the sql statement to query project id for project table with the specified tc direct
+   * project id.
+   *
+   * @since 1.2
+   */
+  private static final String QUERY_PROJECT_IDS_SQL =
+      "SELECT DISTINCT project_id FROM project WHERE tc_direct_project_id=";
+
+  /**
+   * Represents the data types for the result set by querying project id for project table.
+   *
+   * @since 1.2
+   */
+  private static final DataType[] QUERY_PROJECT_IDS__COLUMN_TYPES =
+      new DataType[] {Helper.LONG_TYPE};
+
+  /**
+   * Represents the sql statement to query project id for project table with the specified studio
+   * specification id.
+   *
+   * @since 1.2
+   */
+  private static final String QUERY_PROJECT_IDS_WITH_STUDIO_SPEC_SQL =
+      "SELECT DISTINCT project_id FROM project WHERE project_studio_spec_id=";
+
+  /**
+   * Represents the sql statement to query project id for project table with the specified file type
+   * id.
+   *
+   * @since 1.2
+   */
+  private static final String QUERY_PROJECT_IDS_WITH_FILE_TYPE_SQL =
+      "SELECT DISTINCT project_id FROM project_file_type_xref WHERE file_type_id=";
+  /**
+   * Represents the sql statement to query project id for project table with the specified prize id.
+   *
+   * @since 1.2
+   */
+  private static final String QUERY_PROJECT_IDS_WITH_PRIZE_SQL =
+      "SELECT project_id FROM prize WHERE prize_id=";
+
+  @Value("{phase.persistence.entity-manager-name}")
+  private String entityManagerName;
+
+  @Value("{project.persistence.project-id-sequence-name}")
+  private String projectIdSeqName;
+
+  @Value("{project.persistence.project-audit-id-sequence-name}")
+  private String projectAuditIdSeqName;
+
+  @Value("{project.persistence.file-type-id-sequence-name}")
+  private String fileTypeIdSeqName;
+
+  @Value("{project.persistence.prize-id-sequence-name}")
+  private String prizeIdSeqName;
+
+  @Value("{project.persistence.studio-spec-id-sequence-name}")
+  private String studioSpecIdSeqName;
+
+  @Autowired private Map<String, EntityManager> entityManagerMap;
+  @Autowired private DBHelper dbHelper;
+
+  /**
+   * Represents the IDGenerator for project table. This variable is initialized in the constructor
+   * and never change after that. It will be used in createProject() method to generate new Id for
+   * project..
+   */
+  private IDGenerator projectIdGenerator;
+
+  /**
+   * Represents the IDGenerator for project audit table. This variable is initialized in the
+   * constructor and never change after that. It will be used in updateProject() method to store
+   * update reason.
+   */
+  private IDGenerator projectAuditIdGenerator;
+
+  /**
+   * Represents the IDGenerator for file_type table. This variable is initialized in the constructor
+   * and never change after that. It will be used in createFileType() method to generate new Id for
+   * project. It could not be null after initialized.
+   *
+   * @since 1.2
+   */
+  private IDGenerator fileTypeIdGenerator;
+  /**
+   * Represents the IDGenerator for prize table. This variable is initialized in the constructor and
+   * never change after that. It will be used in createPrize() method to generate new Id for
+   * project. It could not be null after initialized.
+   *
+   * @since 1.2
+   */
+  private IDGenerator prizeIdGenerator;
+  /**
+   * Represents the IDGenerator for project_studio_specification table. This variable is initialized
+   * in the constructor and never change after that. It will be used in
+   * createProjectStudioSpecification() method to generate new Id for project. It could not be null
+   * after initialized.
+   *
+   * @since 1.2
+   */
+  private IDGenerator studioSpecIdGenerator;
+
+  private EntityManager entityManager;
+
+  @PostConstruct
+  public void postRun() throws IDGenerationException {
+    projectIdGenerator = new IDGenerator(projectIdSeqName, dbHelper);
+    projectAuditIdGenerator = new IDGenerator(projectAuditIdSeqName, dbHelper);
+    fileTypeIdGenerator = new IDGenerator(fileTypeIdSeqName, dbHelper);
+    prizeIdGenerator = new IDGenerator(prizeIdSeqName, dbHelper);
+    studioSpecIdGenerator = new IDGenerator(studioSpecIdSeqName, dbHelper);
+    entityManager = entityManagerMap.get(entityManagerName);
+  }
+
+  /**
+   * Creates the project in the database using the given project instance.
+   *
+   * <p>The project information is stored to 'project' table, while its properties are stored in
+   * 'project_info' table. The project's associating scorecards are stored in 'project_scorecard'
+   * table. For the project, its properties and associating scorecards, the operator parameter is
+   * used as the creation/modification user and the creation date and modification date will be the
+   * current date time when the project is created.
+   *
+   * <p>Updated in version 1.2 (TC - Studio Replatforming Project): get sequence name and create
+   * following IdGenerators.
+   *
+   * <ul>
+   *   <li>fileTypeIdGenerator
+   *   <li>prizeIdGenerator
+   *   <li>studioSpecIdGenerator
+   * </ul>
+   *
+   * @param project The project instance to be created in the database.
+   * @param operator The creation user of this project.
+   * @throws IllegalArgumentException if any input is null or the operator is empty string.
+   * @throws PersistenceException if error occurred while accessing the database.
+   * @since 1.0
+   */
+  public void createProject(Project project, String operator) throws PersistenceException {
+    Helper.assertObjectNotNull(project, "project");
+    Helper.assertStringNotNullNorEmpty(operator, "operator");
+    log.debug(
+        new LogMessage(null, operator, "creating new project: " + project.getAllProperties())
+            .toString());
+    try {
+      // check whether the project id is already in the database
+      if (project.getId() > 0) {
+        if (Helper.checkEntityExists("project", "project_id", project.getId(), entityManager)) {
+          throw new PersistenceException(
+              "The project with the same id [" + project.getId() + "] already exists.");
         }
+      }
 
-        this.connectionName = Helper.getConfigurationParameterValue(cm, namespace, "ConnectionName", false, this.getLogger());
-        String projectIdSequenceName = Helper.getConfigurationParameterValue(cm, namespace, "ProjectIdSequenceName", false, this.getLogger());
-        if (projectIdSequenceName == null) {
-            projectIdSequenceName = "project_id_seq";
-        }
+      // generate id for the project
+      var newId = projectIdGenerator.getNextID();
+      log.debug(new LogMessage(newId, operator, "generate id for new project").toString());
 
-        String projectAuditIdSequenceName = Helper.getConfigurationParameterValue(cm, namespace, "ProjectAuditIdSequenceName", false, this.getLogger());
-        if (projectAuditIdSequenceName == null) {
-            projectAuditIdSequenceName = "project_audit_id_seq";
-        }
+      // create the project
+      createProject(newId, project, operator);
 
-        String fileTypeIdGeneratorSequenceName = Helper.getConfigurationParameterValue(cm, namespace, "FileTypeIdGeneratorSequenceName", false, this.getLogger());
-        if (fileTypeIdGeneratorSequenceName == null) {
-            fileTypeIdGeneratorSequenceName = "file_type_id_seq";
-        }
+      // set the file types
+      createOrUpdateProjectFileTypes(newId, project.getProjectFileTypes(), operator, false);
 
-        String prizeIdGeneratorSequenceName = Helper.getConfigurationParameterValue(cm, namespace, "PrizeIdGeneratorSequenceName", false, this.getLogger());
-        if (prizeIdGeneratorSequenceName == null) {
-            prizeIdGeneratorSequenceName = "prize_id_seq";
-        }
+      // set the prizes
+      createOrUpdateProjectPrizes(newId, project.getPrizes(), operator, false);
+      // set the project studio specification
+      createOrUpdateProjectStudioSpecification(
+          newId, project.getProjectStudioSpecification(), operator);
+      // set the newId when no exception occurred
+      project.setId(newId);
+    } catch (IDGenerationException e) {
+      log.error(
+          new LogMessage(null, operator, "Unable to generate id for the project.", e).toString());
+      throw new PersistenceException("Unable to generate id for the project.", e);
+    } catch (PersistenceException e) {
+      log.error(
+          new LogMessage(null, operator, "Fails to create project " + project.getAllProperties(), e)
+              .toString());
+      throw e;
+    }
+  }
 
-        String studioSpecIdGeneratorSequenceName = Helper.getConfigurationParameterValue(cm, namespace, "StudioSpecIdGeneratorSequenceName", false, this.getLogger());
-        if (studioSpecIdGeneratorSequenceName == null) {
-            studioSpecIdGeneratorSequenceName = "studio_spec_id_seq";
-        }
+  /**
+   * Update the given project instance into the database.
+   *
+   * <p>The project information is stored to 'project' table, while its properties are stored in
+   * 'project_info' table. The project's associating scorecards are stored in 'project_scorecard'
+   * table. All related items in these tables will be updated. If items are removed from the
+   * project, they will be deleted from the persistence. Likewise, if new items are added, they will
+   * be created in the persistence. For the project, its properties and associating scorecards, the
+   * operator parameter is used as the modification user and the modification date will be the
+   * current date time when the project is updated. An update reason is provided with this method.
+   * Update reason will be stored in the persistence for future references.
+   *
+   * <p>Updated in version 1.2 (TC - Studio Replatforming Project): It needs to maintain the
+   * relationships between project and following entities.
+   *
+   * <ul>
+   *   <li>FileType
+   *   <li>Prize
+   *   <li>ProjectStudioSpecification
+   * </ul>
+   *
+   * @param project The project instance to be updated into the database.
+   * @param reason The update reason. It will be stored in the persistence for future references.
+   * @param operator The modification user of this project.
+   * @throws IllegalArgumentException if any input is null or the operator is empty string. Or
+   *     project id is zero.
+   * @throws PersistenceException if error occurred while accessing the database.
+   * @since 1.0
+   */
+  public void updateProject(Project project, String reason, String operator)
+      throws PersistenceException {
+    Helper.assertObjectNotNull(project, "project");
+    Helper.assertLongPositive(project.getId(), "project id");
+    Helper.assertObjectNotNull(reason, "reason");
+    Helper.assertStringNotNullNorEmpty(operator, "operator");
+    log.debug(
+        new LogMessage(project.getId(), operator, "updating project: " + project.getAllProperties())
+            .toString());
+    try {
+      // check whether the project id is already in the database
+      if (!Helper.checkEntityExists("project", "project_id", project.getId(), entityManager)) {
+        throw new PersistenceException(
+            "The project id [" + project.getId() + "] does not exist in the database.");
+      }
+      var modifyDate = new Date();
+      // update the project
+      updateProject(project, reason, operator, modifyDate);
 
-        try {
-            this.projectIdGenerator = IDGeneratorFactory.getIDGenerator(projectIdSequenceName);
-        } catch (IDGenerationException var14) {
-            this.getLogger().log(Level.ERROR, "The projectIdSequence [" + projectIdSequenceName + "] is invalid.");
-            throw new PersistenceException("Unable to create IDGenerator for '" + projectIdSequenceName + "'.", var14);
-        }
+      log.debug(
+          new LogMessage(
+                  project.getId(),
+                  operator,
+                  "execute sql:" + "SELECT modify_date " + "FROM project WHERE project_id=?")
+              .toString());
+      // set the file types
+      createOrUpdateProjectFileTypes(
+          project.getId(), project.getProjectFileTypes(), operator, true);
 
-        try {
-            this.projectAuditIdGenerator = IDGeneratorFactory.getIDGenerator(projectAuditIdSequenceName);
-        } catch (IDGenerationException var13) {
-            this.getLogger().log(Level.ERROR, "The projectAuditIdSequence [" + projectAuditIdSequenceName + "] is invalid.");
-            throw new PersistenceException("Unable to create IDGenerator for '" + projectAuditIdSequenceName + "'.", var13);
-        }
+      // set the prizes
+      createOrUpdateProjectPrizes(project.getId(), project.getPrizes(), operator, true);
 
-        try {
-            this.fileTypeIdGenerator = IDGeneratorFactory.getIDGenerator(fileTypeIdGeneratorSequenceName);
-        } catch (IDGenerationException var12) {
-            this.getLogger().log(Level.ERROR, "The fileTypeIdGeneratorSequence [" + fileTypeIdGeneratorSequenceName + "] is invalid.");
-            throw new PersistenceException("Unable to create IDGenerator for '" + fileTypeIdGeneratorSequenceName + "'.", var12);
-        }
+      // set the project studio specification
+      createOrUpdateProjectStudioSpecification(
+          project.getId(), project.getProjectStudioSpecification(), operator);
+      // set the modification user and date when no exception
+      // occurred.
+      project.setModificationUser(operator);
+      project.setModificationTimestamp(modifyDate);
+    } catch (PersistenceException e) {
+      log.error(
+          new LogMessage(null, operator, "Fails to update project " + project.getAllProperties(), e)
+              .toString());
+      throw e;
+    }
+  }
 
-        try {
-            this.prizeIdGenerator = IDGeneratorFactory.getIDGenerator(prizeIdGeneratorSequenceName);
-        } catch (IDGenerationException var11) {
-            this.getLogger().log(Level.ERROR, "The prizeIdGeneratorSequence [" + prizeIdGeneratorSequenceName + "] is invalid.");
-            throw new PersistenceException("Unable to create IDGenerator for '" + prizeIdGeneratorSequenceName + "'.", var11);
-        }
+  /**
+   * Retrieves the project instance from the persistence given its id. The project instance is
+   * retrieved with its related items, such as properties and scorecards.
+   *
+   * @return The project instance.
+   * @param id The id of the project to be retrieved.
+   * @throws IllegalArgumentException if the input id is less than or equal to zero.
+   * @throws PersistenceException if error occurred while accessing the database.
+   */
+  public Project getProject(long id) throws PersistenceException {
+    Helper.assertLongPositive(id, "id");
 
-        try {
-            this.studioSpecIdGenerator = IDGeneratorFactory.getIDGenerator(studioSpecIdGeneratorSequenceName);
-        } catch (IDGenerationException var10) {
-            this.getLogger().log(Level.ERROR, "The studioSpecIdGeneratorSequence [" + studioSpecIdGeneratorSequenceName + "] is invalid.");
-            throw new PersistenceException("Unable to create IDGenerator for '" + studioSpecIdGeneratorSequenceName + "'.", var10);
-        }
+    Project[] projects = getProjects(new long[] {id});
+    return projects.length == 0 ? null : projects[0];
+  }
+
+  /**
+   * Gets Project entities by given directProjectId.
+   *
+   * @param directProjectId the given directProjectId to find the Projects.
+   * @return the found Project entities, return empty if cannot find any.
+   * @throws IllegalArgumentException if the argument is non-positive
+   * @throws PersistenceException if there are any exceptions.
+   * @since 1.2
+   */
+  public Project[] getProjectsByDirectProjectId(long directProjectId) throws PersistenceException {
+    Helper.assertLongPositive(directProjectId, "directProjectId");
+    log.debug("get projects with the direct project id: " + directProjectId);
+    try {
+      var result = executeSql(entityManager, QUERY_PROJECT_IDS_SQL + directProjectId);
+      if (result.isEmpty()) {
+        return new Project[0];
+      }
+      long[] ids = new long[result.size()];
+      for (int i = 0; i < result.size(); i++) {
+        ids[i] = getLong(result.get(i), "project_id");
+      }
+      // get the project objects
+      Project[] projects = getProjects(ids);
+      return projects;
+    } catch (PersistenceException e) {
+      log.error(
+          new LogMessage(
+                  null,
+                  null,
+                  "Fails to retrieving projects with the direct project id: " + directProjectId,
+                  e)
+              .toString());
+      throw e;
+    }
+  }
+
+  /**
+   * Gets Project FileType entities by given projectId.
+   *
+   * @param projectId the given projectId to find the entities.
+   * @return the found FileType entities, return empty if cannot find any.
+   * @throws IllegalArgumentException if the argument is non-positive
+   * @throws PersistenceException if there are any exceptions.
+   * @since 1.2
+   */
+  public FileType[] getProjectFileTypes(long projectId) throws PersistenceException {
+    Helper.assertLongPositive(projectId, "projectId");
+    log.debug("get Project file types with the project id: " + projectId);
+    try {
+      // check whether the project id is already in the database
+      if (!Helper.checkEntityExists("project", "project_id", projectId, entityManager)) {
+        throw new PersistenceException(
+            "The project with id " + projectId + " does not exist in the database.");
+      }
+      var result = executeSql(entityManager, QUERY_FILE_TYPES_SQL + projectId);
+      FileType[] fileTypes = new FileType[result.size()];
+      // enumerate each row
+      for (int i = 0; i < result.size(); ++i) {
+        var row = result.get(i);
+        FileType fileType = new FileType();
+        fileType.setId(getLong(row, "file_type_id"));
+        fileType.setDescription(getString(row, "description"));
+        fileType.setSort(getInt(row, "sort"));
+        fileType.setImageFile(getBoolean(row, "image_file"));
+        fileType.setExtension(getString(row, "extension"));
+        fileType.setBundledFile(getBoolean(row, "bundled_file"));
+        fileTypes[i] = fileType;
+      }
+
+      return fileTypes;
+    } catch (PersistenceException e) {
+      log.error(
+          new LogMessage(
+                  null,
+                  null,
+                  "Fails to retrieving project file types with project id: " + projectId,
+                  e)
+              .toString());
+      throw e;
+    }
+  }
+
+  /**
+   * Updates FileType entities by given projectId, it also updates the relationship between project
+   * and FileType.
+   *
+   * @param projectId the given projectId to update the fileTypes entities.
+   * @param fileTypes the given fileTypes entities to update.
+   * @param operator the given audit user.
+   * @throws IllegalArgumentException if projectId is non-positive or fileTypes contains null, or if
+   *     operator is null or empty.
+   * @throws PersistenceException if there are any exceptions.
+   * @since 1.2
+   */
+  public void updateProjectFileTypes(long projectId, List<FileType> fileTypes, String operator)
+      throws PersistenceException {
+    Helper.assertLongPositive(projectId, "projectId");
+    Helper.assertObjectNotNull(fileTypes, "fileTypes");
+    for (int i = 0; i < fileTypes.size(); i++) {
+      Helper.assertObjectNotNull(fileTypes.get(i), "fileTypes[" + i + "]");
+    }
+    Helper.assertStringNotNullNorEmpty(operator, "operator");
+    log.debug(
+        new LogMessage(
+                null, operator, "updating the file types for the project with id: " + projectId)
+            .toString());
+    try {
+      // check whether the project id is already in the database
+      if (!Helper.checkEntityExists("project", "project_id", projectId, entityManager)) {
+        throw new PersistenceException(
+            "The project with id " + projectId + " does not exist in the database.");
+      }
+
+      createOrUpdateProjectFileTypes(projectId, fileTypes, operator, true);
+
+      // create project audit record into project_audit table
+      createProjectAudit(projectId, "Updates the project file types", operator);
+
+    } catch (PersistenceException e) {
+      log.error(
+          new LogMessage(
+                  null,
+                  operator,
+                  "Fails to update the file types for the project with id " + projectId,
+                  e)
+              .toString());
+      throw e;
+    }
+  }
+
+  /**
+   * Creates or updates project file types.
+   *
+   * @param projectId the project id
+   * @param fileTypes the file types for the project
+   * @param operator the given audit user.
+   * @param update true to update the project file types reference; otherwise, just create the
+   *     project file types reference
+   * @throws PersistenceException if any error occurs
+   * @since 1.2
+   */
+  private void createOrUpdateProjectFileTypes(
+      long projectId, List<FileType> fileTypes, String operator, boolean update)
+      throws PersistenceException {
+    if (fileTypes == null) {
+      return;
+    }
+    Object[] queryArgs;
+
+    if (update) {
+
+      log.debug(
+          "delete the project file typs reference from database with the specified project id: "
+              + projectId);
+      // delete the project file types reference from database with the specified project id
+      queryArgs = new Object[] {projectId};
+      Helper.doDMLQuery(
+          entityManager, DELETE_PROJECT_FILE_TYPES_XREF__WITH_PROJECT_ID_SQL, queryArgs);
     }
 
-    public void createProject(Project project, String operator) throws PersistenceException {
-        Helper.assertObjectNotNull(project, "project");
-        Helper.assertStringNotNullNorEmpty(operator, "operator");
-        Connection conn = null;
-        this.getLogger().log(Level.DEBUG, new LogMessage((Long)null, operator, "creating new project: " + project.getAllProperties()));
+    for (FileType fileType : fileTypes) {
+      // the file type with the specified file type id exists, just update it
+      if (fileType.getId() > 0
+          && Helper.checkEntityExists(
+              "file_type_lu", "file_type_id", fileType.getId(), entityManager)) {
+        updateFileType(fileType, operator);
+      } else { // the file type with the specified file types id does not exist, insert it to the
+        // database
+        createFileType(fileType, operator);
+      }
 
-        Long newId;
-        try {
-            conn = this.openConnection();
-            if (project.getId() > 0L && Helper.checkEntityExists("project", "project_id", project.getId(), conn)) {
-                throw new PersistenceException("The project with the same id [" + project.getId() + "] already exists.");
-            }
+      // insert projectId and file type id into project_file_type_xref table
+      log.debug(
+          "insert projectId: "
+              + projectId
+              + " and file type id: "
+              + fileType.getId()
+              + " into project_file_type_xref table");
 
-            try {
-                newId = this.projectIdGenerator.getNextID();
-                this.getLogger().log(Level.DEBUG, new LogMessage(newId, operator, "generate id for new project"));
-            } catch (IDGenerationException var6) {
-                throw new PersistenceException("Unable to generate id for the project.", var6);
-            }
+      queryArgs = new Object[] {projectId, fileType.getId()};
+      Helper.doDMLQuery(entityManager, INSERT_PROJECT_FILE_TYPES_XREF_SQL, queryArgs);
+    }
+  }
 
-            this.createProject(newId, project, operator, conn);
-            this.createOrUpdateProjectFileTypes(newId, project.getProjectFileTypes(), conn, operator, false);
-            this.createOrUpdateProjectPrizes(newId, project.getPrizes(), conn, operator, false);
-            this.createOrUpdateProjectStudioSpecification(newId, project.getProjectStudioSpecification(), conn, operator);
-            this.closeConnection(conn);
-        } catch (PersistenceException var7) {
-            this.getLogger().log(Level.ERROR, new LogMessage((Long)null, operator, "Fails to create project " + project.getAllProperties(), var7));
-            if (conn != null) {
-                this.closeConnectionOnError(conn);
-            }
+  /**
+   * Gets Project Prize entities by given projectId.
+   *
+   * @param projectId the given projectId to find the entities.
+   * @return the found Prize entities, return empty if cannot find any.
+   * @throws IllegalArgumentException if projectId is non-positive
+   * @throws PersistenceException if there are any exceptions.
+   * @since 1.2
+   */
+  public Prize[] getProjectPrizes(long projectId) throws PersistenceException {
+    Helper.assertLongPositive(projectId, "projectId");
+    log.debug("get project prizes with the project id: " + projectId);
+    try {
+      // check whether the project id is already in the database
+      if (!Helper.checkEntityExists("project", "project_id", projectId, entityManager)) {
+        throw new PersistenceException(
+            "The project with id " + projectId + " does not exist in the database.");
+      }
+      var result = executeSql(entityManager, QUERY_PRIZES_SQL + projectId);
+      Prize[] prizes = new Prize[result.size()];
+      // enumerate each row
+      for (int i = 0; i < result.size(); ++i) {
+        var row = result.get(i);
 
-            throw var7;
+        Prize prize = new Prize();
+        prize.setId(getLong(row, "prize_id"));
+        prize.setProjectId(projectId);
+        prize.setPlace(getInt(row, "place"));
+        prize.setPrizeAmount(getDouble(row, "prize_amount"));
+        prize.setNumberOfSubmissions(getInt(row, "number_of_submissions"));
+        PrizeType prizeType = new PrizeType();
+        prizeType.setId(getLong(row, "prize_type_id"));
+        prizeType.setDescription(getString(row, "prize_type_desc"));
+        prize.setPrizeType(prizeType);
+        prizes[i] = prize;
+      }
+      return prizes;
+    } catch (PersistenceException e) {
+      log.error(
+          new LogMessage(
+                  null, null, "Fails to retrieving project prizes with project id: " + projectId, e)
+              .toString());
+      throw e;
+    }
+  }
+
+  /**
+   * Updates Prize entities by given projectId.
+   *
+   * @param projectId the given projectId to update the prizes entities.
+   * @param prizes the given prizes entities to update.
+   * @param operator the given audit user.
+   * @throws IllegalArgumentException if projectId is non-positive, prizes contains null, or if
+   *     operator is null or empty.
+   * @throws PersistenceException if there are any exceptions.
+   * @since 1.2
+   */
+  public void updateProjectPrizes(long projectId, List<Prize> prizes, String operator)
+      throws PersistenceException {
+    Helper.assertLongPositive(projectId, "projectId");
+    Helper.assertObjectNotNull(prizes, "prizes");
+    for (int i = 0; i < prizes.size(); i++) {
+      Helper.assertObjectNotNull(prizes.get(i), "prizes[" + i + "]");
+    }
+    Helper.assertStringNotNullNorEmpty(operator, "operator");
+    log.debug(
+        new LogMessage(null, operator, "updating the prizes for the project with id: " + projectId)
+            .toString());
+    try {
+      // check whether the project id is already in the database
+      if (!Helper.checkEntityExists("project", "project_id", projectId, entityManager)) {
+        throw new PersistenceException(
+            "The project with id " + projectId + " does not exist in the database.");
+      }
+      createOrUpdateProjectPrizes(projectId, prizes, operator, true);
+      // create project audit record into project_audit table
+      createProjectAudit(projectId, "Updates the project prizes", operator);
+    } catch (PersistenceException e) {
+      log.error(
+          new LogMessage(
+                  null,
+                  operator,
+                  "Fails to update the prizes for the project with id " + projectId,
+                  e)
+              .toString());
+      throw e;
+    }
+  }
+
+  /**
+   * Creates or updates project prizes.
+   *
+   * @param projectId the project id
+   * @param prizes the prizes for the project
+   * @param operator the given audit user.
+   * @param update true to update the project prizes reference; otherwise, just create the project
+   *     prizes reference
+   * @throws PersistenceException if any error occurs
+   * @since 1.2
+   */
+  private void createOrUpdateProjectPrizes(
+      long projectId, List<Prize> prizes, String operator, boolean update)
+      throws PersistenceException {
+    if (prizes == null) {
+      return;
+    }
+
+    for (Prize prize : prizes) {
+      // the prize with the specified prize id exists, just update it
+      if (prize.getId() > 0
+          && Helper.checkEntityExists("prize", "prize_id", prize.getId(), entityManager)) {
+        updatePrize(prize, operator);
+      } else { // the prize with the specified prize id does not exist, insert it to the database
+        createPrize(prize, operator);
+      }
+    }
+  }
+
+  /**
+   * Creates the given FileType entity.
+   *
+   * @param fileType the given fileType entity to create.
+   * @param operator the given audit user.
+   * @return the created fileType entity.
+   * @throws IllegalArgumentException if fileType is null, or if operator is null or empty.
+   * @throws PersistenceException if there are any exceptions.
+   * @since 1.2
+   */
+  public FileType createFileType(FileType fileType, String operator) throws PersistenceException {
+    Helper.assertObjectNotNull(fileType, "fileType");
+    Helper.assertStringNotNullNorEmpty(operator, "operator");
+    // newId will contain the new generated Id for the file type
+    log.debug(new LogMessage(null, operator, "creating new file type: " + fileType).toString());
+    try {
+      // check whether the file type id is already in the database
+      if (fileType.getId() > 0) {
+        if (Helper.checkEntityExists(
+            "file_type_lu", "file_type_id", fileType.getId(), entityManager)) {
+          throw new PersistenceException(
+              "The file type with the same id [" + fileType.getId() + "] already exists.");
         }
+      }
+      // generate id for the file type
+      var newId = fileTypeIdGenerator.getNextID();
+      log.debug(new LogMessage(newId, operator, "generate id for new file type").toString());
+      // create the file type
+      log.debug("insert record into file type with id:" + newId);
+      var createDate = new Date();
+      // insert the file type into database
+      Object[] queryArgs =
+          new Object[] {
+            newId,
+            fileType.getDescription(),
+            fileType.getSort(),
+            convertBooleanToString(fileType.isImageFile()),
+            fileType.getExtension(),
+            convertBooleanToString(fileType.isBundledFile()),
+            operator,
+            createDate,
+            operator,
+            createDate
+          };
+      Helper.doDMLQuery(entityManager, CREATE_FILE_TYPE_SQL, queryArgs);
+      fileType.setCreationUser(operator);
+      fileType.setCreationTimestamp(createDate);
+      fileType.setModificationUser(operator);
+      fileType.setModificationTimestamp(createDate);
 
-        project.setId(newId);
+      // set the newId when no exception occurred
+      fileType.setId(newId);
+    } catch (IDGenerationException e) {
+      throw new PersistenceException("Unable to generate id for the file type.", e);
+    } catch (PersistenceException e) {
+      log.error(new LogMessage(null, operator, "Fails to create file type ", e).toString());
+      throw e;
     }
+    return fileType;
+  }
 
-    public void updateProject(Project project, String reason, String operator) throws PersistenceException {
-        Helper.assertObjectNotNull(project, "project");
-        Helper.assertLongPositive(project.getId(), "project id");
-        Helper.assertObjectNotNull(reason, "reason");
-        Helper.assertStringNotNullNorEmpty(operator, "operator");
-        Connection conn = null;
-        this.getLogger().log(Level.DEBUG, new LogMessage(project.getId(), operator, "updating project: " + project.getAllProperties()));
+  /**
+   * Converts the boolean value to a string representation. For true, we use 't'; For false, we use
+   * 'f'.
+   *
+   * @param booleanVal the boolean value to convert
+   * @return 't' if the paramter is true; otherwise, returns 'f'
+   * @since 1.2
+   */
+  private Object convertBooleanToString(boolean booleanVal) {
+    return booleanVal ? "t" : "f";
+  }
 
-        Date modifyDate;
-        try {
-            conn = this.openConnection();
-            if (!Helper.checkEntityExists("project", "project_id", project.getId(), conn)) {
-                throw new PersistenceException("The project id [" + project.getId() + "] does not exist in the database.");
-            }
+  /**
+   * Updates the given FileType entity.
+   *
+   * @param fileType the given fileType entity to update.
+   * @param operator the given audit user.
+   * @throws IllegalArgumentException if fileType is null, or if operator is null or empty.
+   * @throws PersistenceException if there are any exceptions.
+   * @since 1.2
+   */
+  public void updateFileType(FileType fileType, String operator) throws PersistenceException {
+    Helper.assertObjectNotNull(fileType, "fileType");
+    Helper.assertStringNotNullNorEmpty(operator, "operator");
+    log.debug(
+        new LogMessage(null, operator, "updating the file type with id: " + fileType.getId())
+            .toString());
+    // modifyDate will contain the modify_date retrieved from database.
+    var modifyDate = new Date();
+    try {
+      // check whether the file type id is already in the database
+      if (!Helper.checkEntityExists(
+          "file_type_lu", "file_type_id", fileType.getId(), entityManager)) {
+        throw new PersistenceException(
+            "The file type id [" + fileType.getId() + "] does not exist in the database.");
+      }
 
-            this.updateProject(project, reason, operator, conn);
-            this.getLogger().log(Level.DEBUG, new LogMessage(project.getId(), operator, "execute sql:SELECT modify_date FROM project WHERE project_id=?"));
-            modifyDate = (Date)Helper.doSingleValueQuery(conn, "SELECT modify_date FROM project WHERE project_id=?", new Object[]{project.getId()}, Helper.DATE_TYPE);
-            this.createOrUpdateProjectFileTypes(project.getId(), project.getProjectFileTypes(), conn, operator, true);
-            this.createOrUpdateProjectPrizes(project.getId(), project.getPrizes(), conn, operator, true);
-            this.createOrUpdateProjectStudioSpecification(project.getId(), project.getProjectStudioSpecification(), conn, operator);
-            this.closeConnection(conn);
-        } catch (PersistenceException var7) {
-            this.getLogger().log(Level.ERROR, new LogMessage((Long)null, operator, "Fails to update project " + project.getAllProperties(), var7));
-            if (conn != null) {
-                this.closeConnectionOnError(conn);
-            }
+      // update the file type into database
+      Object[] queryArgs =
+          new Object[] {
+            fileType.getDescription(),
+            fileType.getSort(),
+            convertBooleanToString(fileType.isImageFile()),
+            fileType.getExtension(),
+            convertBooleanToString(fileType.isBundledFile()),
+            operator,
+            modifyDate
+          };
+      Helper.doDMLQuery(entityManager, UPDATE_FILE_TYPE_SQL + fileType.getId(), queryArgs);
+    } catch (PersistenceException e) {
+      log.error(
+          new LogMessage(null, operator, "Fails to update file type " + fileType, e).toString());
+      throw e;
+    }
+    fileType.setModificationUser(operator);
+    fileType.setModificationTimestamp(modifyDate);
+  }
 
-            throw var7;
+  /**
+   * Removes the given FileType entity.
+   *
+   * @param fileType the given fileType entity to update.
+   * @param operator the given audit user.
+   * @throws IllegalArgumentException if fileType is null, or if operator is null or empty.
+   * @throws PersistenceException if there are any exceptions.
+   * @since 1.2
+   */
+  public void removeFileType(FileType fileType, String operator) throws PersistenceException {
+    Helper.assertObjectNotNull(fileType, "fileType");
+    Helper.assertStringNotNullNorEmpty(operator, "operator");
+    log.debug(
+        new LogMessage(null, operator, "deleting the file type with id: " + fileType.getId())
+            .toString());
+    try {
+      // check whether the file type id is already in the database
+      if (!Helper.checkEntityExists(
+          "file_type_lu", "file_type_id", fileType.getId(), entityManager)) {
+        throw new PersistenceException(
+            "The file type id [" + fileType.getId() + "] does not exist in the database.");
+      }
+      var projectIds =
+          executeSql(entityManager, QUERY_PROJECT_IDS_WITH_FILE_TYPE_SQL + fileType.getId())
+              .stream()
+              .map(m -> getLong(m, "project_id"))
+              .collect(Collectors.toList());
+      // delete the project file type reference from database
+      Object[] queryArgs = new Object[] {fileType.getId()};
+      // create project audit record into project_audit table
+      auditProjects(projectIds, "Removes the project file type", operator);
+      Helper.doDMLQuery(entityManager, DELETE_PROJECT_FILE_TYPE_XREF_SQL, queryArgs);
+      // delete the file type from database
+      Helper.doDMLQuery(entityManager, DELETE_FILE_TYPE_SQL, queryArgs);
+    } catch (PersistenceException e) {
+      log.error(
+          new LogMessage(null, operator, "Fails to delete file type " + fileType, e).toString());
+      throw e;
+    }
+  }
+
+  /**
+   * Gets all FileType entities.
+   *
+   * @return the found FileType entities, return empty if cannot find any.
+   * @since 1.2
+   */
+  public FileType[] getAllFileTypes() {
+    log.debug(new LogMessage(null, null, "Enter getAllFileTypes method.").toString());
+    try {
+      var result = executeSql(entityManager, QUERY_ALL_FILE_TYPES_SQL);
+      // create the FileType array.
+      FileType[] fileTypes = new FileType[result.size()];
+      for (int i = 0; i < result.size(); ++i) {
+        var row = result.get(i);
+        // create a new instance of FileType class
+        fileTypes[i] = new FileType();
+        fileTypes[i].setId(getLong(row, "file_type_id"));
+        fileTypes[i].setDescription(getString(row, "description"));
+        fileTypes[i].setSort(getInt(row, "sort"));
+        fileTypes[i].setImageFile(getBoolean(row, "image_file"));
+        fileTypes[i].setExtension(getString(row, "extension"));
+        fileTypes[i].setBundledFile(getBoolean(row, "bundled_file"));
+      }
+      return fileTypes;
+    } catch (Exception e) {
+      log.error(new LogMessage(null, null, "Fail to getAllFileTypes.", e).toString());
+      throw e;
+    }
+  }
+
+  /**
+   * Gets all PrizeType entities.
+   *
+   * @return the found PrizeType entities, return empty if cannot find any.
+   * @since 1.2
+   */
+  public PrizeType[] getPrizeTypes() {
+    log.debug(new LogMessage(null, null, "Enter getPrizeTypes method.").toString());
+    try {
+      var result = executeSql(entityManager, QUERY_ALL_PRIZE_TYPES_SQL);
+      // create the PrizeType array.
+      PrizeType[] prizeTypes = new PrizeType[result.size()];
+
+      for (int i = 0; i < result.size(); ++i) {
+        var row = result.get(i);
+
+        // create a new instance of PrizeType class
+        prizeTypes[i] = new PrizeType();
+        prizeTypes[i].setId(getLong(row, "prize_type_id"));
+        prizeTypes[i].setDescription(getString(row, "prize_type_desc"));
+      }
+      return prizeTypes;
+    } catch (Exception e) {
+      log.error(new LogMessage(null, null, "Fail to getPrizeTypes.", e).toString());
+      throw e;
+    }
+  }
+
+  /**
+   * Creates the given Prize entity.
+   *
+   * @param prize the given prize entity to create.
+   * @param operator the given audit user.
+   * @return the created prize entity.
+   * @throws IllegalArgumentException if prize is null, or if operator is null or empty.
+   * @throws PersistenceException if there are any exceptions.
+   * @since 1.2
+   */
+  public Prize createPrize(Prize prize, String operator) throws PersistenceException {
+    Helper.assertObjectNotNull(prize, "prize");
+    Helper.assertObjectNotNull(prize.getPrizeType(), "prize.prizeType");
+    Helper.assertStringNotNullNorEmpty(operator, "operator");
+    log.debug(new LogMessage(null, operator, "creating new prize: " + prize).toString());
+    try {
+      // check whether the prize id is already in the database
+      if (prize.getId() > 0) {
+        if (Helper.checkEntityExists("prize", "prize_id", prize.getId(), entityManager)) {
+          throw new PersistenceException(
+              "The prize with the same id [" + prize.getId() + "] already exists.");
         }
+      }
 
-        project.setModificationUser(operator);
-        project.setModificationTimestamp(modifyDate);
+      // generate id for the prize
+      var newId = prizeIdGenerator.getNextID();
+      log.debug(new LogMessage(newId, operator, "generate id for new prize").toString());
+      // create the prize
+      log.debug("insert record into prize with id:" + newId);
+      var createDate = new Date();
+      // insert the prize into database
+      Object[] queryArgs =
+          new Object[] {
+            newId,
+            prize.getProjectId(),
+            (long) prize.getPlace(),
+            prize.getPrizeAmount(),
+            prize.getPrizeType().getId(),
+            prize.getNumberOfSubmissions(),
+            operator,
+            createDate,
+            operator,
+            createDate
+          };
+      Helper.doDMLQuery(entityManager, CREATE_PRIZE_SQL, queryArgs);
+      prize.setCreationUser(operator);
+      prize.setCreationTimestamp(createDate);
+      prize.setModificationUser(operator);
+      prize.setModificationTimestamp(createDate);
+      // set the newId when no exception occurred
+      prize.setId(newId);
+    } catch (IDGenerationException e) {
+      throw new PersistenceException("Unable to generate id for the prize.", e);
+    } catch (PersistenceException e) {
+      log.error(new LogMessage(null, operator, "Fails to create prize", e).toString());
+      throw e;
     }
 
-    public Project getProject(long id) throws PersistenceException {
-        Helper.assertLongPositive(id, "id");
-        Project[] projects = this.getProjects(new long[]{id});
-        return projects.length == 0 ? null : projects[0];
+    return prize;
+  }
+
+  /**
+   * Updates the given prize entity.
+   *
+   * @param prize the given prize entity to create.
+   * @param operator the given audit user.
+   * @throws IllegalArgumentException if prize is null, or if operator is null or empty.
+   * @throws PersistenceException if there are any exceptions.
+   * @since 1.2
+   */
+  public void updatePrize(Prize prize, String operator) throws PersistenceException {
+    Helper.assertObjectNotNull(prize, "prize");
+    Helper.assertStringNotNullNorEmpty(operator, "operator");
+    log.debug(
+        new LogMessage(null, operator, "updating the prize with id: " + prize.getId()).toString());
+    // modifyDate will contain the modify_date retrieved from database.
+    // modifyDate will contain the modify_date retrieved from database.
+    var modifyDate = new Date();
+    try {
+      // check whether the prize id is already in the database
+      if (!Helper.checkEntityExists("prize", "prize_id", prize.getId(), entityManager)) {
+        throw new PersistenceException(
+            "The prize id [" + prize.getId() + "] does not exist in the database.");
+      }
+
+      // insert the prize into database
+      Object[] queryArgs =
+          new Object[] {
+            (long) prize.getPlace(),
+            prize.getPrizeAmount(),
+            prize.getPrizeType().getId(),
+            prize.getNumberOfSubmissions(),
+            operator,
+            modifyDate,
+            prize.getProjectId()
+          };
+      Helper.doDMLQuery(entityManager, UPDATE_PRIZE_SQL + prize.getId(), queryArgs);
+      prize.setModificationUser(operator);
+      prize.setModificationTimestamp(modifyDate);
+    } catch (PersistenceException e) {
+      log.error(new LogMessage(null, operator, "Fails to update prize " + prize, e).toString());
+      throw e;
+    }
+  }
+
+  /**
+   * Removes the given prize entity.
+   *
+   * @param prize the given prize entity to create.
+   * @param operator the given audit user.
+   * @throws IllegalArgumentException if prize is null, or if operator is null or empty.
+   * @throws PersistenceException if there are any exceptions.
+   * @since 1.2
+   */
+  public void removePrize(Prize prize, String operator) throws PersistenceException {
+    Helper.assertObjectNotNull(prize, "prize");
+    Helper.assertStringNotNullNorEmpty(operator, "operator");
+    log.debug(
+        new LogMessage(null, operator, "deleting the prize with id: " + prize.getId()).toString());
+
+    try {
+      // check whether the prize id is already in the database
+      if (!Helper.checkEntityExists("prize", "prize_id", prize.getId(), entityManager)) {
+        throw new PersistenceException(
+            "The prize id [" + prize.getId() + "] does not exist in the database.");
+      }
+      // delete the project prize reference from database
+      var projectIds =
+          executeSql(entityManager, QUERY_PROJECT_IDS_WITH_PRIZE_SQL + prize.getId()).stream()
+              .map(m -> getLong(m, "project_id"))
+              .collect(Collectors.toList());
+      // create project audit record into project_audit table
+      auditProjects(projectIds, "Removes the project prize", operator);
+      Object[] queryArgs = new Object[] {prize.getId()};
+      // delete the prize from database
+      Helper.doDMLQuery(entityManager, DELETE_PRIZE_SQL, queryArgs);
+    } catch (PersistenceException e) {
+      log.error(new LogMessage(null, operator, "Fails to delete prize " + prize, e).toString());
+      throw e;
+    }
+  }
+
+  /**
+   * Creates the given ProjectStudioSpecification entity.
+   *
+   * @param spec the given ProjectStudioSpecification entity to create.
+   * @param operator the given audit user.
+   * @return the created spec entity
+   * @throws IllegalArgumentException if spec is null, or if operator is null or empty.
+   * @throws PersistenceException if there are any exceptions.
+   * @since 1.2
+   */
+  public ProjectStudioSpecification createProjectStudioSpecification(
+      ProjectStudioSpecification spec, String operator) throws PersistenceException {
+    Helper.assertObjectNotNull(spec, "spec");
+    Helper.assertStringNotNullNorEmpty(operator, "operator");
+    log.debug(
+        new LogMessage(null, operator, "creating new project studio specification: " + spec)
+            .toString());
+
+    try {
+      // check whether the project studio specification id is already in the database
+      if (spec.getId() > 0) {
+        if (Helper.checkEntityExists(
+            "project_studio_specification",
+            "project_studio_spec_id",
+            spec.getId(),
+            entityManager)) {
+          throw new PersistenceException(
+              "The project studio specification with the same id ["
+                  + spec.getId()
+                  + "] already exists.");
+        }
+      }
+      // generate id for the project studio specification
+      var newId = studioSpecIdGenerator.getNextID();
+      log.debug(
+          new LogMessage(newId, operator, "generate id for new project studio specification")
+              .toString());
+      // create the project studio specification
+      log.debug("insert record into project studio specification with id:" + newId);
+
+      Timestamp createDate = new Timestamp(System.currentTimeMillis());
+
+      // insert the project studio specification into database
+      Object[] queryArgs =
+          new Object[] {
+            newId,
+            spec.getGoals(),
+            spec.getTargetAudience(),
+            spec.getBrandingGuidelines(),
+            spec.getDislikedDesignWebSites(),
+            spec.getOtherInstructions(),
+            spec.getWinningCriteria(),
+            spec.isSubmittersLockedBetweenRounds(),
+            spec.getRoundOneIntroduction(),
+            spec.getRoundTwoIntroduction(),
+            spec.getColors(),
+            spec.getFonts(),
+            spec.getLayoutAndSize(),
+            operator,
+            createDate,
+            operator,
+            createDate
+          };
+      Helper.doDMLQuery(entityManager, CREATE_STUDIO_SPEC_SQL, queryArgs);
+      spec.setCreationUser(operator);
+      spec.setCreationTimestamp(createDate);
+      spec.setModificationUser(operator);
+      spec.setModificationTimestamp(createDate);
+      // set the newId when no exception occurred
+      spec.setId(newId);
+      return spec;
+    } catch (IDGenerationException e) {
+      throw new PersistenceException(
+          "Unable to generate id for the project studio specification.", e);
+    } catch (PersistenceException e) {
+      log.error(
+          new LogMessage(null, operator, "Fails to create project studio specification ", e)
+              .toString());
+      throw e;
+    }
+  }
+
+  /**
+   * Updates the given ProjectStudioSpecification entity.
+   *
+   * @param spec the given ProjectStudioSpecification entity to create.
+   * @param operator the given audit user.
+   * @throws IllegalArgumentException if spec is null, or if operator is null or empty.
+   * @throws PersistenceException if there are any exceptions.
+   * @since 1.2
+   */
+  public void updateProjectStudioSpecification(ProjectStudioSpecification spec, String operator)
+      throws PersistenceException {
+    Helper.assertObjectNotNull(spec, "spec");
+    Helper.assertStringNotNullNorEmpty(operator, "operator");
+    log.debug(
+        new LogMessage(
+                null,
+                operator,
+                "updating the project studio specification with id: " + spec.getId())
+            .toString());
+
+    // modifyDate will contain the modify_date retrieved from database.
+    var modifyDate = new Date();
+    try {
+      // check whether the project studio specification id is already in the database
+      if (!Helper.checkEntityExists(
+          "project_studio_specification", "project_studio_spec_id", spec.getId(), entityManager)) {
+        throw new PersistenceException(
+            "The project studio specification id ["
+                + spec.getId()
+                + "] does not exist in the database.");
+      }
+      // insert the project studio specification into database
+      Object[] queryArgs =
+          new Object[] {
+            spec.getGoals(),
+            spec.getTargetAudience(),
+            spec.getBrandingGuidelines(),
+            spec.getDislikedDesignWebSites(),
+            spec.getOtherInstructions(),
+            spec.getWinningCriteria(),
+            spec.isSubmittersLockedBetweenRounds(),
+            spec.getRoundOneIntroduction(),
+            spec.getRoundTwoIntroduction(),
+            spec.getColors(),
+            spec.getFonts(),
+            spec.getLayoutAndSize(),
+            operator,
+            modifyDate
+          };
+      Helper.doDMLQuery(entityManager, UPDATE_STUDIO_SPEC_SQL + spec.getId(), queryArgs);
+    } catch (PersistenceException e) {
+      log.error(
+          new LogMessage(
+                  null, operator, "Fails to update project studio specification " + spec.getId(), e)
+              .toString());
+      throw e;
     }
 
-    public Project[] getProjects(long[] ids) throws PersistenceException {
-        Helper.assertObjectNotNull(ids, "ids");
-        if (ids.length == 0) {
-            throw new IllegalArgumentException("Array 'ids' should not be empty.");
+    spec.setModificationUser(operator);
+    spec.setModificationTimestamp(modifyDate);
+  }
+
+  /**
+   * Removes the given ProjectStudioSpecification entity.
+   *
+   * @param spec the given ProjectStudioSpecification entity to create.
+   * @param operator the given audit user.
+   * @throws IllegalArgumentException if spec is null, or if operator is null or empty.
+   * @throws PersistenceException if there are any exceptions.
+   * @since 1.2
+   */
+  public void removeProjectStudioSpecification(ProjectStudioSpecification spec, String operator)
+      throws PersistenceException {
+    Helper.assertObjectNotNull(spec, "spec");
+    Helper.assertStringNotNullNorEmpty(operator, "operator");
+    log.debug(
+        new LogMessage(
+                null,
+                operator,
+                "deleting the project studio specification with id: " + spec.getId())
+            .toString());
+    try {
+      // check whether the project studio specification id is already in the database
+      if (!Helper.checkEntityExists(
+          "project_studio_specification", "project_studio_spec_id", spec.getId(), entityManager)) {
+        throw new PersistenceException(
+            "The project studio specification id ["
+                + spec.getId()
+                + "] does not exist in the database.");
+      }
+
+      // delete the project project studio specification reference from database
+      Object[] queryArgs = new Object[] {spec.getId()};
+      var projectIds =
+          executeSql(entityManager, QUERY_PROJECT_IDS_WITH_STUDIO_SPEC_SQL + spec.getId()).stream()
+              .map(m -> getLong(m, "project_id"))
+              .collect(Collectors.toList());
+      // create project audit record into project_audit table
+      auditProjects(projectIds, "Removes the project studio specification", operator);
+      Helper.doDMLQuery(entityManager, SET_PROJECT_STUDIO_SPEC_SQL, queryArgs);
+      // delete the project studio specification from database
+      Helper.doDMLQuery(entityManager, DELETE_STUDIO_SPEC_SQL, queryArgs);
+    } catch (PersistenceException e) {
+      log.error(
+          new LogMessage(
+                  null, operator, "Fails to delete project studio specification " + spec.getId(), e)
+              .toString());
+      throw e;
+    }
+  }
+
+  /**
+   * Audits the projects.
+   *
+   * @param rows the rows containing the projects ids
+   * @param reason the reason to audit
+   * @param operator the audit user
+   * @throws PersistenceException if any error occurs
+   * @since 1.2
+   */
+  private void auditProjects(List<Long> rows, String reason, String operator)
+      throws PersistenceException {
+    if (rows.isEmpty()) {
+      for (Long id : rows) {
+        createProjectAudit(id, reason, operator);
+      }
+    }
+  }
+
+  /**
+   * Gets ProjectStudioSpecification entity by given projectId.
+   *
+   * @param projectId the given projectId to find the entities.
+   * @return the found ProjectStudioSpecification entities, return null if cannot find any.
+   * @throws IllegalArgumentException if projectId is non-positive
+   * @throws PersistenceException if there are any exceptions.
+   * @since 1.2
+   */
+  public ProjectStudioSpecification getProjectStudioSpecification(long projectId)
+      throws PersistenceException {
+    Helper.assertLongPositive(projectId, "projectId");
+    log.debug("get project studio specification with the project id: " + projectId);
+    try {
+      // check whether the project id is already in the database
+      if (!Helper.checkEntityExists("project", "project_id", projectId, entityManager)) {
+        throw new PersistenceException(
+            "The project with id " + projectId + " does not exist in the database.");
+      }
+      var result = executeSql(entityManager, QUERY_STUDIO_SPEC_SQL + projectId);
+      if (result.isEmpty()) { // no project studio specification is found, return null
+        return null;
+      }
+      ProjectStudioSpecification studioSpec = new ProjectStudioSpecification();
+      var rm = result.get(0);
+      // sets the properties for the studio specification
+      studioSpec.setId(getLong(rm, "project_studio_spec_id"));
+      studioSpec.setGoals(getString(rm, "goals"));
+      studioSpec.setTargetAudience(getString(rm, "target_audience"));
+      studioSpec.setBrandingGuidelines(getString(rm, "branding_guidelines"));
+      studioSpec.setDislikedDesignWebSites(getString(rm, "disliked_design_websites"));
+      studioSpec.setOtherInstructions(getString(rm, "other_instructions"));
+      studioSpec.setWinningCriteria(getString(rm, "winning_criteria"));
+      studioSpec.setSubmittersLockedBetweenRounds(
+          getBoolean(rm, "submitters_locked_between_rounds"));
+      studioSpec.setRoundOneIntroduction(getString(rm, "round_one_introduction"));
+      studioSpec.setRoundTwoIntroduction(getString(rm, "round_two_introduction"));
+      studioSpec.setColors(getString(rm, "colors"));
+      studioSpec.setFonts(getString(rm, "fonts"));
+      studioSpec.setLayoutAndSize(getString(rm, "layout_and_size"));
+      return studioSpec;
+    } catch (PersistenceException e) {
+      log.error(
+          new LogMessage(
+                  null,
+                  null,
+                  "Fails to retrieving project studio specification with project id: " + projectId,
+                  e)
+              .toString());
+      throw e;
+    }
+  }
+
+  /**
+   * Updates the given ProjectStudioSpecification entity for specified project id.
+   *
+   * @param spec the given ProjectStudioSpecification entity to update.
+   * @param projectId the given project id to update.
+   * @param operator the given audit user.
+   * @throws IllegalArgumentException if spec is null, or projectId is non-positive or if operator
+   *     is null or empty.
+   * @throws PersistenceException if there are any exceptions.
+   * @since 1.2
+   */
+  public void updateStudioSpecificationForProject(
+      ProjectStudioSpecification spec, long projectId, String operator)
+      throws PersistenceException {
+    Helper.assertObjectNotNull(spec, "spec");
+    Helper.assertLongPositive(projectId, "projectId");
+    Helper.assertStringNotNullNorEmpty(operator, "operator");
+
+    Connection conn = null;
+
+    log.debug(
+        new LogMessage(
+                null,
+                operator,
+                "updating the studio specification for the project with id: " + projectId)
+            .toString());
+
+    try {
+      // check whether the project id is already in the database
+      if (!Helper.checkEntityExists("project", "project_id", projectId, entityManager)) {
+        throw new PersistenceException(
+            "The project with id " + projectId + " does not exist in the database.");
+      }
+
+      createOrUpdateProjectStudioSpecification(projectId, spec, operator);
+
+      // create project audit record into project_audit table
+      createProjectAudit(projectId, "Updates the project studion specification", operator);
+
+    } catch (PersistenceException e) {
+      log.error(
+          new LogMessage(
+                  null,
+                  operator,
+                  "Fails to update the studio specification for the project with id " + projectId,
+                  e)
+              .toString());
+      throw e;
+    }
+  }
+
+  /**
+   * Creates or updates project studio specification.
+   *
+   * @param projectId the project id
+   * @param spec the studio specification for the project
+   * @param operator the given audit user
+   * @throws PersistenceException if any error occurs
+   * @since 1.2
+   */
+  private void createOrUpdateProjectStudioSpecification(
+      long projectId, ProjectStudioSpecification spec, String operator)
+      throws PersistenceException {
+    if (spec == null) {
+      return;
+    }
+
+    // the studio specification with the specified id exists, just update it
+    if (spec.getId() > 0
+        && Helper.checkEntityExists(
+            "project_studio_specification",
+            "project_studio_spec_id",
+            spec.getId(),
+            entityManager)) {
+      updateProjectStudioSpecification(spec, operator);
+    } else { // the studio specification with the specified id does not exist, insert it to the
+      // database
+      createProjectStudioSpecification(spec, operator);
+    }
+
+    // update the project studio specification reference for the project table
+    Object[] queryArgs = new Object[] {spec.getId()};
+    Helper.doDMLQuery(
+        entityManager, SET_PROJECT_STUDIO_SPEC_WITH_PROJECT_SQL + projectId, queryArgs);
+  }
+
+  /**
+   * Creates the project in the database using the given project instance.
+   *
+   * @param projectId The new generated project id
+   * @param project The project instance to be created in the database.
+   * @param operator The creation user of this project.
+   * @throws PersistenceException if error occurred while accessing the database.
+   * @since 1.0
+   */
+  @SuppressWarnings("unchecked")
+  private void createProject(Long projectId, Project project, String operator)
+      throws PersistenceException {
+    log.debug("insert record into project with id:" + projectId);
+    // insert the project into database
+    Object[] queryArgs =
+        new Object[] {
+          projectId,
+          project.getProjectStatus().getId(),
+          project.getProjectCategory().getId(),
+          operator,
+          operator,
+          project.getTcDirectProjectId()
+        };
+    Helper.doDMLQuery(entityManager, CREATE_PROJECT_SQL, queryArgs);
+    // get the creation date.
+    var createDate =
+        getDate(
+            executeSql(
+                    entityManager, "SELECT create_date FROM project WHERE project_id=" + projectId)
+                .get(0),
+            "create_date");
+    // set the creation/modification user and date when no exception
+    // occurred
+    project.setCreationUser(operator);
+    project.setCreationTimestamp(createDate);
+    project.setModificationUser(operator);
+    project.setModificationTimestamp(createDate);
+    // get the property id - property value map from the project.
+    Map idValueMap = makePropertyIdPropertyValueMap(project.getAllProperties());
+    // create the project properties
+    createProjectProperties(projectId, project, idValueMap, operator);
+  }
+
+  /**
+   * Update the given project instance into the database.
+   *
+   * @param project The project instance to be updated into the database.
+   * @param reason The update reason. It will be stored in the persistence for future references.
+   * @param operator The modification user of this project.
+   * @throws PersistenceException if error occurred while accessing the database.
+   */
+  @SuppressWarnings("unchecked")
+  private void updateProject(Project project, String reason, String operator, Date modifyDate)
+      throws PersistenceException {
+    Long projectId = project.getId();
+    log.debug(
+        new LogMessage(projectId, operator, "update project with projectId:" + projectId)
+            .toString());
+    // update the project type and project category
+    Object[] queryArgs =
+        new Object[] {
+          project.getProjectStatus().getId(),
+          project.getProjectCategory().getId(),
+          operator,
+          modifyDate,
+          project.getTcDirectProjectId() == 0 ? null : project.getTcDirectProjectId(),
+          projectId
+        };
+    Helper.doDMLQuery(entityManager, UPDATE_PROJECT_SQL, queryArgs);
+    // update the project object so this data's correct for audit purposes
+    project.setModificationUser(operator);
+    project.setModificationTimestamp(modifyDate);
+
+    // get the property id - property value map from the new project object.
+    Map idValueMap = makePropertyIdPropertyValueMap(project.getAllProperties());
+
+    // update the project properties
+    updateProjectProperties(project, idValueMap, operator);
+
+    // create project audit record into project_audit table
+    createProjectAudit(projectId, reason, operator);
+  }
+
+  /**
+   * Makes a property id-property value(String) map from property name-property value map.
+   *
+   * @param nameValueMap the property name-property value map
+   * @return a property id-property value map
+   * @throws PersistenceException if error occurred while accessing the database.
+   */
+  @SuppressWarnings("unchecked")
+  private Map makePropertyIdPropertyValueMap(Map nameValueMap) throws PersistenceException {
+    Map idValueMap = new HashMap();
+    // get the property name-property id map
+    Map nameIdMap = makePropertyNamePropertyIdMap(getAllProjectPropertyTypes());
+    // enumerate each property
+    for (Object item : nameValueMap.entrySet()) {
+      Entry entry = (Entry) item;
+      // find the property id from property name
+      Object propertyId = nameIdMap.get(entry.getKey());
+      // check if the property id can be found
+      if (propertyId == null) {
+        throw new PersistenceException(
+            "Unable to find ProjectPropertyType name ["
+                + entry.getKey()
+                + "] in project_info_type_lu table.");
+      }
+      // put the property id-property value(String) pair into the map
+      idValueMap.put(propertyId, entry.getValue().toString());
+    }
+    return idValueMap;
+  }
+
+  /**
+   * Gets an array of all project property type in the persistence. The project property types are
+   * stored in 'project_info_type_lu' table.
+   *
+   * @return An array of all scorecard assignments in the persistence.
+   * @throws PersistenceException if error occurred while accessing the database.
+   */
+  public ProjectPropertyType[] getAllProjectPropertyTypes() throws PersistenceException {
+    log.debug(new LogMessage(null, null, "Enter getAllProjectPropertyTypes method.").toString());
+    // find all project property types in the table.
+    var result = executeSql(entityManager, QUERY_ALL_PROJECT_PROPERTY_TYPES_SQL);
+    // create the ProjectPropertyType array.
+    ProjectPropertyType[] propertyTypes = new ProjectPropertyType[result.size()];
+    for (int i = 0; i < result.size(); ++i) {
+      var row = result.get(i);
+      // create a new instance of ProjectPropertyType class
+      propertyTypes[i] =
+          new ProjectPropertyType(
+              getLong(row, "project_info_type_id"),
+              getString(row, "name"),
+              getString(row, "description"));
+    }
+    return propertyTypes;
+  }
+
+  /**
+   * Get projects from sql result.
+   *
+   * @param result result set from sql query
+   * @return An array with project found in persistence.
+   * @throws PersistenceException if error occurred while accessing the database.
+   */
+  public Project[] getProjects(List<Map<String, Object>> result) throws PersistenceException {
+    try {
+      int size = result.size();
+      Project[] projects = new Project[size];
+      for (int i = 0; i < size; i++) {
+        var row = result.get(i);
+        // create the ProjectStatus object
+        ProjectStatus status = new ProjectStatus(getLong(row, "2"), getString(row, "3"));
+        // create the ProjectType object
+        ProjectType type = new ProjectType(getLong(row, "6"), getString(row, "7"));
+        // create the ProjectCategory object
+        ProjectCategory category =
+            new ProjectCategory(getLong(row, "4"), getString(row, "5"), type);
+        // create a new instance of ProjectType class
+        projects[i] = new Project(getLong(row, "1"), category, status);
+        // assign the audit information
+        projects[i].setCreationUser(getString(row, "8"));
+        projects[i].setCreationTimestamp(getDate(row, "9"));
+        projects[i].setModificationUser(getString(row, "10"));
+        projects[i].setModificationTimestamp(getDate(row, "11"));
+        var pp =
+            executeSqlWithParam(
+                entityManager, QUERY_ONE_PROJECT_PROPERTIES_SQL, newArrayList(getLong(row, "1")));
+        for (var pRow : pp) {
+          projects[i].setProperty(getString(pRow, "name"), getString(pRow, "value"));
+        }
+      }
+      return projects;
+    } catch (Exception e) {
+      throw new PersistenceException(e.getMessage(), e);
+    }
+  }
+
+  /**
+   * Retrieves an array of project instance from the persistence given their ids. The project
+   * instances are retrieved with their properties.
+   *
+   * @param ids The ids of the projects to be retrieved.
+   * @return An array of project instances.
+   * @throws PersistenceException if error occurred while accessing the database.
+   */
+  @SuppressWarnings("unchecked")
+  public Project[] getProjects(long ids[]) throws PersistenceException {
+    Helper.assertObjectNotNull(ids, "ids");
+
+    // check if ids is empty
+    if (ids.length == 0) {
+      throw new IllegalArgumentException("Array 'ids' should not be empty.");
+    }
+
+    String idstring = "";
+    // check if ids contains an id that is <= 0
+    for (long id : ids) {
+      idstring += id + ",";
+      if (id <= 0) {
+        throw new IllegalArgumentException("Array 'ids' contains an id that is <= 0.");
+      }
+    }
+    // build the id list string
+    StringBuilder idListBuffer = new StringBuilder();
+    idListBuffer.append('(');
+    for (int i = 0; i < ids.length; ++i) {
+      if (i != 0) {
+        idListBuffer.append(',');
+      }
+      idListBuffer.append(ids[i]);
+    }
+    idListBuffer.append(')');
+    // get the id list string
+    String idList = idListBuffer.toString();
+
+    var result = executeSql(entityManager, QUERY_PROJECTS_SQL + idList);
+
+    // create the Project array.
+    Project[] projects = new Project[result.size()];
+
+    for (int i = 0; i < result.size(); ++i) {
+      var row = result.get(i);
+
+      // create the ProjectStatus object
+      ProjectStatus status =
+          new ProjectStatus(getLong(row, "project_status_id"), getString(row, "status_name"));
+
+      // create the ProjectType object
+      ProjectType type =
+          new ProjectType(getLong(row, "project_type_id"), getString(row, "type_name"));
+
+      // create the ProjectCategory object
+      ProjectCategory category =
+          new ProjectCategory(
+              getLong(row, "project_category_id"), getString(row, "category_name"), type);
+      category.setDescription(getString(row, "description"));
+
+      long projectId = getLong(row, "project_id");
+      // create a new instance of Project class
+      projects[i] = new Project(projectId, category, status);
+
+      // assign the audit information
+      projects[i].setCreationUser(getString(row, "create_user"));
+      projects[i].setCreationTimestamp(getDate(row, "create_date"));
+      projects[i].setModificationUser(getString(row, "modify_user"));
+      projects[i].setModificationTimestamp(getDate(row, "modify_date"));
+
+      // set the tc direct project id and name
+      projects[i].setTcDirectProjectId(getInt(row, "tc_direct_project_id"));
+      projects[i].setTcDirectProjectName(getString(row, "tc_direct_project_name"));
+
+      // set the file types
+      projects[i].setProjectFileTypes(Arrays.asList(getProjectFileTypes(projectId)));
+
+      // set the prizes
+      projects[i].setPrizes(Arrays.asList(getProjectPrizes(projectId)));
+
+      // set the studio specification
+      projects[i].setProjectStudioSpecification(getProjectStudioSpecification(projectId));
+    }
+
+    // get the Id-Project map
+    var projectMap = makeIdProjectMap(projects);
+    var ppResult = executeSql(entityManager, QUERY_PROJECT_PROPERTIES_SQL + idList);
+
+    // enumerate each row
+    for (var row : ppResult) {
+      // get the corresponding Project object
+      Project project = projectMap.get(getLong(row, "project_id"));
+
+      // set the property to project
+      project.setProperty(getString(row, "name"), row.get("value"));
+    }
+    return projects;
+  }
+
+  /**
+   * Gets an array of all project types in the persistence. The project types are stored in
+   * 'project_type_lu' table.
+   *
+   * @return An array of all project types in the persistence.
+   */
+  public ProjectType[] getAllProjectTypes() {
+    log.debug(new LogMessage(null, null, "Enter getAllProjectTypes method.").toString());
+    // find all project types in the table.
+    var result = executeSql(entityManager, QUERY_ALL_PROJECT_TYPES_SQL);
+    // create the ProjectType array.
+    ProjectType[] projectTypes = new ProjectType[result.size()];
+    for (int i = 0; i < result.size(); ++i) {
+      var row = result.get(0);
+      // create a new instance of ProjectType class
+      projectTypes[i] =
+          new ProjectType(
+              getLong(row, "project_type_id"),
+              getString(row, "name"),
+              getString(row, "description"),
+              getBoolean(row, "is_generic"));
+    }
+    return projectTypes;
+  }
+
+  /**
+   * Create the project properties in the database.
+   *
+   * @param projectId the project's Id
+   * @param project The new generated project
+   * @param idValueMap The property id - property value map
+   * @param operator The creation user of this project
+   * @throws PersistenceException if error occurred while accessing the database.
+   */
+  @SuppressWarnings("unchecked")
+  private void createProjectProperties(
+      Long projectId, Project project, Map idValueMap, String operator)
+      throws PersistenceException {
+
+    log.debug(
+        new LogMessage(
+                projectId, operator, "insert record into project_info with project id" + projectId)
+            .toString());
+    try {
+      // enumerator each property in the idValueMap
+      for (Object item : idValueMap.entrySet()) {
+        Entry entry = (Entry) item;
+        // insert the project property into database
+        Object[] queryArgs =
+            new Object[] {projectId, entry.getKey(), entry.getValue(), operator, operator};
+        Helper.doDMLQuery(entityManager, CREATE_PROJECT_PROPERTY_SQL, queryArgs);
+        auditProjectInfo(
+            projectId,
+            project,
+            AUDIT_CREATE_TYPE,
+            (Long) entry.getKey(),
+            (String) entry.getValue());
+      }
+    } catch (Exception e) {
+      throw new PersistenceException(
+          "Unable to create prepared statement [" + CREATE_PROJECT_PROPERTY_SQL + "].", e);
+    }
+  }
+
+  /**
+   * Make an Id-Project map from Project[].
+   *
+   * @param projects the Id-Project array
+   * @return an Id-Project map
+   */
+  private Map<Long, Project> makeIdProjectMap(Project[] projects) {
+    var map = new HashMap<Long, Project>();
+
+    for (Project project : projects) {
+      map.put(project.getId(), project);
+    }
+    return map;
+  }
+
+  /**
+   * Update the project properties into the database.
+   *
+   * @param project the project object
+   * @param idValueMap the property id - property value map
+   * @param operator the modification user of this project
+   * @throws PersistenceException if error occurred while accessing the database.
+   */
+  @SuppressWarnings("unchecked")
+  private void updateProjectProperties(Project project, Map idValueMap, String operator)
+      throws PersistenceException {
+
+    Long projectId = project.getId();
+
+    // get old property ids and values from database
+    Map<Long, String> propertyMap = getProjectPropertyIdsAndValues(projectId);
+
+    // create a property id-property value map that contains the properties
+    // to insert
+    Map createIdValueMap = new HashMap();
+
+    PreparedStatement preparedStatement = null;
+    try {
+      log.debug(
+          new LogMessage(
+                  projectId,
+                  operator,
+                  "update project, update project_info with projectId:" + projectId)
+              .toString());
+      // enumerator each property id in the project object
+      for (Object item : idValueMap.entrySet()) {
+        Entry entry = (Entry) item;
+
+        Long propertyId = (Long) entry.getKey();
+
+        // check if the property in the project object already exists in
+        // the database
+        if (propertyMap.containsKey(propertyId)) {
+          // if the value hasn't been changed, we don't need to update anything
+          if (!propertyMap.get(propertyId).equals((String) entry.getValue())) {
+            // update the project property
+            Object[] queryArgs = new Object[] {entry.getValue(), operator, projectId, propertyId};
+            Helper.doDMLQuery(entityManager, UPDATE_PROJECT_PROPERTY_SQL, queryArgs);
+
+            auditProjectInfo(project, AUDIT_UPDATE_TYPE, propertyId, (String) entry.getValue());
+          }
+          propertyMap.remove(propertyId);
         } else {
-            String idstring = "";
-            long[] var3 = ids;
-            int var4 = ids.length;
-
-            for(int var5 = 0; var5 < var4; ++var5) {
-                long id = var3[var5];
-                idstring = idstring + id + ",";
-                if (id <= 0L) {
-                    throw new IllegalArgumentException("Array 'ids' contains an id that is <= 0.");
-                }
-            }
-
-            Connection conn = null;
-            this.getLogger().log(Level.DEBUG, "get projects with the ids: " + idstring.substring(0, idstring.length() - 1));
-
-            try {
-                conn = this.openConnection();
-                Project[] projects = this.getProjects(ids, conn);
-                this.closeConnection(conn);
-                return projects;
-            } catch (PersistenceException var8) {
-                this.getLogger().log(Level.ERROR, new LogMessage((Long)null, (String)null, "Fails to retrieving projects with ids: " + idstring.substring(0, idstring.length() - 1), var8));
-                if (conn != null) {
-                    this.closeConnectionOnError(conn);
-                }
-
-                throw var8;
-            }
+          // add the entry to the createIdValueMap
+          createIdValueMap.put(propertyId, entry.getValue());
         }
+      }
+    } catch (Exception e) {
+      throw new PersistenceException(
+          "Unable to create prepared statement [" + UPDATE_PROJECT_PROPERTY_SQL + "].", e);
     }
 
-    public ProjectType[] getAllProjectTypes() throws PersistenceException {
-        Connection conn = null;
-        this.getLogger().log(Level.DEBUG, new LogMessage((Long)null, (String)null, "Enter getAllProjectTypes method."));
+    // create the new properties
+    createProjectProperties(project.getId(), project, createIdValueMap, operator);
 
-        try {
-            conn = this.openConnection();
-            ProjectType[] projectTypes = this.getAllProjectTypes(conn);
-            this.closeConnection(conn);
-            return projectTypes;
-        } catch (PersistenceException var3) {
-            this.getLogger().log(Level.ERROR, new LogMessage((Long)null, (String)null, "Fail to getAllProjectTypes.", var3));
-            if (conn != null) {
-                this.closeConnectionOnError(conn);
-            }
+    // delete the remaining property ids that are not in the project object
+    // any longer
+    deleteProjectProperties(project, propertyMap.keySet());
+  }
 
-            throw var3;
+  /**
+   * Gets all the property ids associated to this project.
+   *
+   * @param projectId The id of this project
+   * @return A set that contains the property ids
+   * @throws PersistenceException if error occurred while accessing the database.
+   */
+  private Set<Long> getProjectPropertyIds(Long projectId) {
+    var idSet = new HashSet<Long>();
+    // find projects in the table.
+    var result =
+        executeSqlWithParam(entityManager, QUERY_PROJECT_PROPERTY_IDS_SQL, newArrayList(projectId));
+
+    // enumerator each row
+    for (var row : result) {
+      // add the id to the set
+      idSet.add(getLong(row, "project_info_type_id"));
+    }
+    return idSet;
+  }
+
+  /**
+   * Gets all the property ids and values associated to this project.
+   *
+   * @param projectId The id of this project
+   * @return A map that contains the property values, keyed by id
+   * @throws PersistenceException if error occurred while accessing the database.
+   */
+  private Map<Long, String> getProjectPropertyIdsAndValues(Long projectId) {
+    Map<Long, String> idMap = new HashMap<>();
+    // find projects in the table.
+    var result =
+        executeSqlWithParam(
+            entityManager, QUERY_PROJECT_PROPERTY_IDS_AND_VALUES_SQL, newArrayList(projectId));
+    // enumerator each row
+    for (var row : result) {
+      // add the id to the map
+      idMap.put(getLong(row, "project_info_type_id"), getString(row, "value"));
+    }
+    return idMap;
+  }
+
+  /**
+   * Delete the project properties from the database.
+   *
+   * @param project the project object
+   * @param propertyIdSet the Set that contains the property ids to delete
+   * @throws PersistenceException if error occurred while accessing the database.
+   */
+  private void deleteProjectProperties(Project project, Set<Long> propertyIdSet)
+      throws PersistenceException {
+
+    Long projectId = project.getId();
+
+    // check if the property id set is empty
+    // do nothing if property id set is empty
+    if (!propertyIdSet.isEmpty()) {
+
+      // build the id list string
+      StringBuilder idListBuffer = new StringBuilder();
+      idListBuffer.append('(');
+      int idx = 0;
+      for (Long id : propertyIdSet) {
+        if (idx++ != 0) {
+          idListBuffer.append(',');
         }
+        idListBuffer.append(id);
+      }
+      idListBuffer.append(')');
+
+      log.debug(
+          new LogMessage(
+                  projectId, null, "delete records from project_info with projectId:" + projectId)
+              .toString());
+
+      // delete the properties whose id is in the set
+      Helper.doDMLQuery(
+          entityManager, DELETE_PROJECT_PROPERTIES_SQL + idListBuffer, new Object[] {projectId});
+
+      for (Long id : propertyIdSet) {
+        auditProjectInfo(project, AUDIT_DELETE_TYPE, id, null);
+      }
     }
+  }
 
-    public ProjectCategory[] getAllProjectCategories() throws PersistenceException {
-        Connection conn = null;
-        this.getLogger().log(Level.DEBUG, new LogMessage((Long)null, (String)null, "Enter getAllProjectCategories method."));
+  /**
+   * Create a project audit record into the database.
+   *
+   * @param projectId The id of the project
+   * @param reason The update reason
+   * @param operator the modification user of this project
+   * @throws PersistenceException if error occurred while accessing the database.
+   */
+  private void createProjectAudit(Long projectId, String reason, String operator)
+      throws PersistenceException {
 
-        try {
-            conn = this.openConnection();
-            ProjectCategory[] projectCategories = this.getAllProjectCategories(conn);
-            this.closeConnection(conn);
-            return projectCategories;
-        } catch (PersistenceException var3) {
-            this.getLogger().log(Level.ERROR, new LogMessage((Long)null, (String)null, "Fail to getAllProjectCategories.", var3));
-            if (conn != null) {
-                this.closeConnectionOnError(conn);
-            }
-
-            throw var3;
-        }
+    Long auditId;
+    try {
+      // generate a new audit id
+      auditId = projectAuditIdGenerator.getNextID();
+      log.debug(
+          new LogMessage(projectId, operator, "generate new id for the project audit.").toString());
+    } catch (IDGenerationException e) {
+      throw new PersistenceException("Unable to generate id for project.", e);
     }
+    log.debug("insert record into project_audit with projectId:" + projectId);
+    // insert the update reason information to project_audit table
+    Object[] queryArgs = new Object[] {auditId, projectId, reason, operator, operator};
+    Helper.doDMLQuery(entityManager, CREATE_PROJECT_AUDIT_SQL, queryArgs);
+  }
 
-    public ProjectStatus[] getAllProjectStatuses() throws PersistenceException {
-        Connection conn = null;
-        this.getLogger().log(Level.DEBUG, new LogMessage((Long)null, (String)null, "Enter getAllProjectStatuses method."));
+  /**
+   * Make a property name - property id map from ProjectPropertyType[].
+   *
+   * @param propertyTypes the ProjectPropertyType array
+   * @return a property name - property id map
+   * @throws PersistenceException if duplicate property type names are found
+   */
+  @SuppressWarnings("unchecked")
+  private Map makePropertyNamePropertyIdMap(ProjectPropertyType[] propertyTypes)
+      throws PersistenceException {
+    Map map = new HashMap();
 
-        try {
-            conn = this.openConnection();
-            ProjectStatus[] projectStatuses = this.getAllProjectStatuses(conn);
-            this.closeConnection(conn);
-            return projectStatuses;
-        } catch (PersistenceException var3) {
-            this.getLogger().log(Level.ERROR, new LogMessage((Long)null, (String)null, "Fail to getAllProjectStatuses.", var3));
-            if (conn != null) {
-                this.closeConnectionOnError(conn);
-            }
+    // enumerate each property type
+    for (ProjectPropertyType propertyType : propertyTypes) {
 
-            throw var3;
-        }
+      // check if the property name already exists
+      if (map.containsKey(propertyType.getName())) {
+        throw new PersistenceException(
+            "Duplicate project property type names ["
+                + propertyType.getName()
+                + "] found in project_info_type_lu table.");
+      }
+
+      // put the name-id pair to the map
+      map.put(propertyType.getName(), propertyType.getId());
     }
+    return map;
+  }
 
-    public ProjectPropertyType[] getAllProjectPropertyTypes() throws PersistenceException {
-        this.getLogger().log(Level.DEBUG, new LogMessage((Long)null, (String)null, "Enter getAllProjectPropertyTypes method."));
-        Connection conn = null;
-
-        try {
-            conn = this.openConnection();
-            ProjectPropertyType[] propertyTypes = this.getAllProjectPropertyTypes(conn);
-            this.closeConnection(conn);
-            return propertyTypes;
-        } catch (PersistenceException var3) {
-            this.getLogger().log(Level.ERROR, new LogMessage((Long)null, (String)null, "Fail to getAllProjectPropertyTypes.", var3));
-            if (conn != null) {
-                this.closeConnectionOnError(conn);
-            }
-
-            throw var3;
-        }
+  /**
+   * Gets an array of all project categories in the persistence. The project categories are stored
+   * in 'project_category_lu' table.
+   *
+   * @return An array of all project categories in the persistence.
+   * @throws PersistenceException if error occurred while accessing the database.
+   */
+  public ProjectCategory[] getAllProjectCategories() throws PersistenceException {
+    log.debug(new LogMessage(null, null, "Enter getAllProjectCategories method.").toString());
+    // find all project categories in the table.
+    var result = executeSql(entityManager, QUERY_ALL_PROJECT_CATEGORIES_SQL);
+    // create the ProjectCategory array.
+    ProjectCategory[] projectCategories = new ProjectCategory[result.size()];
+    for (int i = 0; i < projectCategories.length; ++i) {
+      var row = result.get(i);
+      // create the ProjectType object
+      ProjectType type =
+          new ProjectType(
+              getLong(row, "project_type_id"),
+              getString(row, "type_name"),
+              getString(row, "type_description"),
+              getBoolean(row, "is_generic"));
+      // create a new instance of ProjectCategory class
+      projectCategories[i] =
+          new ProjectCategory(
+              getLong(row, "project_category_id"),
+              getString(row, "category_name"),
+              getString(row, "category_description"),
+              type);
     }
+    return projectCategories;
+  }
 
-    public Project[] getProjectsByDirectProjectId(long directProjectId) throws PersistenceException {
-        Helper.assertLongPositive(directProjectId, "directProjectId");
-        Connection conn = null;
-        this.getLogger().log(Level.DEBUG, "get projects with the direct project id: " + directProjectId);
-
-        try {
-            conn = this.openConnection();
-            Object[][] rows = Helper.doQuery(conn, "SELECT DISTINCT project_id FROM project WHERE tc_direct_project_id=" + directProjectId, new Object[0], QUERY_PROJECT_IDS__COLUMN_TYPES);
-            if (0 == rows.length) {
-                return new Project[0];
-            } else {
-                long[] ids = new long[rows.length];
-
-                for(int i = 0; i < rows.length; ++i) {
-                    ids[i] = (Long)rows[i][0];
-                }
-
-                Project[] projects = this.getProjects(ids, conn);
-                this.closeConnection(conn);
-                return projects;
-            }
-        } catch (PersistenceException var7) {
-            this.getLogger().log(Level.ERROR, new LogMessage((Long)null, (String)null, "Fails to retrieving projects with the direct project id: " + directProjectId, var7));
-            if (conn != null) {
-                this.closeConnectionOnError(conn);
-            }
-
-            throw var7;
-        }
+  /**
+   * Gets an array of all project statuses in the persistence. The project statuses are stored in
+   * 'project_status_lu' table.
+   *
+   * @return An array of all project statuses in the persistence.
+   * @throws PersistenceException if error occurred while accessing the database.
+   */
+  public ProjectStatus[] getAllProjectStatuses() throws PersistenceException {
+    log.debug(new LogMessage(null, null, "Enter getAllProjectStatuses method.").toString());
+    // find all project statuses in the table.
+    var result = executeSql(entityManager, QUERY_ALL_PROJECT_STATUSES_SQL);
+    // create the ProjectStatus array.
+    ProjectStatus[] projectStatuses = new ProjectStatus[result.size()];
+    for (int i = 0; i < result.size(); ++i) {
+      var row = result.get(i);
+      // create a new instance of ProjectStatus class
+      projectStatuses[i] =
+          new ProjectStatus(
+              getLong(row, "project_status_id"),
+              getString(row, "name"),
+              getString(row, "description"));
     }
+    return projectStatuses;
+  }
 
-    public FileType[] getProjectFileTypes(long projectId) throws PersistenceException {
-        Helper.assertLongPositive(projectId, "projectId");
-        Connection conn = null;
-        this.getLogger().log(Level.DEBUG, "get Project file types with the project id: " + projectId);
-
-        try {
-            conn = this.openConnection();
-            if (!Helper.checkEntityExists("project", "project_id", projectId, conn)) {
-                throw new PersistenceException("The project with id " + projectId + " does not exist in the database.");
-            } else {
-                Object[][] rows = Helper.doQuery(conn, "SELECT type.file_type_id, type.description, type.sort, type.image_file, type.extension, type.bundled_file FROM file_type_lu AS type JOIN project_file_type_xref AS xref ON type.file_type_id=xref.file_type_id WHERE xref.project_id=" + projectId, new Object[0], QUERY_FILE_TYPES_COLUMN_TYPES);
-                FileType[] fileTypes = new FileType[rows.length];
-
-                for(int i = 0; i < rows.length; ++i) {
-                    Object[] row = rows[i];
-                    FileType fileType = new FileType();
-                    fileType.setId((Long)row[0]);
-                    fileType.setDescription((String)row[1]);
-                    fileType.setSort(((Long)row[2]).intValue());
-                    fileType.setImageFile((Boolean)row[3]);
-                    fileType.setExtension((String)row[4]);
-                    fileType.setBundledFile((Boolean)row[5]);
-                    fileTypes[i] = fileType;
-                }
-
-                this.closeConnection(conn);
-                return fileTypes;
-            }
-        } catch (PersistenceException var9) {
-            this.getLogger().log(Level.ERROR, new LogMessage((Long)null, (String)null, "Fails to retrieving project file types with project id: " + projectId, var9));
-            if (conn != null) {
-                this.closeConnectionOnError(conn);
-            }
-
-            throw var9;
-        }
+  /**
+   * This method will audit project information. This information is generated when most project
+   * properties are inserted, deleted, or edited.
+   *
+   * @param projectId the id of the project being audited
+   * @param project the project being audited
+   * @param auditType the audit type. Can be AUDIT_CREATE_TYPE, AUDIT_DELETE_TYPE, or
+   *     AUDIT_UPDATE_TYPE
+   * @param projectInfoTypeId the project info type id
+   * @param value the project info value that we're changing to
+   * @throws PersistenceException if validation error occurs or any error occurs in the underlying
+   *     layer
+   * @since 1.1.2
+   */
+  private void auditProjectInfo(
+      Long projectId, Project project, int auditType, long projectInfoTypeId, String value)
+      throws PersistenceException {
+    try {
+      executeSqlWithParam(
+          entityManager,
+          PROJECT_INFO_AUDIT_INSERT_SQL,
+          newArrayList(
+              projectId,
+              projectInfoTypeId,
+              value,
+              auditType,
+              new Date(),
+              project.getModificationUser()));
+    } catch (Exception e) {
+      throw new PersistenceException("Unable to insert project_info_audit record.", e);
     }
-
-    public void updateProjectFileTypes(long projectId, List<FileType> fileTypes, String operator) throws PersistenceException {
-        Helper.assertLongPositive(projectId, "projectId");
-        Helper.assertObjectNotNull(fileTypes, "fileTypes");
-
-        for(int i = 0; i < fileTypes.size(); ++i) {
-            Helper.assertObjectNotNull(fileTypes.get(i), "fileTypes[" + i + "]");
-        }
-
-        Helper.assertStringNotNullNorEmpty(operator, "operator");
-        Connection conn = null;
-        this.getLogger().log(Level.DEBUG, new LogMessage((Long)null, operator, "updating the file types for the project with id: " + projectId));
-
-        try {
-            conn = this.openConnection();
-            if (!Helper.checkEntityExists("project", "project_id", projectId, conn)) {
-                throw new PersistenceException("The project with id " + projectId + " does not exist in the database.");
-            } else {
-                this.createOrUpdateProjectFileTypes(projectId, fileTypes, conn, operator, true);
-                this.createProjectAudit(projectId, "Updates the project file types", operator, conn);
-                this.closeConnection(conn);
-            }
-        } catch (PersistenceException var7) {
-            this.getLogger().log(Level.ERROR, new LogMessage((Long)null, operator, "Fails to update the file types for the project with id " + projectId, var7));
-            if (conn != null) {
-                this.closeConnectionOnError(conn);
-            }
-
-            throw var7;
-        }
-    }
-
-    private void createOrUpdateProjectFileTypes(long projectId, List<FileType> fileTypes, Connection conn, String operator, boolean update) throws PersistenceException {
-        if (fileTypes != null) {
-            Object[] queryArgs;
-            if (update) {
-                this.getLogger().log(Level.DEBUG, "delete the project file typs reference from database with the specified project id: " + projectId);
-                queryArgs = new Object[]{projectId};
-                Helper.doDMLQuery(conn, "DELETE FROM project_file_type_xref WHERE project_id=?", queryArgs);
-            }
-
-            Iterator var8 = fileTypes.iterator();
-
-            while(var8.hasNext()) {
-                FileType fileType = (FileType)var8.next();
-                if (fileType.getId() > 0L && Helper.checkEntityExists("file_type_lu", "file_type_id", fileType.getId(), conn)) {
-                    this.updateFileType(fileType, operator);
-                } else {
-                    this.createFileType(fileType, operator);
-                }
-
-                this.getLogger().log(Level.DEBUG, "insert projectId: " + projectId + " and file type id: " + fileType.getId() + " into project_file_type_xref table");
-                queryArgs = new Object[]{projectId, fileType.getId()};
-                Helper.doDMLQuery(conn, "INSERT INTO project_file_type_xref (project_id, file_type_id) VALUES (?, ?)", queryArgs);
-            }
-
-        }
-    }
-
-    public Prize[] getProjectPrizes(long projectId) throws PersistenceException {
-        Helper.assertLongPositive(projectId, "projectId");
-        Connection conn = null;
-        this.getLogger().log(Level.DEBUG, "get project prizes with the project id: " + projectId);
-
-        try {
-            conn = this.openConnection();
-            if (!Helper.checkEntityExists("project", "project_id", projectId, conn)) {
-                throw new PersistenceException("The project with id " + projectId + " does not exist in the database.");
-            } else {
-                Object[][] rows = Helper.doQuery(conn, "SELECT prize.prize_id, prize.place, prize.prize_amount, prize.number_of_submissions, prize_type.prize_type_id, prize_type.prize_type_desc FROM prize AS prize JOIN prize_type_lu AS prize_type ON prize.prize_type_id=prize_type.prize_type_id WHERE prize.project_id=" + projectId, new Object[0], QUERY_PRIZES_COLUMN_TYPES);
-                Prize[] prizes = new Prize[rows.length];
-
-                for(int i = 0; i < rows.length; ++i) {
-                    Object[] row = rows[i];
-                    Prize prize = new Prize();
-                    prize.setId((Long)row[0]);
-                    prize.setProjectId(projectId);
-                    prize.setPlace(((Long)row[1]).intValue());
-                    prize.setPrizeAmount((Double)row[2]);
-                    prize.setNumberOfSubmissions(((Long)row[3]).intValue());
-                    PrizeType prizeType = new PrizeType();
-                    prizeType.setId((Long)row[4]);
-                    prizeType.setDescription((String)row[5]);
-                    prize.setPrizeType(prizeType);
-                    prizes[i] = prize;
-                }
-
-                this.closeConnection(conn);
-                return prizes;
-            }
-        } catch (PersistenceException var10) {
-            this.getLogger().log(Level.ERROR, new LogMessage((Long)null, (String)null, "Fails to retrieving project prizes with project id: " + projectId, var10));
-            if (conn != null) {
-                this.closeConnectionOnError(conn);
-            }
-
-            throw var10;
-        }
-    }
-
-    public void updateProjectPrizes(long projectId, List<Prize> prizes, String operator) throws PersistenceException {
-        Helper.assertLongPositive(projectId, "projectId");
-        Helper.assertObjectNotNull(prizes, "prizes");
-
-        for(int i = 0; i < prizes.size(); ++i) {
-            Helper.assertObjectNotNull(prizes.get(i), "prizes[" + i + "]");
-        }
-
-        Helper.assertStringNotNullNorEmpty(operator, "operator");
-        Connection conn = null;
-        this.getLogger().log(Level.DEBUG, new LogMessage((Long)null, operator, "updating the prizes for the project with id: " + projectId));
-
-        try {
-            conn = this.openConnection();
-            if (!Helper.checkEntityExists("project", "project_id", projectId, conn)) {
-                throw new PersistenceException("The project with id " + projectId + " does not exist in the database.");
-            } else {
-                this.createOrUpdateProjectPrizes(projectId, prizes, conn, operator, true);
-                this.createProjectAudit(projectId, "Updates the project prizes", operator, conn);
-                this.closeConnection(conn);
-            }
-        } catch (PersistenceException var7) {
-            this.getLogger().log(Level.ERROR, new LogMessage((Long)null, operator, "Fails to update the prizes for the project with id " + projectId, var7));
-            if (conn != null) {
-                this.closeConnectionOnError(conn);
-            }
-
-            throw var7;
-        }
-    }
-
-    private void createOrUpdateProjectPrizes(long projectId, List<Prize> prizes, Connection conn, String operator, boolean update) throws PersistenceException {
-        if (prizes != null) {
-            Iterator var7 = prizes.iterator();
-
-            while(true) {
-                while(var7.hasNext()) {
-                    Prize prize = (Prize)var7.next();
-                    if (prize.getId() > 0L && Helper.checkEntityExists("prize", "prize_id", prize.getId(), conn)) {
-                        this.updatePrize(prize, operator);
-                    } else {
-                        this.createPrize(prize, operator);
-                    }
-                }
-
-                return;
-            }
-        }
-    }
-
-    public FileType createFileType(FileType fileType, String operator) throws PersistenceException {
-        Helper.assertObjectNotNull(fileType, "fileType");
-        Helper.assertStringNotNullNorEmpty(operator, "operator");
-        Connection conn = null;
-        Long newId = null;
-        this.getLogger().log(Level.DEBUG, new LogMessage((Long)null, operator, "creating new file type: " + fileType));
-
-        try {
-            conn = this.openConnection();
-            if (fileType.getId() > 0L && Helper.checkEntityExists("file_type_lu", "file_type_id", fileType.getId(), conn)) {
-                throw new PersistenceException("The file type with the same id [" + fileType.getId() + "] already exists.");
-            } else {
-                try {
-                    newId = this.fileTypeIdGenerator.getNextID();
-                    this.getLogger().log(Level.DEBUG, new LogMessage(newId, operator, "generate id for new file type"));
-                } catch (IDGenerationException var7) {
-                    throw new PersistenceException("Unable to generate id for the file type.", var7);
-                }
-
-                this.getLogger().log(Level.DEBUG, "insert record into file type with id:" + newId);
-                Timestamp createDate = new Timestamp(System.currentTimeMillis());
-                Object[] queryArgs = new Object[]{newId, fileType.getDescription(), fileType.getSort(), this.convertBooleanToString(fileType.isImageFile()), fileType.getExtension(), this.convertBooleanToString(fileType.isBundledFile()), operator, createDate, operator, createDate};
-                Helper.doDMLQuery(conn, "INSERT INTO file_type_lu (file_type_id, description, sort, image_file, extension, bundled_file, create_user, create_date, modify_user, modify_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", queryArgs);
-                this.closeConnection(conn);
-                fileType.setCreationUser(operator);
-                fileType.setCreationTimestamp(createDate);
-                fileType.setModificationUser(operator);
-                fileType.setModificationTimestamp(createDate);
-                fileType.setId(newId);
-                return fileType;
-            }
-        } catch (PersistenceException var8) {
-            this.getLogger().log(Level.ERROR, new LogMessage((Long)null, operator, "Fails to create file type " + newId, var8));
-            if (conn != null) {
-                this.closeConnectionOnError(conn);
-            }
-
-            throw var8;
-        }
-    }
-
-    private Object convertBooleanToString(boolean booleanVal) {
-        return booleanVal ? "t" : "f";
-    }
-
-    public void updateFileType(FileType fileType, String operator) throws PersistenceException {
-        Helper.assertObjectNotNull(fileType, "fileType");
-        Helper.assertStringNotNullNorEmpty(operator, "operator");
-        Connection conn = null;
-        this.getLogger().log(Level.DEBUG, new LogMessage((Long)null, operator, "updating the file type with id: " + fileType.getId()));
-        Timestamp modifyDate = new Timestamp(System.currentTimeMillis());
-
-        try {
-            conn = this.openConnection();
-            if (!Helper.checkEntityExists("file_type_lu", "file_type_id", fileType.getId(), conn)) {
-                throw new PersistenceException("The file type id [" + fileType.getId() + "] does not exist in the database.");
-            }
-
-            Object[] queryArgs = new Object[]{fileType.getDescription(), fileType.getSort(), this.convertBooleanToString(fileType.isImageFile()), fileType.getExtension(), this.convertBooleanToString(fileType.isBundledFile()), operator, modifyDate};
-            Helper.doDMLQuery(conn, "UPDATE file_type_lu SET description=?, sort=?, image_file=?, extension=?, bundled_file=?, modify_user=?, modify_date=? WHERE file_type_id=" + fileType.getId(), queryArgs);
-            this.closeConnection(conn);
-        } catch (PersistenceException var6) {
-            this.getLogger().log(Level.ERROR, new LogMessage((Long)null, operator, "Fails to update file type " + fileType, var6));
-            if (conn != null) {
-                this.closeConnectionOnError(conn);
-            }
-
-            throw var6;
-        }
-
-        fileType.setModificationUser(operator);
-        fileType.setModificationTimestamp(modifyDate);
-    }
-
-    public void removeFileType(FileType fileType, String operator) throws PersistenceException {
-        Helper.assertObjectNotNull(fileType, "fileType");
-        Helper.assertStringNotNullNorEmpty(operator, "operator");
-        Connection conn = null;
-        this.getLogger().log(Level.DEBUG, new LogMessage((Long)null, operator, "deleting the file type with id: " + fileType.getId()));
-
-        try {
-            conn = this.openConnection();
-            if (!Helper.checkEntityExists("file_type_lu", "file_type_id", fileType.getId(), conn)) {
-                throw new PersistenceException("The file type id [" + fileType.getId() + "] does not exist in the database.");
-            } else {
-                Object[] queryArgs = new Object[]{fileType.getId()};
-                Object[][] rows = Helper.doQuery(conn, "SELECT DISTINCT project_id FROM project_file_type_xref WHERE file_type_id=" + fileType.getId(), new Object[0], QUERY_PROJECT_IDS__COLUMN_TYPES);
-                this.auditProjects(rows, conn, "Removes the project file type", operator);
-                Helper.doDMLQuery(conn, "DELETE FROM project_file_type_xref WHERE file_type_id=?", queryArgs);
-                Helper.doDMLQuery(conn, "DELETE FROM file_type_lu WHERE file_type_id=?", queryArgs);
-                this.closeConnection(conn);
-            }
-        } catch (PersistenceException var6) {
-            this.getLogger().log(Level.ERROR, new LogMessage((Long)null, operator, "Fails to delete file type " + fileType, var6));
-            if (conn != null) {
-                this.closeConnectionOnError(conn);
-            }
-
-            throw var6;
-        }
-    }
-
-    public FileType[] getAllFileTypes() throws PersistenceException {
-        Connection conn = null;
-        this.getLogger().log(Level.DEBUG, new LogMessage((Long)null, (String)null, "Enter getAllFileTypes method."));
-
-        try {
-            conn = this.openConnection();
-            Object[][] rows = Helper.doQuery(conn, "SELECT file_type_id, description, sort, image_file, extension, bundled_file FROM file_type_lu", new Object[0], QUERY_ALL_FILE_TYPES_COLUMN_TYPES);
-            this.closeConnection(conn);
-            FileType[] fileTypes = new FileType[rows.length];
-
-            for(int i = 0; i < rows.length; ++i) {
-                Object[] row = rows[i];
-                fileTypes[i] = new FileType();
-                fileTypes[i].setId((Long)row[0]);
-                fileTypes[i].setDescription((String)row[1]);
-                fileTypes[i].setSort(((Long)row[2]).intValue());
-                fileTypes[i].setImageFile((Boolean)row[3]);
-                fileTypes[i].setExtension((String)row[4]);
-                fileTypes[i].setBundledFile((Boolean)row[5]);
-            }
-
-            return fileTypes;
-        } catch (PersistenceException var6) {
-            this.getLogger().log(Level.ERROR, new LogMessage((Long)null, (String)null, "Fail to getAllFileTypes.", var6));
-            if (conn != null) {
-                this.closeConnectionOnError(conn);
-            }
-
-            throw var6;
-        }
-    }
-
-    public PrizeType[] getPrizeTypes() throws PersistenceException {
-        Connection conn = null;
-        this.getLogger().log(Level.DEBUG, new LogMessage((Long)null, (String)null, "Enter getPrizeTypes method."));
-
-        try {
-            conn = this.openConnection();
-            Object[][] rows = Helper.doQuery(conn, "SELECT prize_type_id, prize_type_desc FROM prize_type_lu", new Object[0], QUERY_ALL_PRIZE_TYPES_COLUMN_TYPES);
-            PrizeType[] prizeTypes = new PrizeType[rows.length];
-
-            for(int i = 0; i < rows.length; ++i) {
-                Object[] row = rows[i];
-                prizeTypes[i] = new PrizeType();
-                prizeTypes[i].setId((Long)row[0]);
-                prizeTypes[i].setDescription((String)row[1]);
-            }
-
-            this.closeConnection(conn);
-            return prizeTypes;
-        } catch (PersistenceException var6) {
-            this.getLogger().log(Level.ERROR, new LogMessage((Long)null, (String)null, "Fail to getPrizeTypes.", var6));
-            if (conn != null) {
-                this.closeConnectionOnError(conn);
-            }
-
-            throw var6;
-        }
-    }
-
-    public Prize createPrize(Prize prize, String operator) throws PersistenceException {
-        Helper.assertObjectNotNull(prize, "prize");
-        Helper.assertObjectNotNull(prize.getPrizeType(), "prize.prizeType");
-        Helper.assertStringNotNullNorEmpty(operator, "operator");
-        Connection conn = null;
-        Long newId = null;
-        this.getLogger().log(Level.DEBUG, new LogMessage((Long)null, operator, "creating new prize: " + prize));
-
-        try {
-            conn = this.openConnection();
-            if (prize.getId() > 0L && Helper.checkEntityExists("prize", "prize_id", prize.getId(), conn)) {
-                throw new PersistenceException("The prize with the same id [" + prize.getId() + "] already exists.");
-            } else {
-                try {
-                    newId = this.prizeIdGenerator.getNextID();
-                    this.getLogger().log(Level.DEBUG, new LogMessage(newId, operator, "generate id for new prize"));
-                } catch (IDGenerationException var7) {
-                    throw new PersistenceException("Unable to generate id for the prize.", var7);
-                }
-
-                this.getLogger().log(Level.DEBUG, "insert record into prize with id:" + newId);
-                Timestamp createDate = new Timestamp(System.currentTimeMillis());
-                Object[] queryArgs = new Object[]{newId, prize.getProjectId(), (long)prize.getPlace(), prize.getPrizeAmount(), prize.getPrizeType().getId(), prize.getNumberOfSubmissions(), operator, createDate, operator, createDate};
-                Helper.doDMLQuery(conn, "INSERT INTO prize (prize_id, project_id, place, prize_amount, prize_type_id, number_of_submissions, create_user, create_date, modify_user, modify_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", queryArgs);
-                this.closeConnection(conn);
-                prize.setCreationUser(operator);
-                prize.setCreationTimestamp(createDate);
-                prize.setModificationUser(operator);
-                prize.setModificationTimestamp(createDate);
-                prize.setId(newId);
-                return prize;
-            }
-        } catch (PersistenceException var8) {
-            this.getLogger().log(Level.ERROR, new LogMessage((Long)null, operator, "Fails to create prize " + newId, var8));
-            if (conn != null) {
-                this.closeConnectionOnError(conn);
-            }
-
-            throw var8;
-        }
-    }
-
-    public void updatePrize(Prize prize, String operator) throws PersistenceException {
-        Helper.assertObjectNotNull(prize, "prize");
-        Helper.assertStringNotNullNorEmpty(operator, "operator");
-        Connection conn = null;
-        this.getLogger().log(Level.DEBUG, new LogMessage((Long)null, operator, "updating the prize with id: " + prize.getId()));
-        Timestamp modifyDate = new Timestamp(System.currentTimeMillis());
-
-        try {
-            conn = this.openConnection();
-            if (!Helper.checkEntityExists("prize", "prize_id", prize.getId(), conn)) {
-                throw new PersistenceException("The prize id [" + prize.getId() + "] does not exist in the database.");
-            }
-
-            Object[] queryArgs = new Object[]{(long)prize.getPlace(), prize.getPrizeAmount(), prize.getPrizeType().getId(), prize.getNumberOfSubmissions(), operator, modifyDate, prize.getProjectId()};
-            Helper.doDMLQuery(conn, "UPDATE prize SET place=?, prize_amount=?, prize_type_id=?, number_of_submissions=?, modify_user=?, modify_date=?, project_id=? WHERE prize_id=" + prize.getId(), queryArgs);
-            this.closeConnection(conn);
-        } catch (PersistenceException var6) {
-            this.getLogger().log(Level.ERROR, new LogMessage((Long)null, operator, "Fails to update prize " + prize, var6));
-            if (conn != null) {
-                this.closeConnectionOnError(conn);
-            }
-
-            throw var6;
-        }
-
-        prize.setModificationUser(operator);
-        prize.setModificationTimestamp(modifyDate);
-    }
-
-    public void removePrize(Prize prize, String operator) throws PersistenceException {
-        Helper.assertObjectNotNull(prize, "prize");
-        Helper.assertStringNotNullNorEmpty(operator, "operator");
-        Connection conn = null;
-        this.getLogger().log(Level.DEBUG, new LogMessage((Long)null, operator, "deleting the prize with id: " + prize.getId()));
-
-        try {
-            conn = this.openConnection();
-            if (!Helper.checkEntityExists("prize", "prize_id", prize.getId(), conn)) {
-                throw new PersistenceException("The prize id [" + prize.getId() + "] does not exist in the database.");
-            } else {
-                Object[] queryArgs = new Object[]{prize.getId()};
-                Object[][] rows = Helper.doQuery(conn, "SELECT project_id FROM prize WHERE prize_id=" + prize.getId(), new Object[0], QUERY_PROJECT_IDS__COLUMN_TYPES);
-                this.auditProjects(rows, conn, "Removes the project prize", operator);
-                Helper.doDMLQuery(conn, "DELETE FROM prize WHERE prize_id=?", queryArgs);
-                this.closeConnection(conn);
-            }
-        } catch (PersistenceException var6) {
-            this.getLogger().log(Level.ERROR, new LogMessage((Long)null, operator, "Fails to delete prize " + prize, var6));
-            if (conn != null) {
-                this.closeConnectionOnError(conn);
-            }
-
-            throw var6;
-        }
-    }
-
-    public ProjectStudioSpecification createProjectStudioSpecification(ProjectStudioSpecification spec, String operator) throws PersistenceException {
-        Helper.assertObjectNotNull(spec, "spec");
-        Helper.assertStringNotNullNorEmpty(operator, "operator");
-        Connection conn = null;
-        Long newId = null;
-        this.getLogger().log(Level.DEBUG, new LogMessage((Long)null, operator, "creating new project studio specification: " + spec));
-
-        try {
-            conn = this.openConnection();
-            if (spec.getId() > 0L && Helper.checkEntityExists("project_studio_specification", "project_studio_spec_id", spec.getId(), conn)) {
-                throw new PersistenceException("The project studio specification with the same id [" + spec.getId() + "] already exists.");
-            } else {
-                try {
-                    newId = this.studioSpecIdGenerator.getNextID();
-                    this.getLogger().log(Level.DEBUG, new LogMessage(newId, operator, "generate id for new project studio specification"));
-                } catch (IDGenerationException var7) {
-                    throw new PersistenceException("Unable to generate id for the project studio specification.", var7);
-                }
-
-                this.getLogger().log(Level.DEBUG, "insert record into project studio specification with id:" + newId);
-                Timestamp createDate = new Timestamp(System.currentTimeMillis());
-                Object[] queryArgs = new Object[]{newId, spec.getGoals(), spec.getTargetAudience(), spec.getBrandingGuidelines(), spec.getDislikedDesignWebSites(), spec.getOtherInstructions(), spec.getWinningCriteria(), spec.isSubmittersLockedBetweenRounds(), spec.getRoundOneIntroduction(), spec.getRoundTwoIntroduction(), spec.getColors(), spec.getFonts(), spec.getLayoutAndSize(), operator, createDate, operator, createDate};
-                Helper.doDMLQuery(conn, "INSERT INTO project_studio_specification (project_studio_spec_id, goals, target_audience, branding_guidelines, disliked_design_websites, other_instructions, winning_criteria, submitters_locked_between_rounds, round_one_introduction, round_two_introduction, colors, fonts, layout_and_size, create_user, create_date, modify_user, modify_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", queryArgs);
-                this.closeConnection(conn);
-                spec.setCreationUser(operator);
-                spec.setCreationTimestamp(createDate);
-                spec.setModificationUser(operator);
-                spec.setModificationTimestamp(createDate);
-                spec.setId(newId);
-                return spec;
-            }
-        } catch (PersistenceException var8) {
-            this.getLogger().log(Level.ERROR, new LogMessage((Long)null, operator, "Fails to create project studio specification " + newId, var8));
-            if (conn != null) {
-                this.closeConnectionOnError(conn);
-            }
-
-            throw var8;
-        }
-    }
-
-    public void updateProjectStudioSpecification(ProjectStudioSpecification spec, String operator) throws PersistenceException {
-        Helper.assertObjectNotNull(spec, "spec");
-        Helper.assertStringNotNullNorEmpty(operator, "operator");
-        Connection conn = null;
-        this.getLogger().log(Level.DEBUG, new LogMessage((Long)null, operator, "updating the project studio specification with id: " + spec.getId()));
-        Timestamp modifyDate = new Timestamp(System.currentTimeMillis());
-
-        try {
-            conn = this.openConnection();
-            if (!Helper.checkEntityExists("project_studio_specification", "project_studio_spec_id", spec.getId(), conn)) {
-                throw new PersistenceException("The project studio specification id [" + spec.getId() + "] does not exist in the database.");
-            }
-
-            Object[] queryArgs = new Object[]{spec.getGoals(), spec.getTargetAudience(), spec.getBrandingGuidelines(), spec.getDislikedDesignWebSites(), spec.getOtherInstructions(), spec.getWinningCriteria(), spec.isSubmittersLockedBetweenRounds(), spec.getRoundOneIntroduction(), spec.getRoundTwoIntroduction(), spec.getColors(), spec.getFonts(), spec.getLayoutAndSize(), operator, modifyDate};
-            Helper.doDMLQuery(conn, "UPDATE project_studio_specification SET goals=?, target_audience=?, branding_guidelines=?, disliked_design_websites=?, other_instructions=?, winning_criteria=?, submitters_locked_between_rounds=?, round_one_introduction=?, round_two_introduction=?, colors=?, fonts=?, layout_and_size=?, modify_user=?, modify_date=? WHERE project_studio_spec_id=" + spec.getId(), queryArgs);
-            this.closeConnection(conn);
-        } catch (PersistenceException var6) {
-            this.getLogger().log(Level.ERROR, new LogMessage((Long)null, operator, "Fails to update project studio specification " + spec.getId(), var6));
-            if (conn != null) {
-                this.closeConnectionOnError(conn);
-            }
-
-            throw var6;
-        }
-
-        spec.setModificationUser(operator);
-        spec.setModificationTimestamp(modifyDate);
-    }
-
-    public void removeProjectStudioSpecification(ProjectStudioSpecification spec, String operator) throws PersistenceException {
-        Helper.assertObjectNotNull(spec, "spec");
-        Helper.assertStringNotNullNorEmpty(operator, "operator");
-        Connection conn = null;
-        this.getLogger().log(Level.DEBUG, new LogMessage((Long)null, operator, "deleting the project studio specification with id: " + spec.getId()));
-
-        try {
-            conn = this.openConnection();
-            if (!Helper.checkEntityExists("project_studio_specification", "project_studio_spec_id", spec.getId(), conn)) {
-                throw new PersistenceException("The project studio specification id [" + spec.getId() + "] does not exist in the database.");
-            } else {
-                Object[] queryArgs = new Object[]{spec.getId()};
-                Object[][] rows = Helper.doQuery(conn, "SELECT DISTINCT project_id FROM project WHERE project_studio_spec_id=" + spec.getId(), new Object[0], QUERY_PROJECT_IDS__COLUMN_TYPES);
-                this.auditProjects(rows, conn, "Removes the project studio specification", operator);
-                Helper.doDMLQuery(conn, "UPDATE project SET project_studio_spec_id=NULL WHERE project_studio_spec_id=?", queryArgs);
-                Helper.doDMLQuery(conn, "DELETE FROM project_studio_specification WHERE project_studio_spec_id=?", queryArgs);
-                this.closeConnection(conn);
-            }
-        } catch (PersistenceException var6) {
-            this.getLogger().log(Level.ERROR, new LogMessage((Long)null, operator, "Fails to delete project studio specification " + spec.getId(), var6));
-            if (conn != null) {
-                this.closeConnectionOnError(conn);
-            }
-
-            throw var6;
-        }
-    }
-
-    private void auditProjects(Object[][] rows, Connection conn, String reason, String operator) throws PersistenceException {
-        if (0 != rows.length) {
-            Object[][] var5 = rows;
-            int var6 = rows.length;
-
-            for(int var7 = 0; var7 < var6; ++var7) {
-                Object[] row = var5[var7];
-                this.createProjectAudit((Long)row[0], reason, operator, conn);
-            }
-        }
-
-    }
-
-    public ProjectStudioSpecification getProjectStudioSpecification(long projectId) throws PersistenceException {
-        Helper.assertLongPositive(projectId, "projectId");
-        Connection conn = null;
-        this.getLogger().log(Level.DEBUG, "get project studio specification with the project id: " + projectId);
-
-        try {
-            conn = this.openConnection();
-            if (!Helper.checkEntityExists("project", "project_id", projectId, conn)) {
-                throw new PersistenceException("The project with id " + projectId + " does not exist in the database.");
-            } else {
-                Object[][] rows = Helper.doQuery(conn, "SELECT spec.project_studio_spec_id, spec.goals, spec.target_audience, spec.branding_guidelines, spec.disliked_design_websites, spec.other_instructions, spec.winning_criteria, spec.submitters_locked_between_rounds, spec.round_one_introduction, spec.round_two_introduction, spec.colors, spec.fonts, spec.layout_and_size FROM project_studio_specification AS spec JOIN project AS project ON project.project_studio_spec_id=spec.project_studio_spec_id WHERE project.project_id=" + projectId, new Object[0], QUERY_STUDIO_SPEC_COLUMN_TYPES);
-                if (rows.length == 0) {
-                    this.closeConnection(conn);
-                    return null;
-                } else {
-                    ProjectStudioSpecification studioSpec = new ProjectStudioSpecification();
-                    studioSpec.setId((Long)rows[0][0]);
-                    studioSpec.setGoals((String)rows[0][1]);
-                    studioSpec.setTargetAudience((String)rows[0][2]);
-                    studioSpec.setBrandingGuidelines((String)rows[0][3]);
-                    studioSpec.setDislikedDesignWebSites((String)rows[0][4]);
-                    studioSpec.setOtherInstructions((String)rows[0][5]);
-                    studioSpec.setWinningCriteria((String)rows[0][6]);
-                    studioSpec.setSubmittersLockedBetweenRounds((Boolean)rows[0][7]);
-                    studioSpec.setRoundOneIntroduction((String)rows[0][8]);
-                    studioSpec.setRoundTwoIntroduction((String)rows[0][9]);
-                    studioSpec.setColors((String)rows[0][10]);
-                    studioSpec.setFonts((String)rows[0][11]);
-                    studioSpec.setLayoutAndSize((String)rows[0][12]);
-                    this.closeConnection(conn);
-                    return studioSpec;
-                }
-            }
-        } catch (PersistenceException var6) {
-            this.getLogger().log(Level.ERROR, new LogMessage((Long)null, (String)null, "Fails to retrieving project studio specification with project id: " + projectId, var6));
-            if (conn != null) {
-                this.closeConnectionOnError(conn);
-            }
-
-            throw var6;
-        }
-    }
-
-    public void updateStudioSpecificationForProject(ProjectStudioSpecification spec, long projectId, String operator) throws PersistenceException {
-        Helper.assertObjectNotNull(spec, "spec");
-        Helper.assertLongPositive(projectId, "projectId");
-        Helper.assertStringNotNullNorEmpty(operator, "operator");
-        Connection conn = null;
-        this.getLogger().log(Level.DEBUG, new LogMessage((Long)null, operator, "updating the studio specification for the project with id: " + projectId));
-
-        try {
-            conn = this.openConnection();
-            if (!Helper.checkEntityExists("project", "project_id", projectId, conn)) {
-                throw new PersistenceException("The project with id " + projectId + " does not exist in the database.");
-            } else {
-                this.createOrUpdateProjectStudioSpecification(projectId, spec, conn, operator);
-                this.createProjectAudit(projectId, "Updates the project studion specification", operator, conn);
-                this.closeConnection(conn);
-            }
-        } catch (PersistenceException var7) {
-            this.getLogger().log(Level.ERROR, new LogMessage((Long)null, operator, "Fails to update the studio specification for the project with id " + projectId, var7));
-            if (conn != null) {
-                this.closeConnectionOnError(conn);
-            }
-
-            throw var7;
-        }
-    }
-
-    private void createOrUpdateProjectStudioSpecification(long projectId, ProjectStudioSpecification spec, Connection conn, String operator) throws PersistenceException {
-        if (spec != null) {
-            if (spec.getId() > 0L && Helper.checkEntityExists("project_studio_specification", "project_studio_spec_id", spec.getId(), conn)) {
-                this.updateProjectStudioSpecification(spec, operator);
-            } else {
-                this.createProjectStudioSpecification(spec, operator);
-            }
-
-            Object[] queryArgs = new Object[]{spec.getId()};
-            Helper.doDMLQuery(conn, "UPDATE project SET project_studio_spec_id=? WHERE project.project_id=" + projectId, queryArgs);
-        }
-    }
-
-    protected String getConnectionName() {
-        return this.connectionName;
-    }
-
-    protected DBConnectionFactory getConnectionFactory() {
-        return this.factory;
-    }
-
-    protected abstract Log getLogger();
-
-    protected abstract Connection openConnection() throws PersistenceException;
-
-    protected abstract void closeConnection(Connection var1) throws PersistenceException;
-
-    protected abstract void closeConnectionOnError(Connection var1) throws PersistenceException;
-
-    private void createProject(Long projectId, Project project, String operator, Connection conn) throws PersistenceException {
-        this.getLogger().log(Level.DEBUG, "insert record into project with id:" + projectId);
-        Object[] queryArgs = new Object[]{projectId, project.getProjectStatus().getId(), project.getProjectCategory().getId(), operator, operator, project.getTcDirectProjectId()};
-        Helper.doDMLQuery(conn, "INSERT INTO project (project_id, project_status_id, project_category_id, create_user, create_date, modify_user, modify_date, tc_direct_project_id) VALUES (?, ?, ?, ?, CURRENT, ?, CURRENT, ?)", queryArgs);
-        Date createDate = (Date)Helper.doSingleValueQuery(conn, "SELECT create_date FROM project WHERE project_id=?", new Object[]{projectId}, Helper.DATE_TYPE);
-        project.setCreationUser(operator);
-        project.setCreationTimestamp(createDate);
-        project.setModificationUser(operator);
-        project.setModificationTimestamp(createDate);
-        Map idValueMap = this.makePropertyIdPropertyValueMap(project.getAllProperties(), conn);
-        this.createProjectProperties(projectId, project, idValueMap, operator, conn);
-    }
-
-    private void updateProject(Project project, String reason, String operator, Connection conn) throws PersistenceException {
-        Long projectId = project.getId();
-        this.getLogger().log(Level.DEBUG, new LogMessage(projectId, operator, "update project with projectId:" + projectId));
-        Timestamp modifyDate = new Timestamp(System.currentTimeMillis());
-        Object[] queryArgs = new Object[]{project.getProjectStatus().getId(), project.getProjectCategory().getId(), operator, modifyDate, project.getTcDirectProjectId() == 0L ? null : project.getTcDirectProjectId(), projectId};
-        Helper.doDMLQuery(conn, "UPDATE project SET project_status_id=?, project_category_id=?, modify_user=?, modify_date=?, tc_direct_project_id=? WHERE project_id=?", queryArgs);
-        project.setModificationUser(operator);
-        project.setModificationTimestamp(modifyDate);
-        Map idValueMap = this.makePropertyIdPropertyValueMap(project.getAllProperties(), conn);
-        this.updateProjectProperties(project, idValueMap, operator, conn);
-        this.createProjectAudit(projectId, reason, operator, conn);
-    }
-
-    private Map makePropertyIdPropertyValueMap(Map nameValueMap, Connection conn) throws PersistenceException {
-        Map idValueMap = new HashMap();
-        Map nameIdMap = this.makePropertyNamePropertyIdMap(this.getAllProjectPropertyTypes(conn));
-        Iterator var5 = nameValueMap.entrySet().iterator();
-
-        while(var5.hasNext()) {
-            Object item = var5.next();
-            Map.Entry entry = (Map.Entry)item;
-            Object propertyId = nameIdMap.get(entry.getKey());
-            if (propertyId == null) {
-                throw new PersistenceException("Unable to find ProjectPropertyType name [" + entry.getKey() + "] in project_info_type_lu table.");
-            }
-
-            idValueMap.put(propertyId, entry.getValue().toString());
-        }
-
-        return idValueMap;
-    }
-
-    private ProjectPropertyType[] getAllProjectPropertyTypes(Connection conn) throws PersistenceException {
-        Object[][] rows = Helper.doQuery(conn, "SELECT project_info_type_id, name, description FROM project_info_type_lu", new Object[0], QUERY_ALL_PROJECT_PROPERTY_TYPES_COLUMN_TYPES);
-        ProjectPropertyType[] propertyTypes = new ProjectPropertyType[rows.length];
-
-        for(int i = 0; i < rows.length; ++i) {
-            Object[] row = rows[i];
-            propertyTypes[i] = new ProjectPropertyType((Long)row[0], (String)row[1], (String)row[2]);
-        }
-
-        return propertyTypes;
-    }
-
-    public Project[] getProjects(CustomResultSet result) throws PersistenceException {
-        Connection conn = null;
-
-        try {
-            conn = this.openConnection();
-            PreparedStatement ps = conn.prepareStatement("SELECT info.project_id, info_type.name, info.value FROM project_info AS info JOIN project_info_type_lu AS info_type ON info.project_info_type_id=info_type.project_info_type_id WHERE info.project_id = ?");
-            int size = result.getRecordCount();
-            Project[] projects = new Project[size];
-
-            for(int i = 0; i < size; ++i) {
-                result.absolute(i + 1);
-                ProjectStatus status = new ProjectStatus(result.getLong(2), result.getString(3));
-                ProjectType type = new ProjectType(result.getLong(6), result.getString(7));
-                ProjectCategory category = new ProjectCategory(result.getLong(4), result.getString(5), type);
-                projects[i] = new Project(result.getLong(1), category, status);
-                projects[i].setCreationUser(result.getString(8));
-                projects[i].setCreationTimestamp(result.getDate(9));
-                projects[i].setModificationUser(result.getString(10));
-                projects[i].setModificationTimestamp(result.getDate(11));
-                ps.setLong(1, projects[i].getId());
-                ResultSet rs = ps.executeQuery();
-
-                while(rs.next()) {
-                    projects[i].setProperty(rs.getString(2), rs.getString(3));
-                }
-            }
-
-            Project[] var20 = projects;
-            return var20;
-        } catch (NullColumnValueException var16) {
-            throw new PersistenceException("Null value retrieved.", var16);
-        } catch (InvalidCursorStateException var17) {
-            throw new PersistenceException("Cursor state is invalid.", var17);
-        } catch (SQLException var18) {
-            throw new PersistenceException(var18.getMessage(), var18);
-        } finally {
-            if (conn != null) {
-                this.closeConnection(conn);
-            }
-
-        }
-    }
-
-    private Project[] getProjects(long[] ids, Connection conn) throws PersistenceException {
-        StringBuilder idListBuffer = new StringBuilder();
-        idListBuffer.append('(');
-
-        for(int i = 0; i < ids.length; ++i) {
-            if (i != 0) {
-                idListBuffer.append(',');
-            }
-
-            idListBuffer.append(ids[i]);
-        }
-
-        idListBuffer.append(')');
-        String idList = idListBuffer.toString();
-        Object[][] rows = Helper.doQuery(conn, "SELECT project.project_id, status.project_status_id, status.name, category.project_category_id, category.name, type.project_type_id, type.name, project.create_user, project.create_date, project.modify_user, project.modify_date, category.description, project.tc_direct_project_id, tcdp.name as tc_direct_project_name FROM project JOIN project_status_lu AS status ON project.project_status_id=status.project_status_id JOIN project_category_lu AS category ON project.project_category_id=category.project_category_id JOIN project_type_lu AS type ON category.project_type_id=type.project_type_id LEFT OUTER JOIN tc_direct_project AS tcdp ON tcdp.project_id=project.tc_direct_project_id WHERE project.project_id IN " + idList, new Object[0], QUERY_PROJECTS_COLUMN_TYPES);
-        Project[] projects = new Project[rows.length];
-
-        for(int i = 0; i < rows.length; ++i) {
-            Object[] row = rows[i];
-            ProjectStatus status = new ProjectStatus((Long)row[1], (String)row[2]);
-            ProjectType type = new ProjectType((Long)row[5], (String)row[6]);
-            ProjectCategory category = new ProjectCategory((Long)row[3], (String)row[4], type);
-            category.setDescription((String)row[11]);
-            long projectId = (Long)row[0];
-            projects[i] = new Project(projectId, category, status);
-            projects[i].setCreationUser((String)row[7]);
-            projects[i].setCreationTimestamp((Date)row[8]);
-            projects[i].setModificationUser((String)row[9]);
-            projects[i].setModificationTimestamp((Date)row[10]);
-            projects[i].setTcDirectProjectId(row[12] == null ? 0L : (long)((Long)row[12]).intValue());
-            projects[i].setTcDirectProjectName((String)row[13]);
-            projects[i].setProjectFileTypes(Arrays.asList(this.getProjectFileTypes(projectId)));
-            projects[i].setPrizes(Arrays.asList(this.getProjectPrizes(projectId)));
-            projects[i].setProjectStudioSpecification(this.getProjectStudioSpecification(projectId));
-        }
-
-        Map projectMap = this.makeIdProjectMap(projects);
-        rows = Helper.doQuery(conn, "SELECT info.project_id, info_type.name, info.value FROM project_info AS info JOIN project_info_type_lu AS info_type ON info.project_info_type_id=info_type.project_info_type_id WHERE info.project_id IN " + idList, new Object[0], QUERY_PROJECT_PROPERTIES_COLUMN_TYPES);
-        Object[][] var16 = rows;
-        int var17 = rows.length;
-
-        for(int var18 = 0; var18 < var17; ++var18) {
-            Object[] row = var16[var18];
-            Project project = (Project)projectMap.get(row[0]);
-            project.setProperty((String)row[1], row[2]);
-        }
-
-        return projects;
-    }
-
-    private ProjectType[] getAllProjectTypes(Connection conn) throws PersistenceException {
-        Object[][] rows = Helper.doQuery(conn, "SELECT project_type_id, name, description, is_generic FROM project_type_lu", new Object[0], QUERY_ALL_PROJECT_TYPES_COLUMN_TYPES);
-        ProjectType[] projectTypes = new ProjectType[rows.length];
-
-        for(int i = 0; i < rows.length; ++i) {
-            Object[] row = rows[i];
-            projectTypes[i] = new ProjectType((Long)row[0], (String)row[1], (String)row[2], (Boolean)row[3]);
-        }
-
-        return projectTypes;
-    }
-
-    private void createProjectProperties(Long projectId, Project project, Map idValueMap, String operator, Connection conn) throws PersistenceException {
-        this.getLogger().log(Level.DEBUG, new LogMessage(projectId, operator, "insert record into project_info with project id" + projectId));
-        PreparedStatement preparedStatement = null;
-
-        try {
-            preparedStatement = conn.prepareStatement("INSERT INTO project_info (project_id, project_info_type_id, value, create_user, create_date, modify_user, modify_date) VALUES (?, ?, ?, ?, CURRENT, ?, CURRENT)");
-            Iterator var7 = idValueMap.entrySet().iterator();
-
-            while(var7.hasNext()) {
-                Object item = var7.next();
-                Map.Entry entry = (Map.Entry)item;
-                Object[] queryArgs = new Object[]{projectId, entry.getKey(), entry.getValue(), operator, operator};
-                Helper.doDMLQuery(preparedStatement, queryArgs);
-                this.auditProjectInfo(conn, projectId, project, 1, (Long)entry.getKey(), (String)entry.getValue());
-            }
-        } catch (SQLException var14) {
-            throw new PersistenceException("Unable to create prepared statement [INSERT INTO project_info (project_id, project_info_type_id, value, create_user, create_date, modify_user, modify_date) VALUES (?, ?, ?, ?, CURRENT, ?, CURRENT)].", var14);
-        } finally {
-            Helper.closeStatement(preparedStatement);
-        }
-
-    }
-
-    private Map makeIdProjectMap(Project[] projects) {
-        Map map = new HashMap();
-        Project[] var3 = projects;
-        int var4 = projects.length;
-
-        for(int var5 = 0; var5 < var4; ++var5) {
-            Project project = var3[var5];
-            map.put(project.getId(), project);
-        }
-
-        return map;
-    }
-
-    private void updateProjectProperties(Project project, Map idValueMap, String operator, Connection conn) throws PersistenceException {
-        Long projectId = project.getId();
-        Map<Long, String> propertyMap = this.getProjectPropertyIdsAndValues(projectId, conn);
-        Map createIdValueMap = new HashMap();
-        PreparedStatement preparedStatement = null;
-
-        try {
-            this.getLogger().log(Level.DEBUG, new LogMessage(projectId, operator, "update project, update project_info with projectId:" + projectId));
-            preparedStatement = conn.prepareStatement("UPDATE project_info SET value=?, modify_user=?, modify_date=CURRENT WHERE project_id=? AND project_info_type_id=?");
-            Iterator var9 = idValueMap.entrySet().iterator();
-
-            while(var9.hasNext()) {
-                Object item = var9.next();
-                Map.Entry entry = (Map.Entry)item;
-                Long propertyId = (Long)entry.getKey();
-                if (propertyMap.containsKey(propertyId)) {
-                    if (!((String)propertyMap.get(propertyId)).equals((String)entry.getValue())) {
-                        Object[] queryArgs = new Object[]{entry.getValue(), operator, projectId, propertyId};
-                        Helper.doDMLQuery(preparedStatement, queryArgs);
-                        this.auditProjectInfo(conn, project, 3, propertyId, (String)entry.getValue());
-                    }
-
-                    propertyMap.remove(propertyId);
-                } else {
-                    createIdValueMap.put(propertyId, entry.getValue());
-                }
-            }
-        } catch (SQLException var17) {
-            throw new PersistenceException("Unable to create prepared statement [UPDATE project_info SET value=?, modify_user=?, modify_date=CURRENT WHERE project_id=? AND project_info_type_id=?].", var17);
-        } finally {
-            Helper.closeStatement(preparedStatement);
-        }
-
-        this.createProjectProperties(project.getId(), project, createIdValueMap, operator, conn);
-        this.deleteProjectProperties(project, propertyMap.keySet(), conn);
-    }
-
-    private Set getProjectPropertyIds(Long projectId, Connection conn) throws PersistenceException {
-        Set idSet = new HashSet();
-        Object[][] rows = Helper.doQuery(conn, "SELECT project_info_type_id FROM project_info WHERE project_id=?", new Object[]{projectId}, QUERY_PROJECT_PROPERTY_IDS_COLUMN_TYPES);
-        Object[][] var5 = rows;
-        int var6 = rows.length;
-
-        for(int var7 = 0; var7 < var6; ++var7) {
-            Object[] row = var5[var7];
-            idSet.add(row[0]);
-        }
-
-        return idSet;
-    }
-
-    private Map<Long, String> getProjectPropertyIdsAndValues(Long projectId, Connection conn) throws PersistenceException {
-        Map<Long, String> idMap = new HashMap();
-        Object[][] rows = Helper.doQuery(conn, "SELECT project_info_type_id, value FROM project_info WHERE project_id=?", new Object[]{projectId}, QUERY_PROJECT_PROPERTY_IDS_AND_VALUES_COLUMN_TYPES);
-        Object[][] var5 = rows;
-        int var6 = rows.length;
-
-        for(int var7 = 0; var7 < var6; ++var7) {
-            Object[] row = var5[var7];
-            idMap.put((Long)row[0], (String)row[1]);
-        }
-
-        return idMap;
-    }
-
-    private void deleteProjectProperties(Project project, Set<Long> propertyIdSet, Connection conn) throws PersistenceException {
-        Long projectId = project.getId();
-        if (!propertyIdSet.isEmpty()) {
-            StringBuilder idListBuffer = new StringBuilder();
-            idListBuffer.append('(');
-            int idx = 0;
-
-            Iterator var7;
-            Long id;
-            for(var7 = propertyIdSet.iterator(); var7.hasNext(); idListBuffer.append(id)) {
-                id = (Long)var7.next();
-                if (idx++ != 0) {
-                    idListBuffer.append(',');
-                }
-            }
-
-            idListBuffer.append(')');
-            this.getLogger().log(Level.DEBUG, new LogMessage(projectId, (String)null, "delete records from project_info with projectId:" + projectId));
-            Helper.doDMLQuery(conn, "DELETE FROM project_info WHERE project_id=? AND project_info_type_id IN " + idListBuffer.toString(), new Object[]{projectId});
-            var7 = propertyIdSet.iterator();
-
-            while(var7.hasNext()) {
-                id = (Long)var7.next();
-                this.auditProjectInfo(conn, project, 2, id, (String)null);
-            }
-        }
-
-    }
-
-    private void createProjectAudit(Long projectId, String reason, String operator, Connection conn) throws PersistenceException {
-        Long auditId;
-        try {
-            auditId = this.projectAuditIdGenerator.getNextID();
-            this.getLogger().log(Level.DEBUG, new LogMessage(projectId, operator, "generate new id for the project audit."));
-        } catch (IDGenerationException var7) {
-            throw new PersistenceException("Unable to generate id for project.", var7);
-        }
-
-        this.getLogger().log(Level.DEBUG, "insert record into project_audit with projectId:" + projectId);
-        Object[] queryArgs = new Object[]{auditId, projectId, reason, operator, operator};
-        Helper.doDMLQuery(conn, "INSERT INTO project_audit (project_audit_id, project_id, update_reason, create_user, create_date, modify_user, modify_date) VALUES (?, ?, ?, ?, CURRENT, ?, CURRENT)", queryArgs);
-    }
-
-    private Map makePropertyNamePropertyIdMap(ProjectPropertyType[] propertyTypes) throws PersistenceException {
-        Map map = new HashMap();
-        ProjectPropertyType[] var3 = propertyTypes;
-        int var4 = propertyTypes.length;
-
-        for(int var5 = 0; var5 < var4; ++var5) {
-            ProjectPropertyType propertyType = var3[var5];
-            if (map.containsKey(propertyType.getName())) {
-                throw new PersistenceException("Duplicate project property type names [" + propertyType.getName() + "] found in project_info_type_lu table.");
-            }
-
-            map.put(propertyType.getName(), propertyType.getId());
-        }
-
-        return map;
-    }
-
-    private ProjectCategory[] getAllProjectCategories(Connection conn) throws PersistenceException {
-        Object[][] rows = Helper.doQuery(conn, "SELECT category.project_category_id, category.name, category.description, type.project_type_id, type.name, type.description, type.is_generic FROM project_category_lu AS category JOIN project_type_lu AS type ON category.project_type_id = type.project_type_id", new Object[0], QUERY_ALL_PROJECT_CATEGORIES_COLUMN_TYPES);
-        ProjectCategory[] projectCategories = new ProjectCategory[rows.length];
-
-        for(int i = 0; i < rows.length; ++i) {
-            Object[] row = rows[i];
-            ProjectType type = new ProjectType((Long)row[3], (String)row[4], (String)row[5], (Boolean)row[6]);
-            projectCategories[i] = new ProjectCategory((Long)row[0], (String)row[1], (String)row[2], type);
-        }
-
-        return projectCategories;
-    }
-
-    private ProjectStatus[] getAllProjectStatuses(Connection conn) throws PersistenceException {
-        Object[][] rows = Helper.doQuery(conn, "SELECT project_status_id, name, description FROM project_status_lu", new Object[0], QUERY_ALL_PROJECT_STATUSES_COLUMN_TYPES);
-        ProjectStatus[] projectStatuses = new ProjectStatus[rows.length];
-
-        for(int i = 0; i < rows.length; ++i) {
-            Object[] row = rows[i];
-            projectStatuses[i] = new ProjectStatus((Long)row[0], (String)row[1], (String)row[2]);
-        }
-
-        return projectStatuses;
-    }
-
-    private void auditProjectInfo(Connection connection, Long projectId, Project project, int auditType, long projectInfoTypeId, String value) throws PersistenceException {
-        PreparedStatement statement = null;
-
-        try {
-            statement = connection.prepareStatement("INSERT INTO project_info_audit (project_id, project_info_type_id, value, audit_action_type_id, action_date, action_user_id) VALUES (?, ?, ?, ?, ?, ?)");
-            int index = 1;
-            int var15 = index + 1;
-            statement.setLong(index, projectId);
-            statement.setLong(var15++, projectInfoTypeId);
-            statement.setString(var15++, value);
-            statement.setInt(var15++, auditType);
-            statement.setTimestamp(var15++, new Timestamp(project.getModificationTimestamp().getTime()));
-            statement.setString(var15++, project.getModificationUser());
-            if (statement.executeUpdate() != 1) {
-                throw new PersistenceException("Audit information was not successfully saved.");
-            }
-        } catch (SQLException var13) {
-            this.closeConnectionOnError(connection);
-            throw new PersistenceException("Unable to insert project_info_audit record.", var13);
-        } finally {
-            Helper.closeStatement(statement);
-        }
-
-    }
-
-    private void auditProjectInfo(Connection connection, Project project, int auditType, long projectInfoTypeId, String value) throws PersistenceException {
-        this.auditProjectInfo(connection, project.getId(), project, auditType, projectInfoTypeId, value);
-    }
-
-    static {
-        QUERY_ALL_PROJECT_TYPES_COLUMN_TYPES = new DataType[]{Helper.LONG_TYPE, Helper.STRING_TYPE, Helper.STRING_TYPE, Helper.BOOLEAN_TYPE};
-        QUERY_ALL_PROJECT_CATEGORIES_COLUMN_TYPES = new DataType[]{Helper.LONG_TYPE, Helper.STRING_TYPE, Helper.STRING_TYPE, Helper.LONG_TYPE, Helper.STRING_TYPE, Helper.STRING_TYPE, Helper.BOOLEAN_TYPE};
-        QUERY_ALL_PROJECT_STATUSES_COLUMN_TYPES = new DataType[]{Helper.LONG_TYPE, Helper.STRING_TYPE, Helper.STRING_TYPE};
-        QUERY_ALL_PROJECT_PROPERTY_TYPES_COLUMN_TYPES = new DataType[]{Helper.LONG_TYPE, Helper.STRING_TYPE, Helper.STRING_TYPE};
-        QUERY_PROJECTS_COLUMN_TYPES = new DataType[]{Helper.LONG_TYPE, Helper.LONG_TYPE, Helper.STRING_TYPE, Helper.LONG_TYPE, Helper.STRING_TYPE, Helper.LONG_TYPE, Helper.STRING_TYPE, Helper.STRING_TYPE, Helper.DATE_TYPE, Helper.STRING_TYPE, Helper.DATE_TYPE, Helper.STRING_TYPE, Helper.LONG_TYPE, Helper.STRING_TYPE};
-        QUERY_PROJECT_PROPERTIES_COLUMN_TYPES = new DataType[]{Helper.LONG_TYPE, Helper.STRING_TYPE, Helper.STRING_TYPE};
-        QUERY_PROJECT_PROPERTY_IDS_COLUMN_TYPES = new DataType[]{Helper.LONG_TYPE};
-        QUERY_PROJECT_PROPERTY_IDS_AND_VALUES_COLUMN_TYPES = new DataType[]{Helper.LONG_TYPE, Helper.STRING_TYPE};
-        QUERY_FILE_TYPES_COLUMN_TYPES = new DataType[]{Helper.LONG_TYPE, Helper.STRING_TYPE, Helper.LONG_TYPE, Helper.BOOLEAN_TYPE, Helper.STRING_TYPE, Helper.BOOLEAN_TYPE};
-        QUERY_PRIZES_COLUMN_TYPES = new DataType[]{Helper.LONG_TYPE, Helper.LONG_TYPE, Helper.Double_TYPE, Helper.LONG_TYPE, Helper.LONG_TYPE, Helper.STRING_TYPE};
-        QUERY_ALL_PRIZE_TYPES_COLUMN_TYPES = new DataType[]{Helper.LONG_TYPE, Helper.STRING_TYPE};
-        QUERY_ALL_FILE_TYPES_COLUMN_TYPES = new DataType[]{Helper.LONG_TYPE, Helper.STRING_TYPE, Helper.LONG_TYPE, Helper.BOOLEAN_TYPE, Helper.STRING_TYPE, Helper.BOOLEAN_TYPE};
-        QUERY_STUDIO_SPEC_COLUMN_TYPES = new DataType[]{Helper.LONG_TYPE, Helper.STRING_TYPE, Helper.STRING_TYPE, Helper.STRING_TYPE, Helper.STRING_TYPE, Helper.STRING_TYPE, Helper.STRING_TYPE, Helper.BOOLEAN_TYPE, Helper.STRING_TYPE, Helper.STRING_TYPE, Helper.STRING_TYPE, Helper.STRING_TYPE, Helper.STRING_TYPE};
-        QUERY_PROJECT_IDS__COLUMN_TYPES = new DataType[]{Helper.LONG_TYPE};
-    }
-    protected Connection openConnection() throws PersistenceException {
-        String connectionName = this.getConnectionName();
-        if (connectionName == null) {
-            LOGGER.log(Level.DEBUG, new LogMessage((Long)null, (String)null, "creating db connection using default connection"));
-        } else {
-            LOGGER.log(Level.DEBUG, new LogMessage((Long)null, (String)null, "creating db connection using connection name: " + connectionName));
-        }
-
-        Connection conn = Helper.createConnection(this.getConnectionFactory(), connectionName);
-
-        try {
-            conn.setAutoCommit(false);
-            return conn;
-        } catch (SQLException var4) {
-            throw new PersistenceException("Error occurs when setting " + (connectionName == null ? "the default connection" : "the connection '" + connectionName + "'") + " to support transaction.", var4);
-        }
-    }
-
-    protected void closeConnection(Connection connection) throws PersistenceException {
-        Helper.assertObjectNotNull(connection, "connection");
-
-        try {
-            LOGGER.log(Level.DEBUG, "committing transaction");
-            Helper.commitTransaction(connection);
-        } finally {
-            Helper.closeConnection(connection);
-        }
-
-    }
-
-    protected void closeConnectionOnError(Connection connection) throws PersistenceException {
-        Helper.assertObjectNotNull(connection, "connection");
-
-        try {
-            LOGGER.log(Level.DEBUG, "rollback transaction");
-            Helper.rollBackTransaction(connection);
-        } finally {
-            Helper.closeConnection(connection);
-        }
-
-    }
-
-//    protected Log getLogger() {
-//        return LOGGER;
-//    }
+  }
+
+  /**
+   * This method will audit project information. This information is generated when most project
+   * properties are inserted, deleted, or edited.
+   *
+   * @param project the project being audited
+   * @param auditType the audit type. Can be AUDIT_CREATE_TYPE, AUDIT_DELETE_TYPE, or
+   *     AUDIT_UPDATE_TYPE
+   * @param projectInfoTypeId the project info type id
+   * @param value the project info value that we're changing to
+   * @throws PersistenceException if validation error occurs or any error occurs in the underlying
+   *     layer
+   * @since 1.1.2
+   */
+  private void auditProjectInfo(
+      Project project, int auditType, long projectInfoTypeId, String value)
+      throws PersistenceException {
+    auditProjectInfo(project.getId(), project, auditType, projectInfoTypeId, value);
+  }
 }

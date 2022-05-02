@@ -238,12 +238,6 @@ public class PhasePersistence {
   private static final String PROJECT_PHASE_AUDIT_DELETE_SQL =
       "DELETE FROM project_phase_audit WHERE project_phase_id IN ";
 
-  /**
-   * This represents a connection name (an alias) that is used to fetch a connection instance from
-   * the connection factory. This is initialized in one of the constructors and once initialized
-   * cannot be changed. Can be null or an empty string, upon which it will try to use the default
-   * connection.
-   */
   @Value("{phase.persistence.entity-manager-name}")
   private String entityManagerName;
 

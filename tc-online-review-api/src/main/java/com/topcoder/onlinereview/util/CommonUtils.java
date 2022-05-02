@@ -19,6 +19,14 @@ public class CommonUtils {
     return Long.parseLong(map.get(key).toString());
   }
 
+  public static Integer getInt(Map<String, Object> map, String key) {
+    return Integer.parseInt(map.get(key).toString());
+  }
+
+  public static Double getDouble(Map<String, Object> map, String key) {
+    return Double.parseDouble(map.get(key).toString());
+  }
+
   public static Boolean getBoolean(Map<String, Object> map, String key) {
     return (Boolean) map.get(key);
   }

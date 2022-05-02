@@ -83,9 +83,9 @@ public class ResultSetContainer implements Serializable, List<ResultSetContainer
     private static final long serialVersionUID = -6750551108318797975L;
 
     // Stores ArrayList of ResultSetRow
-    private ArrayList<ResultSetRow> data;
-    private ResultColumn columns[];
-    private HashMap<String, Integer> columnNameMap;
+    private List<Map<String, Object>> data;
+//    private ResultColumn columns[];
+//    private HashMap<String, Integer> columnNameMap;
     private int startRow;
     private int endRow;
 
@@ -106,8 +106,8 @@ public class ResultSetContainer implements Serializable, List<ResultSetContainer
      * but it helps us fullfill the contract of a java bean.
      */
     public ResultSetContainer() {
-        data = new ArrayList<ResultSetRow>();
-        columnNameMap = new HashMap<String, Integer>();
+        data = new ArrayList<Map<String, Object>>();
+//        columnNameMap = new HashMap<String, Integer>();
         dataBefore = false;
         dataAfter = false;
         startRow = 1;

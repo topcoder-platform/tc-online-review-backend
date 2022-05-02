@@ -3,7 +3,6 @@ package com.topcoder.onlinereview.component.project.management;
 import com.topcoder.onlinereview.component.datavalidator.IntegerValidator;
 import com.topcoder.onlinereview.component.datavalidator.LongValidator;
 import com.topcoder.onlinereview.component.datavalidator.StringValidator;
-import com.topcoder.onlinereview.component.search.SearchBuilderException;
 import com.topcoder.onlinereview.component.search.SearchBundle;
 import com.topcoder.onlinereview.component.search.filter.Filter;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,6 +11,8 @@ import org.springframework.stereotype.Component;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import static com.google.common.collect.Lists.newArrayList;
 
 @Component
 public class ProjectManager {
@@ -54,12 +55,12 @@ public class ProjectManager {
 
   public Project[] searchProjects(Filter filter) throws PersistenceException {
     Helper.checkObjectNotNull(filter, "filter");
-
     try {
-      CustomResultSet result = (CustomResultSet) this.searchBundle.search(filter);
-      return this.persistence.getProjects(result);
-    } catch (SearchBuilderException var3) {
-      throw new PersistenceException("error occurs when getting search result.", var3);
+      // TODO
+      //      CustomResultSet result = (CustomResultSet) this.searchBundle.search(filter);
+      return this.persistence.getProjects(newArrayList());
+      //    } catch (SearchBuilderException var3) {
+      //      throw new PersistenceException("error occurs when getting search result.", var3);
     } catch (ClassCastException var4) {
       throw new PersistenceException("error occurs when trying to get ids.", var4);
     }
