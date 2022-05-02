@@ -126,7 +126,7 @@ public class ContestEligibilityValidationManagerBean implements ContestEligibili
      *             if namespace or configFileName is empty or any errors occurred when initializing
      */
     @PostConstruct
-    protected void initialize() {
+    public void initialize() {
         checkEmpty(namespace, "namespace");
         checkEmpty(configFileName, "configFileName");
         // note logName can be empty if user really need,it will not raise IAE
