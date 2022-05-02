@@ -3,14 +3,11 @@
  */
 package com.topcoder.onlinereview.component.contest;
 
-import com.topcoder.service.contest.eligibility.ContestEligibility;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.Resource;
-import javax.ejb.SessionContext;
 import javax.persistence.EntityManager;
 import javax.persistence.Query;
 import java.util.Date;
@@ -18,7 +15,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
-//import org.jboss.logging.Logger;
 
 /**
  * <p>
@@ -65,8 +61,6 @@ import java.util.Set;
  *   <ol>
  *     <li>Updated the class to use JBoss Logging for logging the events to make the component usable in local
  *     environment for Online Review application.</li>
- *     <li>Changed visibility for {@link #getEntityManager()} method to protected so it could be overridden for
- *     injection of the entity manager in local environment for Online Review application.</li>
  *   </ol>
  * </p>
  *
@@ -77,33 +71,9 @@ import java.util.Set;
 @Component
 public class ContestEligibilityManager {
 
-    /**
-     * <p>
-     * Represents the sessionContext of the EJB.
-     * </p>
-     */
-    @Resource
-    private SessionContext sessionContext;
-
-
-    /**
-     * <p>
-     * This field represents the entity manager which is used to communicate with the persistence.
-     * </p>
-     * <p>
-     * It's automatically injected by EJB container.
-     * </p>
-     */
-    @Resource(name = "unitName")
-    private String unitName;
-
-    /**
-     * Represents the log name.Default value is 'contest_eligibility_logger'.You also could change the default value
-     * via deploy descriptor.
-     */
-    @Resource(name = "logName")
-    private String logName = "contest_eligibility_logger";
-
+    @Autowired
+    @Qualifier("dsEntityManager")
+    private EntityManager entityManager;
     /**
      * Add a contest eligibility.
      *
@@ -121,7 +91,6 @@ public class ContestEligibilityManager {
             new Object[] {contestEligibility});
         checkNull(contestEligibility, "contestEligibility");
         try {
-            EntityManager entityManager = getEntityManager();
             entityManager.persist(contestEligibility);
         } catch (RuntimeException e) {
             throw logError(new ContestEligibilityPersistenceException(
@@ -146,7 +115,6 @@ public class ContestEligibilityManager {
             new Object[] {contestEligibility});
         checkNull(contestEligibility, "contestEligibility");
         try {
-            EntityManager entityManager = getEntityManager();
             entityManager.remove(entityManager.merge(contestEligibility));
         } catch (RuntimeException e) {
             throw logError(new ContestEligibilityPersistenceException(
@@ -183,8 +151,6 @@ public class ContestEligibilityManager {
             checkNull(contestEligibility, "contest eligibility in list");
         }
         try {
-            EntityManager entityManager = getEntityManager();
-
             for (Iterator<ContestEligibility> iterator = list.iterator(); iterator.hasNext();) {
                 ContestEligibility contestEligibility = iterator.next();
                 if (contestEligibility.isDeleted()) {
@@ -224,7 +190,6 @@ public class ContestEligibilityManager {
         logEntrance("ContestEligibilityManagerBean#getContestEligibility", new String[] {"contestId",
         "isStudio"}, new Object[] {contestId, isStudio});
         checkPositive(contestId, "contestId");
-        EntityManager entityManager = getEntityManager();
         final Query query =
             entityManager
                 .createQuery("from ContestEligibility c where c.contestId=:contestId and c.studio=:studio");
@@ -275,7 +240,6 @@ public class ContestEligibilityManager {
         int studio = isStudio ? 1 : 0;
         String queryStr = "select unique contest_id from contest_eligibility where is_studio = "+ studio +" and  contest_id in " + ids;
 
-        EntityManager entityManager = getEntityManager();
         Query query =
             entityManager
                 .createNativeQuery(queryStr);
@@ -350,7 +314,7 @@ public class ContestEligibilityManager {
                 }
                 logInfo.append(" [ " + paramNames[i] + " = " + params[i] + " ]");
             }
-            log.debug(logInfo);
+            log.debug(logInfo.toString());
         }
     }
 
@@ -402,32 +366,6 @@ public class ContestEligibilityManager {
         if (arg <= 0) {
             IllegalArgumentException e = new IllegalArgumentException(name + " should be positive.");
             throw logError(e);
-        }
-    }
-
-    /**
-     * <p>
-     * Returns the <code>EntityManager</code> looked up from the session context.
-     * </p>
-     * 
-     * @return the EntityManager looked up from the session context
-     * @throws ContestEligibilityPersistenceException
-     *             if fail to get the EntityManager from the sessionContext.
-     */
-    protected EntityManager getEntityManager() throws ContestEligibilityPersistenceException {
-        try {
-            Object obj = sessionContext.lookup(unitName);
-
-            if (obj == null) {
-                throw logError(new ContestEligibilityPersistenceException(
-                "The object for jndi name '" + unitName + "' doesn't exist."));
-            }
-
-            return (EntityManager) obj;
-        } catch (ClassCastException e) {
-             throw new ContestEligibilityPersistenceException(
-               "The jndi name for '" + unitName
-                    + "' should be EntityManager instance.", e);
         }
     }
 }

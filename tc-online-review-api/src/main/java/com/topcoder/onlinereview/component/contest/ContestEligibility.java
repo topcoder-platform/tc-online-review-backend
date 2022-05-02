@@ -3,136 +3,52 @@
  */
 package com.topcoder.onlinereview.component.contest;
 
+import lombok.Data;
+
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.SequenceGenerator;
+import javax.persistence.Table;
+import javax.persistence.Transient;
 import java.io.Serializable;
 
 /**
- * <p>
  * Represents the bass entity class for contest eligibility.
- * </p>
- * <p>
- * <strong>Thread Safety</strong>: This class is not thread safe since it is mutable.
- * </p>
+ *
+ * <p><strong>Thread Safety</strong>: This class is not thread safe since it is mutable.
  *
  * @author TCSDEVELOPER
  * @version 1.0
  */
-public abstract class ContestEligibility implements Serializable {
+@Data
+@Entity
+@Table(name = "contest_eligibility")
+public class ContestEligibility implements Serializable {
 
-    /**
-     * <p>
-     * The serial version UID.
-     * </p>
-     */
-    private static final long serialVersionUID = -7716443412438952646L;
+  /** The serial version UID. */
+  private static final long serialVersionUID = -7716443412438952646L;
 
-    /**
-     * <p>
-     * Represents the id of the entity.
-     * </p>
-     */
-    private long id;
+  /** Represents the id of the entity. */
+  @Id
+  @GeneratedValue(strategy = GenerationType.SEQUENCE)
+  @SequenceGenerator(
+      name = "CONTEST_ELIGIBILITY_SEQ",
+      sequenceName = "CONTEST_ELIGIBILITY_SEQ",
+      allocationSize = 1)
+  @Column(name = "contest_eligibility_id")
+  private Long id;
 
-    /**
-     * <p>
-     * Represents the id of the contest.
-     * </p>
-     */
-    private long contestId;
+  /** Represents the id of the contest. */
+  @Column(name = "contest_id")
+  private Long contestId;
 
-    /**
-     * <p>
-     * Represents the flag to indicate whether it is used for studio.
-     * </p>
-     */
-    private boolean studio;
+  /** Represents the flag to indicate whether it is used for studio. */
+  @Column(name = "is_studio")
+  private Boolean studio;
 
-    /**
-     * <p>
-     * It is a non-persistent flag to indicate a 'to be deleted' eligibility.
-     * </p>
-     */
-    private boolean deleted;
-
-    /**
-     * Default constructor.
-     */
-    public ContestEligibility() {
-        // empty.
-    }
-
-    /**
-     * Returns the id.
-     *
-     * @return the id.
-     */
-    public long getId() {
-        return id;
-    }
-
-    /**
-     * Sets the id with the specified value.
-     *
-     * @param id
-     *            the id to set.
-     */
-    public void setId(long id) {
-        this.id = id;
-    }
-
-    /**
-     * Returns the contestId.
-     *
-     * @return the contestId.
-     */
-    public long getContestId() {
-        return contestId;
-    }
-
-    /**
-     * Sets the contestId with the specified value.
-     *
-     * @param contestId
-     *            the contestId to set.
-     */
-    public void setContestId(long contestId) {
-        this.contestId = contestId;
-    }
-
-    /**
-     * Returns the studio.
-     *
-     * @return the studio.
-     */
-    public boolean isStudio() {
-        return studio;
-    }
-
-    /**
-     * Sets the studio flag with the specified value.
-     *
-     * @param studio
-     *            the studio flag to set.
-     */
-    public void setStudio(boolean studio) {
-        this.studio = studio;
-    }
-
-    /**
-     * Returns the deleted.
-     *
-     * @return the deleted.
-     */
-    public boolean isDeleted() {
-        return deleted;
-    }
-
-    /**
-     * Sets the delete flag with the specified value.
-     *
-     * @param deleted
-     *            the delete flag to set.
-     */
-    public void setDeleted(boolean deleted) {
-        this.deleted = deleted;
-    }
+  /** It is a non-persistent flag to indicate a 'to be deleted' eligibility. */
+  @Transient private boolean deleted;
 }

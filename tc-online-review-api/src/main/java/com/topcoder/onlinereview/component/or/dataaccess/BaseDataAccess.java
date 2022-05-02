@@ -14,10 +14,12 @@ import com.topcoder.onlinereview.component.shared.dataaccess.DataAccess;
 import com.topcoder.onlinereview.component.shared.dataaccess.Request;
 import com.topcoder.onlinereview.component.shared.dataaccess.ResultSetContainer;
 
+import javax.persistence.EntityManager;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -138,7 +140,7 @@ public abstract class BaseDataAccess {
      * @return a <code>Map</code> providing the query results. Maps query names to query results.
      * @throws DataAccessException if an unexpected error occurs while running the query.
      */
-    protected Map<String, ResultSetContainer> runQuery(String queryName, String paramName, String paramValue) {
+    protected Map<String, List<Map<String, Object>>> runQuery(String queryName, String paramName, String paramValue) {
         return runQuery(queryName, new String[] {paramName}, new String[] {paramValue});
     }
 
@@ -152,7 +154,7 @@ public abstract class BaseDataAccess {
      * @return a <code>Map</code> providing the query results. Maps query names to query results.
      * @throws DataAccessException if an unexpected error occurs while running the query.
      */
-    protected Map<String, ResultSetContainer> runQuery(String queryName, String[] paramNames, String[] paramValues) {
+    protected Map<String, List<Map<String, Object>>> runQuery(String queryName, String[] paramNames, String[] paramValues) {
         return runQueryInDB(DBMS.TCS_OLTP_DATASOURCE_NAME, queryName, paramNames, paramValues);
     }
 
@@ -160,15 +162,15 @@ public abstract class BaseDataAccess {
      * <p>Executes the specified query using Query Tool. The query is customized with provided value of specified
      * parameter.</p>
      *
-     * @param dbName the name of db.
+     * @param entityManager the entityManager.
      * @param queryName a <code>String</code> providing the name of the query to be run.
      * @param paramNames a <code>String</code> array providing the names of the query parameters for customization.
      * @param paramValues a <code>String</code> array providing the values of the query parameters for customization.
      * @return a <code>Map</code> providing the query results. Maps query names to query results.
      * @throws DataAccessException if an unexpected error occurs while running the query.
      */
-    protected Map<String, ResultSetContainer> runQueryInDB(String dbName, String queryName, String[] paramNames, String[] paramValues) {
-        DataAccess dataAccess = new DataAccess(dbName);
+    protected Map<String, List<Map<String, Object>>> runQueryInDB(EntityManager entityManager, String queryName, String[] paramNames, String[] paramValues) {
+        DataAccess dataAccess = new DataAccess(entityManager);
         Request request = new Request();
         request.setContentHandle(queryName);
         for (int i = 0; i < paramNames.length; i++) {
@@ -180,50 +182,6 @@ public abstract class BaseDataAccess {
             return dataAccess.getData(request);
         } catch (Exception e) {
             throw new DataAccessException("Failed to run " + queryName + " query via Query Tool", e);
-        }
-    }
-
-    /**
-     * <p>Gets a connection to TCS Catalog database.</p>
-     *
-     * @return a <code>Connection</code> providing the connection to TCS Catalog database.
-     * @throws DataAccessException if an SQL error occurs while establishing connection to TCS Catalog database.
-     */
-    protected Connection getTCSCatalogDBConnection() {
-        try {
-            return DBMS.getConnection(DBMS.TCS_OLTP_DATASOURCE_NAME);
-        } catch (SQLException e) {
-            throw new DataAccessException("Failed to connect to TCS Catalog database", e);
-        }
-    }
-
-    /**
-     * <p>Closes the specified statement. If an SQL error occurs while closing the statement it is ignored.</p>
-     *
-     * @param statement a <code>Statement</code> to be closed.
-     */
-    protected void close(Statement statement) {
-        if (statement != null) {
-            try {
-                statement.close();
-            } catch (SQLException e) {
-                // Ignore
-            }
-        }
-    }
-
-    /**
-     * <p>Closes the specified connection. If an SQL error occurs while closing the connection it is ignored.</p>
-     *
-     * @param connection a <code>Connection</code> to be closed.
-     */
-    protected void close(Connection connection) {
-        if (connection != null) {
-            try {
-                connection.close();
-            } catch (SQLException e) {
-                // Ignore
-            }
         }
     }
 }
