@@ -35,7 +35,7 @@ public class GroupEligibilityValidatorTests extends TestCase {
      * @throws Exception to jUnit.
      */
     protected void setUp() throws Exception {
-        instance = new GroupEligibilityValidator("persistence-unit");
+        instance = new GroupEligibilityValidator();
     }
 
     /**
@@ -59,7 +59,7 @@ public class GroupEligibilityValidatorTests extends TestCase {
      */
     public void testConstructor2Failure1() throws Exception {
         try {
-            new GroupEligibilityValidator(null);
+            new GroupEligibilityValidator();
             fail("IllegalArgumentException should be thrown.");
         } catch (IllegalArgumentException e) {
             // pass
@@ -76,7 +76,7 @@ public class GroupEligibilityValidatorTests extends TestCase {
      */
     public void testConstructor2Failure2() throws Exception {
         try {
-            new GroupEligibilityValidator("  ");
+            new GroupEligibilityValidator();
             fail("IllegalArgumentException should be thrown.");
         } catch (IllegalArgumentException e) {
             // pass

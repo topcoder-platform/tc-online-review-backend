@@ -5,13 +5,12 @@
 
 package com.topcoder.service.contest.eligibilityvalidation;
 
+import com.topcoder.service.contest.eligibility.ContestEligibility;
+import junit.framework.TestCase;
+
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
-
-import junit.framework.TestCase;
-
-import com.topcoder.service.contest.eligibility.ContestEligibility;
 
 /**
  * <p>
@@ -59,7 +58,6 @@ public class ContestEligibilityValidationManagerBeanUnitTests extends TestCase {
         setPrivateField(ContestEligibilityValidationManagerBean.class, instance, "namespace",
             "empty_entity_name");
         try {
-            instance.initialize();
             fail("ContestEligibilityValidationManagerConfigurationException should be thrown.");
         } catch (ContestEligibilityValidationManagerConfigurationException e) {
             // pass
@@ -79,7 +77,6 @@ public class ContestEligibilityValidationManagerBeanUnitTests extends TestCase {
         setPrivateField(ContestEligibilityValidationManagerBean.class, instance, "namespace",
             "empty_key");
         try {
-            instance.initialize();
             fail("ContestEligibilityValidationManagerConfigurationException should be thrown.");
         } catch (ContestEligibilityValidationManagerConfigurationException e) {
             // pass
@@ -100,7 +97,6 @@ public class ContestEligibilityValidationManagerBeanUnitTests extends TestCase {
         setPrivateField(ContestEligibilityValidationManagerBean.class, instance, "namespace",
             "invalid_entity");
         try {
-            instance.initialize();
             fail("ContestEligibilityValidationManagerConfigurationException should be thrown.");
         } catch (ContestEligibilityValidationManagerConfigurationException e) {
             // pass
@@ -122,7 +118,6 @@ public class ContestEligibilityValidationManagerBeanUnitTests extends TestCase {
         setPrivateField(ContestEligibilityValidationManagerBean.class, instance, "namespace",
             "invalid_persistence_unit");
         try {
-            instance.initialize();
             fail("ContestEligibilityValidationManagerConfigurationException should be thrown.");
         } catch (ContestEligibilityValidationManagerConfigurationException e) {
             // pass
@@ -135,7 +130,6 @@ public class ContestEligibilityValidationManagerBeanUnitTests extends TestCase {
      * @throws Exception to JUNIT.
      */
     public void testValidate_failure_1() throws Exception {
-        instance.initialize();
         try {
             instance.validate(11111, null);
             fail("IAE should be thrown");
@@ -151,7 +145,6 @@ public class ContestEligibilityValidationManagerBeanUnitTests extends TestCase {
      * @throws Exception to JUNIT.
      */
     public void testValidate_failure_2() throws Exception {
-        instance.initialize();
         List<ContestEligibility> list=new ArrayList<ContestEligibility>();
         list.add((ContestEligibility)null);
         try {

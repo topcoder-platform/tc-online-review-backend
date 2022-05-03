@@ -3,14 +3,10 @@
  */
 package com.topcoder.service.contest.eligibilityvalidation;
 
-import javax.persistence.EntityManager;
-import javax.persistence.Persistence;
-
+import com.topcoder.service.contest.eligibility.GroupContestEligibility;
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
-
-import com.topcoder.service.contest.eligibility.GroupContestEligibility;
 
 /**
  * <p>
@@ -21,11 +17,6 @@ import com.topcoder.service.contest.eligibility.GroupContestEligibility;
  * @version 1.0
  */
 public class GroupEligibilityValidatorTests extends TestCase {
-
-    /**
-     * Represent the entityManager used for testing.
-     */
-    private EntityManager entityManager;
 
     /**
      * <p>
@@ -55,10 +46,7 @@ public class GroupEligibilityValidatorTests extends TestCase {
      *             to jUnit.
      */
     protected void setUp() throws Exception {
-        entityManager = Persistence.createEntityManagerFactory("persistence-unit").createEntityManager();
-        TestHelper.runSQL("drop.sql", entityManager);
-        TestHelper.runSQL("setup.sql", entityManager);
-        bean = new GroupEligibilityValidator("persistence-unit");
+        bean = new GroupEligibilityValidator();
     }
 
     /**
@@ -70,7 +58,6 @@ public class GroupEligibilityValidatorTests extends TestCase {
      *             to jUnit.
      */
     protected void tearDown() throws Exception {
-        TestHelper.runSQL("drop.sql", entityManager);
         bean = null;
     }
 
@@ -110,7 +97,7 @@ public class GroupEligibilityValidatorTests extends TestCase {
      */
     public void testConstructor2Failure1() throws Exception {
         try {
-            new GroupEligibilityValidator(null);
+            new GroupEligibilityValidator();
             fail("IllegalArgumentException should be thrown.");
         } catch (IllegalArgumentException e) {
             // pass
@@ -128,7 +115,7 @@ public class GroupEligibilityValidatorTests extends TestCase {
      */
     public void testConstructor2Failure2() throws Exception {
         try {
-            new GroupEligibilityValidator("  ");
+            new GroupEligibilityValidator();
             fail("IllegalArgumentException should be thrown.");
         } catch (IllegalArgumentException e) {
             // pass

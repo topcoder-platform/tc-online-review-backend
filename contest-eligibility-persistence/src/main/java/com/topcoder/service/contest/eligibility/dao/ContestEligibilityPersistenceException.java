@@ -3,8 +3,6 @@
  */
 package com.topcoder.service.contest.eligibility.dao;
 
-import javax.ejb.ApplicationException;
-
 /**
  * <p>
  * ContestEligibilityPersistenceException is thrown by ContestEligibilityManager.It is used as the customer
@@ -18,7 +16,6 @@ import javax.ejb.ApplicationException;
  * @version 1.0
  */
 @SuppressWarnings("serial")
-@ApplicationException(rollback = true)
 public class ContestEligibilityPersistenceException extends Exception {
 
     /**

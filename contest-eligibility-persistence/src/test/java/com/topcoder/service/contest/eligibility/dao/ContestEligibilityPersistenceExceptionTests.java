@@ -3,8 +3,6 @@
  */
 package com.topcoder.service.contest.eligibility.dao;
 
-import javax.ejb.ApplicationException;
-
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
@@ -123,7 +121,5 @@ public class ContestEligibilityPersistenceExceptionTests extends TestCase {
      * </p>
      */
     public void testApplicationExceptionAnnotation() {
-        assertTrue("ContestEligibilityPersistenceException does not annotate ApplicationException.",
-            ContestEligibilityPersistenceException.class.isAnnotationPresent(ApplicationException.class));
     }
 }

@@ -7,15 +7,6 @@ import com.topcoder.service.contest.eligibility.ContestEligibility;
 import com.topcoder.shared.util.DBMS;
 import org.apache.log4j.Logger;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.Resource;
-import javax.ejb.SessionContext;
-import javax.ejb.Stateless;
-import javax.ejb.TransactionAttribute;
-import javax.ejb.TransactionAttributeType;
-import javax.ejb.TransactionManagement;
-import javax.ejb.TransactionManagementType;
-import javax.persistence.EntityManager;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -70,30 +61,12 @@ import static com.topcoder.shared.util.DBMS.COMMON_OLTP_DATASOURCE_NAME;
  * <ol>
  *   <li>Updated the class to use JBoss Logging for logging the events to make the component usable
  *       in local environment for Online Review application.
- *   <li>Changed visibility for {@link #getEntityManager()} method to protected so it could be
- *       overridden for injection of the entity manager in local environment for Online Review
- *       application.
  * </ol>
  *
  * @author TCSDEVELOPER
  * @version 1.0.1
  */
-@Stateless
-@TransactionManagement(TransactionManagementType.CONTAINER)
-@TransactionAttribute(TransactionAttributeType.REQUIRED)
-public class ContestEligibilityManagerBean
-    implements ContestEligibilityManagerLocal, ContestEligibilityManagerRemote {
-
-  /** Represents the sessionContext of the EJB. */
-  @Resource private SessionContext sessionContext;
-
-  /**
-   * This field represents the entity manager which is used to communicate with the persistence.
-   *
-   * <p>It's automatically injected by EJB container.
-   */
-  @Resource(name = "unitName")
-  private String unitName;
+public class ContestEligibilityManagerBean implements ContestEligibilityManager {
 
   /** The logger is used to log the methods. */
   private Logger logger = Logger.getLogger(this.logName);
@@ -102,18 +75,11 @@ public class ContestEligibilityManagerBean
    * Represents the log name.Default value is 'contest_eligibility_logger'.You also could change the
    * default value via deploy descriptor.
    */
-  @Resource(name = "logName")
   private String logName = "contest_eligibility_logger";
 
   /** Default constructor. */
   public ContestEligibilityManagerBean() {
     // Does nothing
-  }
-
-  /** Handle the post-construct event. It will initialize the logger. */
-  @PostConstruct
-  protected void initialize() {
-    logger = Logger.getLogger(this.logName);
   }
 
   /**
@@ -374,35 +340,43 @@ public class ContestEligibilityManagerBean
     if (contestIds == null || contestIds.length == 0) {
       return result;
     }
-    String ids = "(?";
-    if (contestIds.length > 1) {
-      for (int i = 1; i < contestIds.length; i++) {
-        ids += ", ?";
-      }
-    }
 
-    ids += ")";
 
     int studio = isStudio ? 1 : 0;
 
     Connection conn = null;
     try {
       conn = DBMS.getConnection(COMMON_OLTP_DATASOURCE_NAME);
-      PreparedStatement ps =
-          conn.prepareStatement(
-              "select unique contest_id from contest_eligibility where is_studio = "
-                  + studio
-                  + " and  contest_id in "
-                  + ids);
-      for (int i = 0; i < contestIds.length; i++) {
-        ps.setLong(i + 1, contestIds[i]);
+      int startIndex = 0;
+      while (true) {
+        int count = Math.min(100, contestIds.length - startIndex);
+        String ids = "(?";
+        if (count > 1) {
+          for (int i = 1; i < count; i++) {
+            ids += ", ?";
+          }
+        }
+        ids += ")";
+        PreparedStatement ps =
+                conn.prepareStatement(
+                        "select unique contest_id from contest_eligibility where is_studio = "
+                                + studio
+                                + " and  contest_id in "
+                                + ids);
+        for (int i = 0; i < contestIds.length; i++) {
+          ps.setLong(i + 1, contestIds[i]);
+        }
+        ResultSet rs = ps.executeQuery();
+        while (rs.next()) {
+          result.add(rs.getLong(1));
+        }
+        rs.close();
+        ps.close();
+        startIndex += count;
+        if (startIndex >= contestIds.length) {
+          break;
+        }
       }
-      ResultSet rs = ps.executeQuery();
-      while (rs.next()) {
-        result.add(rs.getLong(1));
-      }
-      rs.close();
-      ps.close();
       logExit("ContestEligibilityManagerBean#haveEligibility");
       return result;
     } catch (SQLException e) {
@@ -514,30 +488,6 @@ public class ContestEligibilityManagerBean
     if (arg <= 0) {
       IllegalArgumentException e = new IllegalArgumentException(name + " should be positive.");
       throw logError(e);
-    }
-  }
-
-  /**
-   * Returns the <code>EntityManager</code> looked up from the session context.
-   *
-   * @return the EntityManager looked up from the session context
-   * @throws ContestEligibilityPersistenceException if fail to get the EntityManager from the
-   *     sessionContext.
-   */
-  protected EntityManager getEntityManager() throws ContestEligibilityPersistenceException {
-    try {
-      Object obj = sessionContext.lookup(unitName);
-
-      if (obj == null) {
-        throw logError(
-            new ContestEligibilityPersistenceException(
-                "The object for jndi name '" + unitName + "' doesn't exist."));
-      }
-
-      return (EntityManager) obj;
-    } catch (ClassCastException e) {
-      throw new ContestEligibilityPersistenceException(
-          "The jndi name for '" + unitName + "' should be EntityManager instance.", e);
     }
   }
 }

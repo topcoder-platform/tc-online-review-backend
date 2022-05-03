@@ -3,15 +3,11 @@
  */
 package com.topcoder.service.contest.eligibilityvalidation.accuracytests;
 
-import javax.persistence.EntityManager;
-import javax.persistence.Persistence;
-
+import com.topcoder.service.contest.eligibility.GroupContestEligibility;
+import com.topcoder.service.contest.eligibilityvalidation.GroupEligibilityValidator;
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
-
-import com.topcoder.service.contest.eligibility.GroupContestEligibility;
-import com.topcoder.service.contest.eligibilityvalidation.GroupEligibilityValidator;
 
 /**
  * <p>
@@ -22,11 +18,6 @@ import com.topcoder.service.contest.eligibilityvalidation.GroupEligibilityValida
  * @version 1.0
  */
 public class GroupEligibilityValidatorAccTests extends TestCase {
-
-    /**
-     * Represent the entityManager used for testing.
-     */
-    private EntityManager entityManager;
 
     /**
      * <p>
@@ -57,10 +48,7 @@ public class GroupEligibilityValidatorAccTests extends TestCase {
      */
     @Override
     protected void setUp() throws Exception {
-        entityManager = Persistence.createEntityManagerFactory("persistence-unit").createEntityManager();
-        TestHelper.runSQL("drop.sql", entityManager);
-        TestHelper.runSQL("setup.sql", entityManager);
-        bean = new GroupEligibilityValidator("persistence-unit");
+        bean = new GroupEligibilityValidator();
     }
 
     /**
@@ -73,7 +61,6 @@ public class GroupEligibilityValidatorAccTests extends TestCase {
      */
     @Override
     protected void tearDown() throws Exception {
-        TestHelper.runSQL("drop.sql", entityManager);
         bean = null;
     }
     /**

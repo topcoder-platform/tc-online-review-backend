@@ -3,20 +3,16 @@
  */
 package com.topcoder.service.contest.eligibilityvalidation;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import javax.naming.Context;
-import javax.naming.InitialContext;
-import javax.persistence.EntityManager;
-import javax.persistence.Persistence;
-
+import com.topcoder.service.contest.eligibility.ContestEligibility;
+import com.topcoder.service.contest.eligibility.GroupContestEligibility;
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
 
-import com.topcoder.service.contest.eligibility.ContestEligibility;
-import com.topcoder.service.contest.eligibility.GroupContestEligibility;
+import javax.naming.Context;
+import javax.naming.InitialContext;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * <p>
@@ -54,10 +50,6 @@ public class DemoTest extends TestCase {
      *             to jUnit.
      */
     protected void setUp() throws Exception {
-        EntityManager entityManager =
-            Persistence.createEntityManagerFactory("persistence-unit").createEntityManager();
-        TestHelper.runSQL("drop.sql", entityManager);
-        TestHelper.runSQL("setup.sql", entityManager);
         Context context = new InitialContext();
         contestEligibilityValidationManager =
             (ContestEligibilityValidationManager) context
@@ -73,9 +65,6 @@ public class DemoTest extends TestCase {
      *             to jUnit.
      */
     protected void tearDown() throws Exception {
-        EntityManager entityManager =
-            Persistence.createEntityManagerFactory("persistence-unit").createEntityManager();
-        TestHelper.runSQL("drop.sql", entityManager);
         contestEligibilityValidationManager = null;
     }
 

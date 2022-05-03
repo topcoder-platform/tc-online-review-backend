@@ -3,16 +3,6 @@
  */
 package com.topcoder.service.contest.eligibilityvalidation;
 
-import java.io.IOException;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import javax.annotation.PostConstruct;
-import javax.annotation.Resource;
-import javax.ejb.Stateless;
-
 import com.topcoder.configuration.ConfigurationAccessException;
 import com.topcoder.configuration.ConfigurationObject;
 import com.topcoder.configuration.persistence.ConfigurationFileManager;
@@ -23,6 +13,12 @@ import com.topcoder.util.objectfactory.ObjectFactory;
 import com.topcoder.util.objectfactory.SpecificationFactoryException;
 import com.topcoder.util.objectfactory.impl.ConfigurationObjectSpecificationFactory;
 import org.apache.log4j.Logger;
+
+import java.io.IOException;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * <p>
@@ -71,9 +67,7 @@ import org.apache.log4j.Logger;
  * @author TCSDEVELOPER
  * @version 1.0.1
  */
-@Stateless
-public class ContestEligibilityValidationManagerBean implements ContestEligibilityValidationManagerLocal,
-    ContestEligibilityValidationManagerRemote {
+public class ContestEligibilityValidationManagerBean implements ContestEligibilityValidationManager {
 
     /**
      * The logger is used to log the method.Never be null.It is always required.
@@ -84,7 +78,6 @@ public class ContestEligibilityValidationManagerBean implements ContestEligibili
      * Represents the log name.Default value is 'contest_eligibility_logger'.You also could change the default value
      * via deploy descriptor.Can not be null but can be empty if really needed.
      */
-    @Resource(name = "logName")
     private String logName = "contest_eligibility_logger";
 
     /**
@@ -92,7 +85,6 @@ public class ContestEligibilityValidationManagerBean implements ContestEligibili
      * 'ContestEligibilityValidationManagerBean.xml'.You also could change the default value via deploy
      * descriptor.Can not be null or empty.
      */
-    @Resource(name = "configFileName")
     private String configFileName = "ContestEligibilityValidationManagerBean.xml";
 
     /**
@@ -100,7 +92,6 @@ public class ContestEligibilityValidationManagerBean implements ContestEligibili
      * 'com.topcoder.service.contest.eligibilityvalidation.ContestEligibilityValidationManagerBean'.You also
      * could change the default value via deploy descriptor.Can not be null or empty.
      */
-    @Resource(name = "namespace")
     private String namespace =
         "com.topcoder.service.contest.eligibilityvalidation.ContestEligibilityValidationManagerBean";
 
@@ -116,17 +107,6 @@ public class ContestEligibilityValidationManagerBean implements ContestEligibili
      * Default empty constructor.
      */
     public ContestEligibilityValidationManagerBean() {
-        // does nothing
-    }
-
-    /**
-     * Handle the post-construct event. It will initialize any internal needed properties.
-     *
-     * @throws ContestEligibilityValidationManagerConfigurationException
-     *             if namespace or configFileName is empty or any errors occurred when initializing
-     */
-    @PostConstruct
-    public void initialize() {
         checkEmpty(namespace, "namespace");
         checkEmpty(configFileName, "configFileName");
         // note logName can be empty if user really need,it will not raise IAE
@@ -140,11 +120,11 @@ public class ContestEligibilityValidationManagerBean implements ContestEligibili
 
             // object_factory_config configuration
             ConfigurationObject objectFactoryConfig =
-                getRequiredChildConfigurationObject(root, "object_factory_config");
+                    getRequiredChildConfigurationObject(root, "object_factory_config");
 
             // Create configuration object specification factory
             ConfigurationObjectSpecificationFactory cosf =
-                new ConfigurationObjectSpecificationFactory(objectFactoryConfig);
+                    new ConfigurationObjectSpecificationFactory(objectFactoryConfig);
 
             // Create object factory
             ObjectFactory objectFactory = new ObjectFactory(cosf);
@@ -157,31 +137,31 @@ public class ContestEligibilityValidationManagerBean implements ContestEligibili
                 String validatorObjKey = getRequiredProperty(configurationObject, "validator_obj_key");
                 String entityName = getRequiredProperty(configurationObject, "entity_name");
                 ContestEligibilityValidator validator =
-                    (ContestEligibilityValidator) objectFactory.createObject(validatorObjKey);
+                        (ContestEligibilityValidator) objectFactory.createObject(validatorObjKey);
                 if (validators.containsKey(entityName)) {
                     throw new ContestEligibilityValidationManagerConfigurationException("The validator -"
-                        + validator.getClass().getName() + " has been existed.");
+                            + validator.getClass().getName() + " has been existed.");
                 }
                 validators.put(entityName, validator);
             }
         } catch (InvalidClassSpecificationException e) {
             throw new ContestEligibilityValidationManagerConfigurationException(
-                "The specification is not valid and can't be used to create an object.", e);
+                    "The specification is not valid and can't be used to create an object.", e);
         } catch (ConfigurationPersistenceException e) {
             throw new ContestEligibilityValidationManagerConfigurationException(
-                "Any errors occur when parsing the configuration file to configuration object.", e);
+                    "Any errors occur when parsing the configuration file to configuration object.", e);
         } catch (ConfigurationAccessException e) {
             throw new ContestEligibilityValidationManagerConfigurationException(
-                "Any errors occurred when using configuration object.", e);
+                    "Any errors occurred when using configuration object.", e);
         } catch (SpecificationFactoryException e) {
             throw new ContestEligibilityValidationManagerConfigurationException(
-                "Any errors occurred when creating object using object factory.", e);
+                    "Any errors occurred when creating object using object factory.", e);
         } catch (ClassCastException e) {
             throw new ContestEligibilityValidationManagerConfigurationException(
-                "Created object type from the Object Factory is should be ContestEligibilityValidator.", e);
+                    "Created object type from the Object Factory is should be ContestEligibilityValidator.", e);
         } catch (IOException e) {
             throw new ContestEligibilityValidationManagerConfigurationException(
-                "Any IO errors occur when parsing the configuration file.", e);
+                    "Any IO errors occur when parsing the configuration file.", e);
         }
     }
 
