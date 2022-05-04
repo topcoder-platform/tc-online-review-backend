@@ -289,9 +289,9 @@ public class ContestEligibilityManagerBean implements ContestEligibilityManager 
       PreparedStatement ps =
           conn.prepareStatement(
               "select c.contest_eligibility_id, c.contest_id, c.is_studio, g.group_id from contest_eligibility AS c JOIN group_contest_eligibility AS g On c.contest_eligibility_id = g.contest_eligibility_id "
-                  + "where c is_studio = "
+                  + "where c.is_studio = "
                   + (isStudio ? "1" : "0")
-                  + " and  contest_id = "
+                  + " and c.contest_id = "
                   + contestId);
       ResultSet rs = ps.executeQuery();
       while (rs.next()) {
