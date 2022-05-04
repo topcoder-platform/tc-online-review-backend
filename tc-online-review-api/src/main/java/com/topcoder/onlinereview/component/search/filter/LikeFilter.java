@@ -3,8 +3,8 @@
  */
 package com.topcoder.onlinereview.component.search.filter;
 
-import com.topcoder.search.builder.ValidationResult;
-import com.topcoder.util.datavalidator.ObjectValidator;
+import com.topcoder.onlinereview.component.datavalidator.ObjectValidator;
+import com.topcoder.onlinereview.component.search.ValidationResult;
 
 import java.util.Iterator;
 import java.util.Map;

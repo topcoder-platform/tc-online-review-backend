@@ -255,25 +255,11 @@ public class ProjectPersistence {
    */
   private static final String PRIZE_ID_SEQUENCE_NAME_PARAMETER = "PrizeIdGeneratorSequenceName";
 
-  /**
-   * Represents the name of studio spec id sequence name parameter in configuration.
-   *
-   * @since 1.2
-   */
-  private static final String STUDIO_SPEC_ID_SEQUENCE_NAME_PARAMETER =
-      "StudioSpecIdGeneratorSequenceName";
   /** Represents the sql statement to query all project types. */
   private static final String QUERY_ALL_PROJECT_TYPES_SQL =
       "SELECT " + "project_type_id, name, description, is_generic FROM project_type_lu";
 
-  /**
-   * Represents the column types for the result set which is returned by executing the sql statement
-   * to query all project types.
-   */
-  private static final DataType[] QUERY_ALL_PROJECT_TYPES_COLUMN_TYPES =
-      new DataType[] {
-        Helper.LONG_TYPE, Helper.STRING_TYPE, Helper.STRING_TYPE, Helper.BOOLEAN_TYPE
-      };
+
 
   /** Represents the sql statement to query all project categories. */
   private static final String QUERY_ALL_PROJECT_CATEGORIES_SQL =
@@ -285,42 +271,13 @@ public class ProjectPersistence {
           + "JOIN project_type_lu AS type "
           + "ON category.project_type_id = type.project_type_id";
 
-  /**
-   * Represents the column types for the result set which is returned by executing the sql statement
-   * to query all project categories.
-   */
-  private static final DataType[] QUERY_ALL_PROJECT_CATEGORIES_COLUMN_TYPES =
-      new DataType[] {
-        Helper.LONG_TYPE,
-        Helper.STRING_TYPE,
-        Helper.STRING_TYPE,
-        Helper.LONG_TYPE,
-        Helper.STRING_TYPE,
-        Helper.STRING_TYPE,
-        Helper.BOOLEAN_TYPE
-      };
-
   /** Represents the sql statement to query all project statuses. */
   private static final String QUERY_ALL_PROJECT_STATUSES_SQL =
       "SELECT " + "project_status_id, name, description FROM project_status_lu";
 
-  /**
-   * Represents the column types for the result set which is returned by executing the sql statement
-   * to query all project statuses.
-   */
-  private static final DataType[] QUERY_ALL_PROJECT_STATUSES_COLUMN_TYPES =
-      new DataType[] {Helper.LONG_TYPE, Helper.STRING_TYPE, Helper.STRING_TYPE};
-
   /** Represents the sql statement to query all project property types. */
   private static final String QUERY_ALL_PROJECT_PROPERTY_TYPES_SQL =
       "SELECT " + "project_info_type_id, name, description FROM project_info_type_lu";
-
-  /**
-   * Represents the column types for the result set which is returned by executing the sql statement
-   * to query all project property types.
-   */
-  private static final DataType[] QUERY_ALL_PROJECT_PROPERTY_TYPES_COLUMN_TYPES =
-      new DataType[] {Helper.LONG_TYPE, Helper.STRING_TYPE, Helper.STRING_TYPE};
 
   /** Represents the sql statement to query projects. */
   private static final String QUERY_PROJECTS_SQL =
@@ -334,28 +291,6 @@ public class ProjectPersistence {
           + "JOIN project_type_lu AS type ON category.project_type_id=type.project_type_id "
           + "LEFT OUTER JOIN tc_direct_project AS tcdp ON tcdp.project_id=project.tc_direct_project_id "
           + "WHERE project.project_id IN ";
-
-  /**
-   * Represents the column types for the result set which is returned by executing the sql statement
-   * to query projects.
-   */
-  private static final DataType[] QUERY_PROJECTS_COLUMN_TYPES =
-      new DataType[] {
-        Helper.LONG_TYPE,
-        Helper.LONG_TYPE,
-        Helper.STRING_TYPE,
-        Helper.LONG_TYPE,
-        Helper.STRING_TYPE,
-        Helper.LONG_TYPE,
-        Helper.STRING_TYPE,
-        Helper.STRING_TYPE,
-        Helper.DATE_TYPE,
-        Helper.STRING_TYPE,
-        Helper.DATE_TYPE,
-        Helper.STRING_TYPE,
-        Helper.LONG_TYPE,
-        Helper.STRING_TYPE
-      };
 
   /** Represents the sql statement to query project properties. */
   private static final String QUERY_PROJECT_PROPERTIES_SQL =
@@ -375,13 +310,6 @@ public class ProjectPersistence {
           + "ON info.project_info_type_id=info_type.project_info_type_id "
           + "WHERE info.project_id = ?";
 
-  /**
-   * Represents the column types for the result set which is returned by executing the sql statement
-   * to query project properties.
-   */
-  private static final DataType[] QUERY_PROJECT_PROPERTIES_COLUMN_TYPES =
-      new DataType[] {Helper.LONG_TYPE, Helper.STRING_TYPE, Helper.STRING_TYPE};
-
   /** Represents the sql statement to query project property ids. */
   private static final String QUERY_PROJECT_PROPERTY_IDS_SQL =
       "SELECT " + "project_info_type_id FROM project_info WHERE project_id=?";
@@ -389,20 +317,6 @@ public class ProjectPersistence {
   /** Represents the sql statement to query project property ids and values. */
   private static final String QUERY_PROJECT_PROPERTY_IDS_AND_VALUES_SQL =
       "SELECT " + "project_info_type_id, value FROM project_info WHERE project_id=?";
-
-  /**
-   * Represents the column types for the result set which is returned by executing the sql statement
-   * to query project property ids.
-   */
-  private static final DataType[] QUERY_PROJECT_PROPERTY_IDS_COLUMN_TYPES =
-      new DataType[] {Helper.LONG_TYPE};
-
-  /**
-   * Represents the column types for the result set which is returned by executing the sql statement
-   * to query project property ids and values.
-   */
-  private static final DataType[] QUERY_PROJECT_PROPERTY_IDS_AND_VALUES_COLUMN_TYPES =
-      new DataType[] {Helper.LONG_TYPE, Helper.STRING_TYPE};
 
   /** Represents the sql statement to create project. */
   private static final String CREATE_PROJECT_SQL =
@@ -487,21 +401,6 @@ public class ProjectPersistence {
           + "WHERE xref.project_id=";
 
   /**
-   * Represents the column types for the result set which is returned by executing the sql statement
-   * to query file types.
-   *
-   * @since 1.2
-   */
-  private static final DataType[] QUERY_FILE_TYPES_COLUMN_TYPES = {
-    Helper.LONG_TYPE,
-    Helper.STRING_TYPE,
-    Helper.LONG_TYPE,
-    Helper.BOOLEAN_TYPE,
-    Helper.STRING_TYPE,
-    Helper.BOOLEAN_TYPE
-  };
-
-  /**
    * Represents the sql statement to query prizes.
    *
    * @since 1.2
@@ -513,21 +412,6 @@ public class ProjectPersistence {
           + "FROM prize AS prize "
           + "JOIN prize_type_lu AS prize_type ON prize.prize_type_id=prize_type.prize_type_id "
           + "WHERE prize.project_id=";
-
-  /**
-   * Represents the column types for the result set which is returned by executing the sql statement
-   * to query prizes.
-   *
-   * @since 1.2
-   */
-  private static final DataType[] QUERY_PRIZES_COLUMN_TYPES = {
-    Helper.LONG_TYPE,
-    Helper.LONG_TYPE,
-    Helper.Double_TYPE,
-    Helper.LONG_TYPE,
-    Helper.LONG_TYPE,
-    Helper.STRING_TYPE
-  };
 
   /**
    * Represents the sql statement to insert prize to the prize table.
@@ -562,15 +446,7 @@ public class ProjectPersistence {
    */
   private static final String QUERY_ALL_PRIZE_TYPES_SQL =
       "SELECT prize_type_id, prize_type_desc FROM prize_type_lu";
-  /**
-   * Represents the column types for the result set which is returned by querying prize types from
-   * the prize_type_lu table.
-   *
-   * @since 1.2
-   */
-  private static final DataType[] QUERY_ALL_PRIZE_TYPES_COLUMN_TYPES = {
-    Helper.LONG_TYPE, Helper.STRING_TYPE
-  };
+
   /**
    * Represents the sql statement to query file types from the file_type_lu table.
    *
@@ -579,20 +455,6 @@ public class ProjectPersistence {
   private static final String QUERY_ALL_FILE_TYPES_SQL =
       "SELECT file_type_id, description, sort, image_file, "
           + "extension, bundled_file FROM file_type_lu";
-  /**
-   * Represents the column types for the result set which is returned by querying file types from
-   * the file_type_lu table.
-   *
-   * @since 1.2
-   */
-  private static final DataType[] QUERY_ALL_FILE_TYPES_COLUMN_TYPES = {
-    Helper.LONG_TYPE,
-    Helper.STRING_TYPE,
-    Helper.LONG_TYPE,
-    Helper.BOOLEAN_TYPE,
-    Helper.STRING_TYPE,
-    Helper.BOOLEAN_TYPE
-  };
 
   /**
    * Represents the sql statement to delete the project file types reference by the specified file
@@ -702,28 +564,6 @@ public class ProjectPersistence {
           + "FROM project_studio_specification AS spec JOIN project AS project "
           + "ON project.project_studio_spec_id=spec.project_studio_spec_id "
           + "WHERE project.project_id=";
-  /**
-   * Represents the data types for the result set by querying studio specification data with the
-   * specified project id.
-   *
-   * @since 1.2
-   */
-  private static final DataType[] QUERY_STUDIO_SPEC_COLUMN_TYPES =
-      new DataType[] {
-        Helper.LONG_TYPE,
-        Helper.STRING_TYPE,
-        Helper.STRING_TYPE,
-        Helper.STRING_TYPE,
-        Helper.STRING_TYPE,
-        Helper.STRING_TYPE,
-        Helper.STRING_TYPE,
-        Helper.BOOLEAN_TYPE,
-        Helper.STRING_TYPE,
-        Helper.STRING_TYPE,
-        Helper.STRING_TYPE,
-        Helper.STRING_TYPE,
-        Helper.STRING_TYPE
-      };
 
   /**
    * Represents the sql statement to set studio specification id for project table with the
@@ -742,14 +582,6 @@ public class ProjectPersistence {
    */
   private static final String QUERY_PROJECT_IDS_SQL =
       "SELECT DISTINCT project_id FROM project WHERE tc_direct_project_id=";
-
-  /**
-   * Represents the data types for the result set by querying project id for project table.
-   *
-   * @since 1.2
-   */
-  private static final DataType[] QUERY_PROJECT_IDS__COLUMN_TYPES =
-      new DataType[] {Helper.LONG_TYPE};
 
   /**
    * Represents the sql statement to query project id for project table with the specified studio
@@ -776,7 +608,7 @@ public class ProjectPersistence {
   private static final String QUERY_PROJECT_IDS_WITH_PRIZE_SQL =
       "SELECT project_id FROM prize WHERE prize_id=";
 
-  @Value("{phase.persistence.entity-manager-name}")
+  @Value("{project.persistence.entity-manager-name}")
   private String entityManagerName;
 
   @Value("{project.persistence.project-id-sequence-name}")

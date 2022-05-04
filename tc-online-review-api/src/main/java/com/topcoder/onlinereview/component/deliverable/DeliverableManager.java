@@ -5,6 +5,7 @@ package com.topcoder.onlinereview.component.deliverable;
 
 import com.topcoder.management.deliverable.logging.LogMessage;
 import com.topcoder.management.deliverable.persistence.DeliverablePersistence;
+import com.topcoder.onlinereview.component.search.SearchBundle;
 import com.topcoder.onlinereview.component.search.filter.Filter;
 import com.topcoder.search.builder.SearchBuilderConfigurationException;
 import com.topcoder.search.builder.SearchBuilderException;

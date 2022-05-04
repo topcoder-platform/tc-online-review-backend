@@ -11,6 +11,7 @@ import com.topcoder.onlinereview.component.search.SearchBundle;
 import com.topcoder.onlinereview.component.search.filter.Filter;
 import com.topcoder.util.sql.databaseabstraction.CustomResultSet;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -36,6 +37,7 @@ import java.util.Map;
  *
  * @version 1.0.2
  */
+@Component
 public class ScorecardManager {
     /**
      * The default namespace of this component. It will be used in the default constructor.

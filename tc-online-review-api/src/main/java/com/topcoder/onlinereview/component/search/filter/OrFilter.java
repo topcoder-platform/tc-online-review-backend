@@ -3,7 +3,7 @@
  */
 package com.topcoder.onlinereview.component.search.filter;
 
-import com.topcoder.search.builder.ValidationResult;
+import com.topcoder.onlinereview.component.search.ValidationResult;
 
 import java.util.List;
 import java.util.Map;
