@@ -113,7 +113,7 @@ public abstract class AbstractCodecTestCase extends TestCase {
         assertNotNull(inflater);
 
         try {
-            deflater.setInput(null);
+            deflater.setInput((byte[])null);
             fail("Should have thrown NullPointerException");
         } catch (NullPointerException npe) {
             // good
@@ -144,7 +144,7 @@ public abstract class AbstractCodecTestCase extends TestCase {
         }
 
         try {
-            inflater.setInput(null);
+            inflater.setInput((byte[])null);
             fail("Should have thrown NullPointerException");
         } catch (NullPointerException npe) {
             // good
@@ -186,7 +186,7 @@ public abstract class AbstractCodecTestCase extends TestCase {
         assertNotNull(inflater);
 
         try {
-            deflater.deflate(null);
+            deflater.deflate((byte[])null);
             fail("Should have thrown NullPointerException");
         } catch (NullPointerException npe) {
             // good
@@ -217,7 +217,7 @@ public abstract class AbstractCodecTestCase extends TestCase {
         }
 
         try {
-            inflater.inflate(null);
+            inflater.inflate((byte[])null);
             fail("Should have thrown NullPointerException");
         } catch (NullPointerException npe) {
             // good
