@@ -3,20 +3,16 @@
  */
 package com.topcoder.service.contest.eligibilityvalidation;
 
-import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-
-import javax.persistence.EntityManager;
-import javax.persistence.Persistence;
-
+import com.topcoder.service.contest.eligibility.ContestEligibility;
+import com.topcoder.service.contest.eligibility.GroupContestEligibility;
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
 
-import com.topcoder.service.contest.eligibility.ContestEligibility;
-import com.topcoder.service.contest.eligibility.GroupContestEligibility;
+import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 /**
  * <p>
@@ -97,7 +93,6 @@ public class ContestEligibilityValidationManagerBeanTests extends TestCase {
     public void testInitializeAccuracy() throws Exception {
         assertTrue("validators map size should be 0.",
             ((Map) getPrivateField(bean, "validators")).size() == 0);
-        bean.initialize();
         assertTrue("validators map size should be 1.",
             ((Map) getPrivateField(bean, "validators")).size() == 1);
     }
@@ -113,7 +108,6 @@ public class ContestEligibilityValidationManagerBeanTests extends TestCase {
     public void testInitializeFailure1() throws Exception {
         setPrivateField(ContestEligibilityValidationManagerBean.class, bean, "namespace", " ");
         try {
-            bean.initialize();
             fail("ContestEligibilityValidationManagerConfigurationException should be thrown.");
         } catch (ContestEligibilityValidationManagerConfigurationException e) {
             // pass
@@ -131,7 +125,6 @@ public class ContestEligibilityValidationManagerBeanTests extends TestCase {
     public void testInitializeFailure2() throws Exception {
         setPrivateField(ContestEligibilityValidationManagerBean.class, bean, "configFileName", " ");
         try {
-            bean.initialize();
             fail("ContestEligibilityValidationManagerConfigurationException should be thrown.");
         } catch (ContestEligibilityValidationManagerConfigurationException e) {
             // pass
@@ -152,7 +145,6 @@ public class ContestEligibilityValidationManagerBeanTests extends TestCase {
         setPrivateField(ContestEligibilityValidationManagerBean.class, bean, "namespace",
             "missRequiredElements");
         try {
-            bean.initialize();
             fail("ContestEligibilityValidationManagerConfigurationException should be thrown.");
         } catch (ContestEligibilityValidationManagerConfigurationException e) {
             // pass
@@ -171,7 +163,6 @@ public class ContestEligibilityValidationManagerBeanTests extends TestCase {
     public void testInitializeFailure4() throws Exception {
         setPrivateField(ContestEligibilityValidationManagerBean.class, bean, "configFileName", "no.xml");
         try {
-            bean.initialize();
             fail("ContestEligibilityValidationManagerConfigurationException should be thrown.");
         } catch (ContestEligibilityValidationManagerConfigurationException e) {
             // pass
@@ -192,7 +183,6 @@ public class ContestEligibilityValidationManagerBeanTests extends TestCase {
         setPrivateField(ContestEligibilityValidationManagerBean.class, bean, "namespace",
             "badOFConfiguration");
         try {
-            bean.initialize();
             fail("ContestEligibilityValidationManagerConfigurationException should be thrown.");
         } catch (ContestEligibilityValidationManagerConfigurationException e) {
             // pass
@@ -212,7 +202,6 @@ public class ContestEligibilityValidationManagerBeanTests extends TestCase {
         setPrivateField(ContestEligibilityValidationManagerBean.class, bean, "configFileName", "bad.xml");
         setPrivateField(ContestEligibilityValidationManagerBean.class, bean, "namespace", "classCastError");
         try {
-            bean.initialize();
             fail("ContestEligibilityValidationManagerConfigurationException should be thrown.");
         } catch (ContestEligibilityValidationManagerConfigurationException e) {
             // pass
@@ -233,7 +222,6 @@ public class ContestEligibilityValidationManagerBeanTests extends TestCase {
         setPrivateField(ContestEligibilityValidationManagerBean.class, bean, "namespace",
             "InvalidClassSpecificationException");
         try {
-            bean.initialize();
             fail("ContestEligibilityValidationManagerConfigurationException should be thrown.");
         } catch (ContestEligibilityValidationManagerConfigurationException e) {
             // pass
@@ -254,7 +242,6 @@ public class ContestEligibilityValidationManagerBeanTests extends TestCase {
             "UnrecognizedFileType.txt");
         setPrivateField(ContestEligibilityValidationManagerBean.class, bean, "namespace", "no");
         try {
-            bean.initialize();
             fail("ContestEligibilityValidationManagerConfigurationException should be thrown.");
         } catch (ContestEligibilityValidationManagerConfigurationException e) {
             // pass
@@ -274,7 +261,6 @@ public class ContestEligibilityValidationManagerBeanTests extends TestCase {
         setPrivateField(ContestEligibilityValidationManagerBean.class, bean, "configFileName", "bad.xml");
         setPrivateField(ContestEligibilityValidationManagerBean.class, bean, "namespace", "same_validators");
         try {
-            bean.initialize();
             fail("ContestEligibilityValidationManagerConfigurationException should be thrown.");
         } catch (ContestEligibilityValidationManagerConfigurationException e) {
             // pass
@@ -295,7 +281,6 @@ public class ContestEligibilityValidationManagerBeanTests extends TestCase {
         setPrivateField(ContestEligibilityValidationManagerBean.class, bean, "namespace",
             "missRequiredProperty");
         try {
-            bean.initialize();
             fail("ContestEligibilityValidationManagerConfigurationException should be thrown.");
         } catch (ContestEligibilityValidationManagerConfigurationException e) {
             // pass
@@ -315,7 +300,6 @@ public class ContestEligibilityValidationManagerBeanTests extends TestCase {
         setPrivateField(ContestEligibilityValidationManagerBean.class, bean, "configFileName", "bad.xml");
         setPrivateField(ContestEligibilityValidationManagerBean.class, bean, "namespace", "emptyProperty");
         try {
-            bean.initialize();
             fail("ContestEligibilityValidationManagerConfigurationException should be thrown.");
         } catch (ContestEligibilityValidationManagerConfigurationException e) {
             // pass
@@ -335,11 +319,6 @@ public class ContestEligibilityValidationManagerBeanTests extends TestCase {
      *             to JUnit
      */
     public void testValidateAccuracy1() throws Exception {
-        bean.initialize();
-        EntityManager entityManager =
-            Persistence.createEntityManagerFactory("persistence-unit").createEntityManager();
-        TestHelper.runSQL("drop.sql", entityManager);
-        TestHelper.runSQL("setup.sql", entityManager);
         GroupContestEligibility contestEligibility1 = new GroupContestEligibility();
         contestEligibility1.setGroupId(5);
         GroupContestEligibility contestEligibility2 = new GroupContestEligibility();
@@ -348,7 +327,6 @@ public class ContestEligibilityValidationManagerBeanTests extends TestCase {
         eligibilities.add(contestEligibility1);
         eligibilities.add(contestEligibility2);
         assertTrue("The user should be eligible,so return true.", bean.validate(5, eligibilities));
-        TestHelper.runSQL("drop.sql", entityManager);
     }
 
     /**
@@ -364,17 +342,11 @@ public class ContestEligibilityValidationManagerBeanTests extends TestCase {
      *             to JUnit
      */
     public void testValidateAccuracy2() throws Exception {
-        bean.initialize();
-        EntityManager entityManager =
-            Persistence.createEntityManagerFactory("persistence-unit").createEntityManager();
-        TestHelper.runSQL("drop.sql", entityManager);
-        TestHelper.runSQL("setup.sql", entityManager);
         GroupContestEligibility contestEligibility = new GroupContestEligibility();
         contestEligibility.setGroupId(1);
         List<ContestEligibility> eligibilities = new ArrayList<ContestEligibility>();
         eligibilities.add(contestEligibility);
         assertFalse("The user should not be eligible,so return false.", bean.validate(1, eligibilities));
-        TestHelper.runSQL("drop.sql", entityManager);
     }
 
     /**
@@ -387,7 +359,6 @@ public class ContestEligibilityValidationManagerBeanTests extends TestCase {
      *             to JUnit
      */
     public void testValidateAccuracy3() throws Exception {
-        bean.initialize();
         List<ContestEligibility> eligibilities = new ArrayList<ContestEligibility>();
         assertTrue("The given list is empty,so return true.", bean.validate(100, eligibilities));
     }
@@ -401,7 +372,6 @@ public class ContestEligibilityValidationManagerBeanTests extends TestCase {
      *             to JUnit
      */
     public void testValidateFailure1() throws Exception {
-        bean.initialize();
         try {
             bean.validate(5, null);
             fail("IllegalArgumentException should be thrown.");
@@ -419,7 +389,6 @@ public class ContestEligibilityValidationManagerBeanTests extends TestCase {
      *             to JUnit
      */
     public void testValidateFailure2() throws Exception {
-        bean.initialize();
         List<ContestEligibility> eligibilities = new ArrayList<ContestEligibility>();
         eligibilities.add(null);
         try {
@@ -440,7 +409,6 @@ public class ContestEligibilityValidationManagerBeanTests extends TestCase {
      *             to JUnit
      */
     public void testValidateFailure3() throws Exception {
-        bean.initialize();
         List<ContestEligibility> eligibilities = new ArrayList<ContestEligibility>();
         eligibilities.add(new MockContestEligibility());
         try {
@@ -463,7 +431,6 @@ public class ContestEligibilityValidationManagerBeanTests extends TestCase {
     public void testValidateFailure4() throws Exception {
         setPrivateField(ContestEligibilityValidationManagerBean.class, bean, "configFileName", "bad.xml");
         setPrivateField(ContestEligibilityValidationManagerBean.class, bean, "namespace", "mockValidator");
-        bean.initialize();
         List<ContestEligibility> eligibilities = new ArrayList<ContestEligibility>();
         eligibilities.add(new MockContestEligibility());
         try {

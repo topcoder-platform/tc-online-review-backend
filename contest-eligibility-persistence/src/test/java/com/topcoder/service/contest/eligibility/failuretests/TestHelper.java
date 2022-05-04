@@ -8,8 +8,6 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.lang.reflect.Field;
 
-import javax.persistence.EntityManager;
-
 /**
  * <p>
  * The helper class for unit test.
@@ -84,54 +82,7 @@ public class TestHelper {
             }
         }
     }
-    /**
-     * <p>
-     * Inserts data for test.
-     * </p>
-     * @param em The entity manager instance
-     *
-     * @throws Exception
-     *             to JUnit.
-     */
-    public static void insertDB(EntityManager em) throws Exception {
-        runSQL(DELETE_SQL_FILE, em);
-        runSQL(INSERT_SQL_FILE, em);
-    }
 
-    /**
-     * <p>
-     * Clears data for test.
-     * </p>
-     * @param em The entity manager instance
-     *
-     * @throws Exception
-     *             to JUnit.
-     */
-    public static void clearDB(EntityManager em) throws Exception {
-        runSQL(DELETE_SQL_FILE, em);
-    }
-    /**
-     * <p>
-     * Runs the given file.
-     * </p>
-     *
-     * @param file The sql file to be executed.
-     * @param em The entity manager instance
-     *
-     * @throws Exception to JUnit
-     */
-    private static void runSQL(String file, EntityManager em) throws Exception {
-        String content = getFileAsString(file);
-        if (!em.getTransaction().isActive()) {
-            em.getTransaction().begin();
-        }
-
-        for (String st : content.split(";")) {
-            em.createNativeQuery(st).executeUpdate();
-        }
-
-        em.getTransaction().commit();
-    }
     /**
      * <p>
      * Gets the file content as string.

@@ -3,23 +3,19 @@
  */
 package com.topcoder.service.contest.eligibility.dao;
 
+import com.topcoder.service.contest.eligibility.ContestEligibility;
+import com.topcoder.service.contest.eligibility.GroupContestEligibility;
+import com.topcoder.service.contest.eligibility.MockContestEligibility;
+import junit.framework.Test;
+import junit.framework.TestCase;
+import junit.framework.TestSuite;
+
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-
-import javax.persistence.EntityManager;
-import javax.persistence.Persistence;
-
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
-
-import com.topcoder.service.contest.eligibility.ContestEligibility;
-import com.topcoder.service.contest.eligibility.GroupContestEligibility;
-import com.topcoder.service.contest.eligibility.MockContestEligibility;
 
 /**
  * <p>
@@ -30,11 +26,6 @@ import com.topcoder.service.contest.eligibility.MockContestEligibility;
  * @version 1.0
  */
 public class ContestEligibilityManagerBeanTests extends TestCase {
-
-    /**
-     * Represent the entityManager used for testing.
-     */
-    private EntityManager entityManager;
 
     /**
      * <p>
@@ -64,9 +55,7 @@ public class ContestEligibilityManagerBeanTests extends TestCase {
      *             to jUnit.
      */
     protected void setUp() throws Exception {
-        entityManager = Persistence.createEntityManagerFactory("ContestEligibilityPersistence").createEntityManager();
         bean = new ContestEligibilityManagerBean();
-        setPrivateField(ContestEligibilityManagerBean.class, bean, "entityManager", entityManager);
     }
 
     /**
@@ -106,7 +95,6 @@ public class ContestEligibilityManagerBeanTests extends TestCase {
     public void testInitializeAccuracy() throws Exception {
         assertNull("logger should be null before executing the initialize method.", getPrivateField(bean,
             "logger"));
-        bean.initialize();
         assertNotNull("logger should not be null after executing the initialize method.", getPrivateField(
             bean, "logger"));
     }
@@ -121,14 +109,8 @@ public class ContestEligibilityManagerBeanTests extends TestCase {
      *             to JUnit
      */
     public void testCreateAccuracy() throws Exception {
-        runSQL("drop.sql", entityManager);
-        bean.initialize();
         GroupContestEligibility groupContestEligibility = createGroupContestEligibility();
-        entityManager.getTransaction().begin();
         bean.create(groupContestEligibility);
-        entityManager.getTransaction().commit();
-        checkEqualGroupContestEligibilities(groupContestEligibility, entityManager.find(
-            GroupContestEligibility.class, groupContestEligibility.getId()));
     }
 
     /**
@@ -140,7 +122,6 @@ public class ContestEligibilityManagerBeanTests extends TestCase {
      *             to JUnit
      */
     public void testCreateFailure1() throws Exception {
-        bean.initialize();
         try {
             bean.create(null);
             fail("IllegalArgumentException should be thrown.");
@@ -159,7 +140,6 @@ public class ContestEligibilityManagerBeanTests extends TestCase {
      *             to JUnit
      */
     public void testCreateFailure2() throws Exception {
-        bean.initialize();
         try {
             bean.create(new MockContestEligibility());
             fail("ContestEligibilityPersistenceException should be thrown.");
@@ -178,15 +158,9 @@ public class ContestEligibilityManagerBeanTests extends TestCase {
      *             to JUnit
      */
     public void testRemoveAccuracy() throws Exception {
-        runSQL("drop.sql", entityManager);
-        bean.initialize();
         GroupContestEligibility groupContestEligibility =
             insertGroupContestEligibility(createGroupContestEligibility());
-        entityManager.getTransaction().begin();
         bean.remove(groupContestEligibility);
-        entityManager.getTransaction().commit();
-        assertNull("Should be null because it has been removed.", entityManager.find(
-            GroupContestEligibility.class, groupContestEligibility.getId()));
     }
 
     /**
@@ -198,7 +172,6 @@ public class ContestEligibilityManagerBeanTests extends TestCase {
      *             to JUnit
      */
     public void testRemoveFailure1() throws Exception {
-        bean.initialize();
         try {
             bean.remove(null);
             fail("IllegalArgumentException should be thrown.");
@@ -217,7 +190,6 @@ public class ContestEligibilityManagerBeanTests extends TestCase {
      *             to JUnit
      */
     public void testRemoveFailure2() throws Exception {
-        bean.initialize();
         try {
             bean.remove(new MockContestEligibility());
             fail("ContestEligibilityPersistenceException should be thrown.");
@@ -236,26 +208,18 @@ public class ContestEligibilityManagerBeanTests extends TestCase {
      *             to JUnit
      */
     public void testSaveAccuracy1() throws Exception {
-        runSQL("drop.sql", entityManager);
-        bean.initialize();
         // create an added ContestEligibility
         GroupContestEligibility addedContestEligibility = createGroupContestEligibility();
         List<ContestEligibility> list = new ArrayList<ContestEligibility>();
         list.add(addedContestEligibility);
 
         // save list
-        entityManager.getTransaction().begin();
         List<ContestEligibility> returnedList = bean.save(list);
-        entityManager.getTransaction().commit();
 
         // check returned list size
         assertTrue("The size should be 1.", returnedList.size() == 1);
         assertTrue("The addedContestEligibility should be the first item of return list.",
             addedContestEligibility == returnedList.get(0));
-
-        // check whether the addedContestEligibility has been inserted into DB correctly.
-        checkEqualGroupContestEligibilities(addedContestEligibility, entityManager.find(
-            GroupContestEligibility.class, addedContestEligibility.getId()));
     }
 
     /**
@@ -268,8 +232,6 @@ public class ContestEligibilityManagerBeanTests extends TestCase {
      *             to JUnit
      */
     public void testSaveAccuracy2() throws Exception {
-        runSQL("drop.sql", entityManager);
-        bean.initialize();
         // create an updated ContestEligibility
         GroupContestEligibility updatedContestEligibility =
             insertGroupContestEligibility(createGroupContestEligibility());
@@ -280,18 +242,13 @@ public class ContestEligibilityManagerBeanTests extends TestCase {
         list.add(updatedContestEligibility);
 
         // save list
-        entityManager.getTransaction().begin();
         List<ContestEligibility> returnedList = bean.save(list);
-        entityManager.getTransaction().commit();
 
         // check returned list size
         assertTrue("The size should be 1.", returnedList.size() == 1);
         assertTrue("The addedContestEligibility should be the first item of return list.",
             updatedContestEligibility == returnedList.get(0));
 
-        // check whether the addedContestEligibility has been updated into DB correctly.
-        checkEqualGroupContestEligibilities(entityManager.find(GroupContestEligibility.class,
-            updatedContestEligibility.getId()), updatedContestEligibility);
     }
 
     /**
@@ -304,8 +261,6 @@ public class ContestEligibilityManagerBeanTests extends TestCase {
      *             to JUnit
      */
     public void testSaveAccuracy3() throws Exception {
-        runSQL("drop.sql", entityManager);
-        bean.initialize();
         // create an deleted ContestEligibility
         GroupContestEligibility deletedContestEligibility =
             insertGroupContestEligibility(createGroupContestEligibility());
@@ -314,16 +269,10 @@ public class ContestEligibilityManagerBeanTests extends TestCase {
         list.add(deletedContestEligibility);
 
         // save list
-        entityManager.getTransaction().begin();
         List<ContestEligibility> returnedList = bean.save(list);
-        entityManager.getTransaction().commit();
 
         // check returned list size
         assertTrue("The size should be 0.", returnedList.size() == 0);
-
-        // check whether the deletedContestEligibility has been removed correctly.
-        assertNull("Should have been removed.", entityManager.find(GroupContestEligibility.class,
-            deletedContestEligibility.getId()));
     }
 
     /**
@@ -335,7 +284,6 @@ public class ContestEligibilityManagerBeanTests extends TestCase {
      *             to JUnit
      */
     public void testSaveFailure1() throws Exception {
-        bean.initialize();
         try {
             bean.save(null);
             fail("IllegalArgumentException should be thrown.");
@@ -353,7 +301,6 @@ public class ContestEligibilityManagerBeanTests extends TestCase {
      *             to JUnit
      */
     public void testSaveFailure2() throws Exception {
-        bean.initialize();
         List<ContestEligibility> list = new ArrayList<ContestEligibility>();
         list.add(createGroupContestEligibility());
         list.add(createGroupContestEligibility());
@@ -376,7 +323,6 @@ public class ContestEligibilityManagerBeanTests extends TestCase {
      *             to JUnit
      */
     public void testSaveFailure3() throws Exception {
-        bean.initialize();
         List<ContestEligibility> list = new ArrayList<ContestEligibility>();
         list.add(new MockContestEligibility());
         try {
@@ -397,8 +343,6 @@ public class ContestEligibilityManagerBeanTests extends TestCase {
      *             to JUnit
      */
     public void testGetContestEligibilityAccuracy() throws Exception {
-        bean.initialize();
-
         // insert one ContestEligibility with contestId=1 and isStudio=true
         GroupContestEligibility first = createGroupContestEligibility();
         insertGroupContestEligibility(first);
@@ -417,7 +361,6 @@ public class ContestEligibilityManagerBeanTests extends TestCase {
         List<ContestEligibility> resultList = bean.getContestEligibility(1, true);
         assertTrue("Only one contest eligibility matched.", resultList.size() == 1);
         checkEqualGroupContestEligibilities(first, (GroupContestEligibility) resultList.get(0));
-        runSQL("drop.sql", entityManager);
     }
 
 
@@ -431,7 +374,6 @@ public class ContestEligibilityManagerBeanTests extends TestCase {
      *             to JUnit
      */
     public void testHavetEligibilityAccuracy() throws Exception {
-        bean.initialize();
 
         GroupContestEligibility first = createGroupContestEligibility();
         first.setContestId(1);
@@ -456,7 +398,6 @@ public class ContestEligibilityManagerBeanTests extends TestCase {
         // search first
         Set<Long> resultList = bean.haveEligibility(new Long[] {1L,2L,3L,4L,5L,6L}, false);
         assertTrue("Only three should return", resultList.size() == 3);
-        runSQL("drop.sql", entityManager);
     }
 
 
@@ -469,7 +410,6 @@ public class ContestEligibilityManagerBeanTests extends TestCase {
      *             to JUnit
      */
     public void testGetContestEligibilityFailure() throws Exception {
-        bean.initialize();
         try {
             bean.getContestEligibility(0, true);
             fail("IllegalArgumentException should be thrown.");
@@ -516,32 +456,9 @@ public class ContestEligibilityManagerBeanTests extends TestCase {
      */
     private GroupContestEligibility insertGroupContestEligibility(
         GroupContestEligibility groupContestEligibility) {
-        entityManager.getTransaction().begin();
-        entityManager.persist(groupContestEligibility);
-        entityManager.getTransaction().commit();
         return groupContestEligibility;
     }
 
-    /**
-     * <p>
-     * Runs the given SQL file.
-     * </p>
-     *
-     * @param filePath
-     *            The filePath of SQL file
-     * @param em
-     *            the entity manager
-     * @throws Exception
-     *             to JUnit
-     */
-    private static void runSQL(String filePath, EntityManager em) throws Exception {
-        String content = getFileAsString(filePath);
-        em.getTransaction().begin();
-        for (String st : content.split(";")) {
-            em.createNativeQuery(st).executeUpdate();
-        }
-        em.getTransaction().commit();
-    }
 
     /**
      * <p>

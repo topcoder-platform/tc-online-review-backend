@@ -3,20 +3,15 @@
  */
 package com.topcoder.service.contest.eligibility.failuretests;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import javax.persistence.EntityManager;
-import javax.persistence.Persistence;
-
-
+import com.topcoder.service.contest.eligibility.ContestEligibility;
+import com.topcoder.service.contest.eligibility.GroupContestEligibility;
+import com.topcoder.service.contest.eligibility.dao.ContestEligibilityManagerBean;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.topcoder.service.contest.eligibility.ContestEligibility;
-import com.topcoder.service.contest.eligibility.GroupContestEligibility;
-import com.topcoder.service.contest.eligibility.dao.ContestEligibilityManagerBean;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * <p>
@@ -27,19 +22,6 @@ import com.topcoder.service.contest.eligibility.dao.ContestEligibilityManagerBea
  * @version 1.0
  */
 public class ContestEligibilityManagerBeanFailureTest {
-    /**
-     * <p>
-     * Represents the <code>EntityManager</code> instance.
-     * </p>
-     */
-    private static EntityManager entityManager = Persistence.createEntityManagerFactory(
-            "ContestEligibilityPersistence").createEntityManager();
-    /**
-     * <p>
-     * Represents the <code>EntityManager</code> instance.
-     * </p>
-     */
-    private static MockEntityManager mockEntityManager;
     /**
      * <p>
      * Represents the <code>ContestEligibilityManager</code> instance used to test against.
@@ -57,12 +39,8 @@ public class ContestEligibilityManagerBeanFailureTest {
     @Before
     public void setUp() throws Exception {
         contestEligibilityManager = new ContestEligibilityManagerBean();
-        TestHelper.inject(ContestEligibilityManagerBean.class, "entityManager",
-                contestEligibilityManager, entityManager);
         TestHelper.inject(ContestEligibilityManagerBean.class, "logger",
                 contestEligibilityManager, com.topcoder.util.log.LogManager.getLog());
-        mockEntityManager = new MockEntityManager(entityManager);
-        mockEntityManager.enablePersistenceException(false);
     }
 
     /**
@@ -76,7 +54,6 @@ public class ContestEligibilityManagerBeanFailureTest {
     public void tearDown() throws Exception {
         contestEligibilityManager = null;
         rollbackTransaction();
-        TestHelper.clearDB(entityManager);
     }
     /**
      * <p>
@@ -101,9 +78,6 @@ public class ContestEligibilityManagerBeanFailureTest {
      * </p>
      */
     public static void rollbackTransaction() {
-        if (entityManager.getTransaction().isActive()) {
-            entityManager.getTransaction().rollback();
-        }
     }
     /**
      * <p>

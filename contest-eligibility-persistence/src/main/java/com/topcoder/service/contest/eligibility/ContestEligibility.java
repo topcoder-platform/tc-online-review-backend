@@ -16,7 +16,7 @@ import java.io.Serializable;
  * @author TCSDEVELOPER
  * @version 1.0
  */
-public abstract class ContestEligibility implements Serializable {
+public class ContestEligibility implements Serializable {
 
     /**
      * <p>

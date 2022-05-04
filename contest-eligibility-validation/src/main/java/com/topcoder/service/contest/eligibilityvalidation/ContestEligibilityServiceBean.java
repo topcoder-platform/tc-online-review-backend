@@ -3,29 +3,20 @@
  */
 package com.topcoder.service.contest.eligibilityvalidation;
 
-import javax.ejb.EJB;
-import javax.ejb.Stateless;
-import javax.ejb.TransactionAttribute;
-import javax.ejb.TransactionAttributeType;
-import javax.ejb.TransactionManagement;
-import javax.ejb.TransactionManagementType;
-
-import java.util.List;
-import java.util.ArrayList;
-import java.util.Set;
-
-
 import com.topcoder.service.contest.eligibility.ContestEligibility;
 import com.topcoder.service.contest.eligibility.dao.ContestEligibilityManager;
-import com.topcoder.service.contest.eligibility.dao.ContestEligibilityManagerLocal;
+import com.topcoder.service.contest.eligibility.dao.ContestEligibilityManagerBean;
 import com.topcoder.service.contest.eligibility.dao.ContestEligibilityPersistenceException;
 import org.apache.log4j.Logger;
+
+import java.util.List;
+import java.util.Set;
 
 /**
  * <p>
  * This is an implementation of <code>Contest Service Facade</code> web service
  * in form of stateless session EJB. It holds a reference to
- * {@link StudioService} which is delegated the fulfillment of requests.
+ * {@link } which is delegated the fulfillment of requests.
  * </p>
  * 
  * <p>
@@ -40,11 +31,7 @@ import org.apache.log4j.Logger;
  * @author TCSDEVELOPER
  * @version 1.0.1
  */
-@Stateless
-@TransactionManagement(TransactionManagementType.CONTAINER)
-@TransactionAttribute(TransactionAttributeType.REQUIRED)
-public class ContestEligibilityServiceBean implements ContestEligibilityServiceLocal,
-    ContestEligibilityServiceRemote {
+public class ContestEligibilityServiceBean implements ContestEligibilityService {
 
     /**
      * The logger instance for logging the information in
@@ -60,8 +47,7 @@ public class ContestEligibilityServiceBean implements ContestEligibilityServiceL
      * <code>Contest Eligibility Validation EJB</code>.
      * </p>
      */
-    @EJB(beanInterface = ContestEligibilityValidationManagerLocal.class)
-    private ContestEligibilityValidationManager contestEligibilityValidationManager = null;
+    private ContestEligibilityValidationManager contestEligibilityValidationManager = new ContestEligibilityValidationManagerBean();
 
     /**
      * <p>
@@ -69,8 +55,7 @@ public class ContestEligibilityServiceBean implements ContestEligibilityServiceL
      * <code>Contest Eligibility Persistence EJB</code>.
      * </p>
      */
-    @EJB(beanInterface = ContestEligibilityManagerLocal.class)
-    private ContestEligibilityManager contestEligibilityManager = null;
+    private ContestEligibilityManager contestEligibilityManager = new ContestEligibilityManagerBean();
    
     /**
      * Returns whether a user is eligible for a particular contest.

@@ -1,14 +1,7 @@
 package com.topcoder.service.contest.eligibilityvalidation;
 
 import com.topcoder.service.contest.eligibility.GroupContestEligibility;
-import com.topcoder.service.contest.eligibilityvalidation.GroupEligibilityValidator;
-import com.topcoder.service.contest.eligibilityvalidation.TestHelper;
-
 import junit.framework.TestCase;
-
-import javax.persistence.EntityManager;
-import javax.persistence.Persistence;
-import javax.persistence.Query;
 
 /**
  * Stress Tests for {@link GroupEligibilityValidator}.
@@ -30,11 +23,7 @@ public class GroupEligibilityValidatorStressTests extends TestCase {
      *             if anything goes wrong
      */
     public void setUp() throws Exception {
-        EntityManager entityManager =
-            Persistence.createEntityManagerFactory("persistence-unit").createEntityManager();
-        TestHelper.runSQL("drop.sql", entityManager);
-        TestHelper.runSQL("setup.sql", entityManager);
-        validator = new GroupEligibilityValidator("persistence-unit");
+        validator = new GroupEligibilityValidator();
     }
 
     /**
@@ -44,9 +33,6 @@ public class GroupEligibilityValidatorStressTests extends TestCase {
      *             to JUnit
      */
     public void tearDown() throws Exception {
-        EntityManager entityManager =
-            Persistence.createEntityManagerFactory("persistence-unit").createEntityManager();
-        TestHelper.runSQL("drop.sql", entityManager);
     }
 
     /**

@@ -6,8 +6,6 @@ package com.topcoder.service.contest.eligibilityvalidation;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 
-import javax.persistence.EntityManager;
-
 /**
  * <p>
  * TestHelper class for the test.
@@ -28,27 +26,6 @@ public final class TestHelper {
      */
     private TestHelper() {
         // empty
-    }
-
-    /**
-     * <p>
-     * Runs the given SQL file.
-     * </p>
-     * 
-     * @param filePath
-     *            The filePath of SQL file
-     * @param em
-     *            the entity manager
-     * @throws Exception
-     *             to JUnit
-     */
-    public static void runSQL(String filePath, EntityManager em) throws Exception {
-        String content = getFileAsString(filePath);
-        em.getTransaction().begin();
-        for (String st : content.split(";")) {
-            em.createNativeQuery(st).executeUpdate();
-        }
-        em.getTransaction().commit();
     }
 
     /**

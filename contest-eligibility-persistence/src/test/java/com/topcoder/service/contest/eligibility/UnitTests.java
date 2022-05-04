@@ -18,8 +18,7 @@ import com.topcoder.service.contest.eligibility.dao.ContestEligibilityPersistenc
  * @version 1.0
  */
 @RunWith(Suite.class)
-@Suite.SuiteClasses( {DemoTest.class,
-    ContestEligibilityManagerBeanTests.class,
+@Suite.SuiteClasses( {ContestEligibilityManagerBeanTests.class,
     ContestEligibilityPersistenceExceptionTests.class,
     GroupContestEligibilityTests.class,
     ContestEligibilityTests.class})

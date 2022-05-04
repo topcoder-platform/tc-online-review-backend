@@ -3,19 +3,14 @@
  */
 package com.topcoder.service.contest.eligibility.accuracytests;
 
-import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.List;
-
-import javax.persistence.EntityManager;
-import javax.persistence.Persistence;
-
-import junit.framework.TestCase;
-
 import com.topcoder.service.contest.eligibility.ContestEligibility;
 import com.topcoder.service.contest.eligibility.GroupContestEligibility;
 import com.topcoder.service.contest.eligibility.dao.ContestEligibilityManagerBean;
-import com.topcoder.util.log.LogManager;
+import junit.framework.TestCase;
+
+import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * <p>
@@ -29,35 +24,11 @@ public class ContestEligibilityManagerBeanTest extends TestCase {
 
     /**
      * <p>
-     * SQL used to clear database.
-     * </p>
-     */
-    private static final String[] CLEAR =
-        {"DELETE FROM group_contest_eligibility", "DELETE FROM contest_eligibility"};
-    /**
-     * persistence unit name.
-     */
-    private static final String PERSISTENCE_UNIT = "ContestEligibilityPersistence";
-    /**
-     * Represents the entity manager used for CRUD operations on entity.
-     */
-    private static EntityManager manager;
-
-    /**
-     * <p>
      * Represent the ContestEligibilityManagerBean instance is used to call its method for test. It will be
      * initialized in setUp().
      * </p>
      */
     private ContestEligibilityManagerBean instance;
-    /**
-     * <p>
-     * Sets the entity manager.
-     * </p>
-     */
-    static {
-        manager = Persistence.createEntityManagerFactory(PERSISTENCE_UNIT).createEntityManager();
-    }
 
     /**
      * <p>
@@ -69,8 +40,6 @@ public class ContestEligibilityManagerBeanTest extends TestCase {
      */
     public void setUp() throws Exception {
         instance = new ContestEligibilityManagerBean();
-        setPrivateField(ContestEligibilityManagerBean.class, instance, "entityManager", manager);
-        setPrivateField(ContestEligibilityManagerBean.class, instance, "logger", LogManager.getLog("test"));
         clearDatabase();
     }
 
@@ -224,29 +193,9 @@ public class ContestEligibilityManagerBeanTest extends TestCase {
     }
 
     /**
-     * <p>
-     * Gets the entity manager.
-     * </p>
-     * 
-     * @return the entity manager
-     */
-    private static EntityManager getEntityManager() {
-        if (manager == null || !manager.isOpen()) {
-            manager = Persistence.createEntityManagerFactory(PERSISTENCE_UNIT).createEntityManager();
-        }
-        return manager;
-    }
-
-    /**
      * Clears the database tables.
      */
     private static void clearDatabase() {
-        EntityManager em = getEntityManager();
-        em.getTransaction().begin();
-        for (String sql : CLEAR) {
-            em.createNativeQuery(sql).executeUpdate();
-        }
-        em.getTransaction().commit();
     }
 
     /**
