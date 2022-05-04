@@ -4,6 +4,7 @@
 package com.topcoder.service.contest.eligibility.dao;
 
 import com.topcoder.service.contest.eligibility.ContestEligibility;
+import com.topcoder.service.contest.eligibility.GroupContestEligibility;
 import com.topcoder.shared.util.DBMS;
 import org.apache.log4j.Logger;
 
@@ -276,7 +277,6 @@ public class ContestEligibilityManagerBean implements ContestEligibilityManager 
   @SuppressWarnings("unchecked")
   public List<ContestEligibility> getContestEligibility(long contestId, boolean isStudio)
       throws ContestEligibilityPersistenceException {
-
     logEntrance(
         "ContestEligibilityManagerBean#getContestEligibility",
         new String[] {"contestId", "isStudio"},
@@ -288,17 +288,19 @@ public class ContestEligibilityManagerBean implements ContestEligibilityManager 
       conn = DBMS.getConnection(COMMON_OLTP_DATASOURCE_NAME);
       PreparedStatement ps =
           conn.prepareStatement(
-              "select contest_eligibility_id, contest_id, is_studio from contest_eligibility where is_studio = "
+              "select c.contest_eligibility_id, c.contest_id, c.is_studio, g.group_id from contest_eligibility AS c JOIN group_contest_eligibility AS g On c.contest_eligibility_id = g.contest_eligibility_id "
+                  + "where c is_studio = "
                   + (isStudio ? "1" : "0")
                   + " and  contest_id = "
                   + contestId);
       ResultSet rs = ps.executeQuery();
       while (rs.next()) {
-        ContestEligibility ce = new ContestEligibility();
+        GroupContestEligibility ce = new GroupContestEligibility();
         ce.setId(rs.getLong(1));
         ce.setContestId(rs.getLong(2));
         ce.setStudio(rs.getBoolean(3));
         ce.setDeleted(false);
+        ce.setGroupId(rs.getLong(4));
         results.add(ce);
       }
       rs.close();

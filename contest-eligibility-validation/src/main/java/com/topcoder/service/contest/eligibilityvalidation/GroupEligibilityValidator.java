@@ -50,15 +50,7 @@ public class GroupEligibilityValidator implements ContestEligibilityValidator {
       conn = DBMS.getConnection(COMMON_OLTP_DATASOURCE_NAME);
       PreparedStatement ps =
           conn.prepareStatement(
-              "insert into contest_eligibility(contest_eligibility_id, contest_id, is_studio) VALUES(CONTEST_ELIGIBILITY_SEQ.NEXTVAL, ?, ?)");
-      ps.setLong(1, contestEligibility.getContestId());
-      ps.setBoolean(2, contestEligibility.isStudio());
-      ps.executeUpdate();
-      ps.close();
-      ps =
-          conn.prepareStatement(
-              "select * from user_group_xref where security_status_id = 1 and login_id=? and group_id=?"
-                  + contestEligibility.getContestId());
+              "select * from user_group_xref where security_status_id = 1 and login_id=? and group_id=?");
       ps.setLong(1, userId);
       ps.setLong(2, ((GroupContestEligibility) contestEligibility).getGroupId());
       ResultSet rs = ps.executeQuery();
