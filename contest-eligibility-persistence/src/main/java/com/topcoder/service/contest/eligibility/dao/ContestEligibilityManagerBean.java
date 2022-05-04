@@ -288,7 +288,7 @@ public class ContestEligibilityManagerBean implements ContestEligibilityManager 
       conn = DBMS.getConnection(COMMON_OLTP_DATASOURCE_NAME);
       PreparedStatement ps =
           conn.prepareStatement(
-              "select contest_eligibility_id, contest_id, is_studio, deleted from contest_eligibility where is_studio = "
+              "select contest_eligibility_id, contest_id, is_studio from contest_eligibility where is_studio = "
                   + (isStudio ? "1" : "0")
                   + " and  contest_id = "
                   + contestId);
