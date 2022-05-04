@@ -363,8 +363,8 @@ public class ContestEligibilityManagerBean implements ContestEligibilityManager 
                                 + studio
                                 + " and  contest_id in "
                                 + ids);
-        for (int i = 0; i < contestIds.length; i++) {
-          ps.setLong(i + 1, contestIds[i]);
+        for (int i = 0; i < count; i++) {
+          ps.setLong(i + 1, contestIds[startIndex + i]);
         }
         ResultSet rs = ps.executeQuery();
         while (rs.next()) {
