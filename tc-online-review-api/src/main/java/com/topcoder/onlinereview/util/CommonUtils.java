@@ -27,6 +27,10 @@ public class CommonUtils {
     return Double.parseDouble(map.get(key).toString());
   }
 
+  public static Float getFloat(Map<String, Object> map, String key) {
+    return Float.parseFloat(map.get(key).toString());
+  }
+
   public static Boolean getBoolean(Map<String, Object> map, String key) {
     return (Boolean) map.get(key);
   }

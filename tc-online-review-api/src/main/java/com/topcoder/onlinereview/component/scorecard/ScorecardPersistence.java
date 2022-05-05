@@ -3,34 +3,35 @@
  */
 package com.topcoder.onlinereview.component.scorecard;
 
-import com.topcoder.db.connectionfactory.DBConnectionException;
-import com.topcoder.db.connectionfactory.DBConnectionFactory;
-import com.topcoder.db.connectionfactory.DBConnectionFactoryImpl;
-import com.topcoder.db.connectionfactory.UnknownConnectionException;
-import com.topcoder.management.scorecard.ConfigurationException;
-import com.topcoder.management.scorecard.PersistenceException;
-import com.topcoder.management.scorecard.ScorecardIDInfo;
-import com.topcoder.management.scorecard.persistence.logging.LogMessage;
-import com.topcoder.util.config.ConfigManager;
-import com.topcoder.util.config.ConfigManagerException;
-import com.topcoder.util.log.Level;
-import com.topcoder.util.sql.databaseabstraction.CustomResultSet;
-import com.topcoder.util.sql.databaseabstraction.InvalidCursorStateException;
-import com.topcoder.util.sql.databaseabstraction.NullColumnValueException;
+import com.topcoder.onlinereview.component.id.DBHelper;
+import com.topcoder.onlinereview.component.id.IDGenerationException;
+import com.topcoder.onlinereview.component.id.IDGenerator;
+import com.topcoder.onlinereview.component.project.management.LogMessage;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
+import javax.annotation.PostConstruct;
+import javax.persistence.EntityManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
-import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+
+import static com.google.common.collect.Lists.newArrayList;
+import static com.topcoder.onlinereview.util.CommonUtils.executeSql;
+import static com.topcoder.onlinereview.util.CommonUtils.executeSqlWithParam;
+import static com.topcoder.onlinereview.util.CommonUtils.getDate;
+import static com.topcoder.onlinereview.util.CommonUtils.getFloat;
+import static com.topcoder.onlinereview.util.CommonUtils.getLong;
+import static com.topcoder.onlinereview.util.CommonUtils.getString;
 
 /**
  * This class contains operations to create and update scorecard instances into the Informix
@@ -98,107 +99,27 @@ public class ScorecardPersistence {
       "INSERT INTO scorecard(scorecard_id, scorecard_status_id, "
           + "scorecard_type_id, project_category_id, name, version, min_score, max_score, create_user, "
           + "create_date, modify_user, modify_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+  /** The default name of the id generator for the scorecards. */
+  private static final String SCORECARD_ID_SEQUENCE = "scorecard_id_seq";
 
-  /**
-   * The factory instance that is used to create connection to the database. The Create, update, get
-   * scorecard methods use this instance to create connection. This variable is initialized in the
-   * constructor, immutable and can never be null.
-   */
-  private final DBConnectionFactory factory;
+  /** The IDGenerator instance used for scorecards ids. */
+  private IDGenerator scorecardIdGenerator;
 
-  /**
-   * This field will be used by create, update, get methods to retrieve database connection. It is
-   * initialized in the constructor, immutable and can be either null or non-null. If is is null,
-   * default connection will be created.
-   */
-  private final String connectionName;
+  @Autowired private Map<String, EntityManager> entityManagerMap;
 
-  /**
-   * Create a new instance of InformixScorecardPersistence. The passing namespace parameter will be
-   * used to get the namespace to initialize DBConnectionFactory component. ConfigurationException
-   * will be thrown if the 'ConnectionFactoryNS' property is missing in the given namespace.
-   *
-   * @param namespace The namespace to load connection setting.
-   * @throws IllegalArgumentException if the input is null or empty string.
-   * @throws ConfigurationException if error occurrs while loading configuration settings, or
-   *     required configuration parameter is missing.
-   * @throws PersistenceException if cannot initialize the connection to the database.
-   */
-  public ScorecardPersistence(String namespace)
-      throws ConfigurationException, PersistenceException {
-    if (namespace == null) {
-      throw new IllegalArgumentException("namespace cannot be null.");
-    }
+  @Value("{scorecard.persistence.entity-manager-name}")
+  private String entityManagerName;
 
-    if (namespace.trim().length() == 0) {
-      throw new IllegalArgumentException("namespace cannot be empty String.");
-    }
+  private EntityManager entityManager;
+  @Autowired private DBHelper dbHelper;
+  @Autowired private GroupPersistence groupPersistence;
+  @Autowired private SectionPersistence sectionPersistence;
+  @Autowired private QuestionPersistence questionPersistence;
 
-    try {
-      ConfigManager cm = ConfigManager.getInstance();
-      String factoryNs = cm.getString(namespace, "ConnectionFactoryNS");
-      logger.log(
-          Level.DEBUG,
-          "read property ConnectionFactoryNS[" + factoryNs + "] from the namespace :" + namespace);
-      factory = new DBConnectionFactoryImpl(factoryNs);
-      connectionName = cm.getString(namespace, "ConnectionName");
-      logger.log(
-          Level.DEBUG,
-          "read property ConnectionName[" + connectionName + "] from the namespace :" + namespace);
-      IdGeneratorUtility.loadIdGenerators(namespace);
-    } catch (ConfigManagerException ex) {
-      logger.log(
-          Level.FATAL,
-          "Fails to create InformixScorecardPersistence.\n"
-              + LogMessage.getExceptionStackTrace(ex));
-      throw new ConfigurationException("Error occur while reading the configuration.", ex);
-    } catch (com.topcoder.db.connectionfactory.ConfigurationException ex) {
-      logger.log(
-          Level.FATAL,
-          "Fails to create InformixScorecardPersistence.\n"
-              + LogMessage.getExceptionStackTrace(ex));
-      throw new ConfigurationException("Error occur while creating the DbConnectionFactory.", ex);
-    } catch (UnknownConnectionException ex) {
-      logger.log(
-          Level.FATAL,
-          "Fails to create InformixScorecardPersistence.\n"
-              + LogMessage.getExceptionStackTrace(ex));
-      throw new PersistenceException("Error occur while creating the DbConnectionFactory.", ex);
-    }
-  }
-
-  /**
-   * Creates the database connection. If the <code>connectionName</code> is <code>null</code>, the
-   * default will be created. The autoCommit flag will be set to <code>false</code>.
-   *
-   * @return the database connection.
-   * @throws PersistenceException if connection couldn't be created.
-   */
-  private Connection createConnection() throws PersistenceException {
-    try {
-      Connection conn =
-          (connectionName == null)
-              ? factory.createConnection()
-              : factory.createConnection(connectionName);
-
-      if (connectionName == null) {
-        logger.log(Level.DEBUG, "create db connection with default connect name");
-      } else {
-        logger.log(Level.DEBUG, "create db connection with connect name:" + connectionName);
-      }
-
-      conn.setAutoCommit(false);
-
-      return conn;
-    } catch (DBConnectionException ex) {
-      logger.log(
-          Level.ERROR, "fail to create db connection.\n" + LogMessage.getExceptionStackTrace(ex));
-      throw new PersistenceException("Error occur while creating database connection.", ex);
-    } catch (SQLException ex) {
-      logger.log(
-          Level.ERROR, "fail to create db connection.\n" + LogMessage.getExceptionStackTrace(ex));
-      throw new PersistenceException("Error occur while creating database connection.", ex);
-    }
+  @PostConstruct
+  public void postRun() throws IDGenerationException {
+    scorecardIdGenerator = new IDGenerator(SCORECARD_ID_SEQUENCE, dbHelper);
+    entityManager = entityManagerMap.get(entityManagerName);
   }
 
   /**
@@ -217,30 +138,22 @@ public class ScorecardPersistence {
     if (scorecard == null) {
       throw new IllegalArgumentException("scorecard cannot be null.");
     }
-
     if (operator == null) {
       throw new IllegalArgumentException("operator cannot be null.");
     }
-
     if (operator.trim().length() == 0) {
       throw new IllegalArgumentException("operator cannot be empty String.");
     }
-
-    logger.log(Level.DEBUG, new LogMessage("Scorecard", null, operator, "Create new Scorecard."));
-
-    Connection conn = createConnection();
-
-    // generate the id first
-    long scorecardId = DBUtils.nextId(IdGeneratorUtility.getScorecardIdGenerator());
-
+    log.debug(new LogMessage(null, operator, "Create new Scorecard.").toString());
     try {
+      // generate the id first
+      long scorecardId = scorecardIdGenerator.getNextID();
       // get the current time
-      Timestamp time = new Timestamp(System.currentTimeMillis());
+      Date time = new Date();
       // create scorecard
-      createScorecard(conn, scorecard, scorecardId, operator, time);
+      createScorecard(scorecard, scorecardId, operator, time);
 
       // create groups
-      InformixGroupPersistence groupPersistence = new InformixGroupPersistence(conn);
       groupPersistence.createGroups(scorecard.getAllGroups(), operator, scorecardId);
 
       // set the audit data
@@ -249,64 +162,38 @@ public class ScorecardPersistence {
       scorecard.setCreationTimestamp(time);
       scorecard.setCreationUser(operator);
       scorecard.setModificationUser(operator);
-
-      logger.log(Level.DEBUG, "commit the transaction.");
-      conn.commit();
-    } catch (SQLException ex) {
-      DBUtils.rollback(conn);
-      logger.log(
-          Level.ERROR,
-          new LogMessage("Scorecard", null, operator, "Fail to create Scorecard.", ex));
+    } catch (Exception ex) {
+      log.error(new LogMessage(null, operator, "Fail to create Scorecard.", ex).toString());
       throw new PersistenceException("Error occur during create operation.", ex);
-    } catch (PersistenceException ex) {
-      DBUtils.rollback(conn);
-      logger.log(
-          Level.ERROR, new LogMessage("Scorecard", null, operator, "Fail to create Scorecard."));
-      throw ex;
-    } finally {
-      DBUtils.close(conn);
     }
   }
 
   /**
    * Creates the scorecard in the database. Inserts the values into the scorecard table.
    *
-   * @param conn the connection to be used.
    * @param scorecard the scorecard to be stored.
    * @param id the id of the scorecard.
    * @param operator the creation operator.
    * @param time the creation time.
-   * @throws SQLException if database error occurs.
    */
-  private static void createScorecard(
-      Connection conn, Scorecard scorecard, long id, String operator, Timestamp time)
-      throws SQLException {
-    logger.log(Level.DEBUG, "insert record into scorecard with id:" + id);
-
-    PreparedStatement pstmt = null;
-
-    try {
-      pstmt = conn.prepareStatement(INSERT_SCORECARD);
-
-      pstmt.setLong(1, id);
-      pstmt.setLong(2, scorecard.getScorecardStatus().getId());
-      pstmt.setLong(3, scorecard.getScorecardType().getId());
-      pstmt.setLong(4, scorecard.getCategory());
-      pstmt.setString(5, scorecard.getName());
-      pstmt.setString(6, scorecard.getVersion());
-      pstmt.setFloat(7, scorecard.getMinScore());
-      pstmt.setFloat(8, scorecard.getMaxScore());
-
-      // set user and date
-      pstmt.setString(9, operator);
-      pstmt.setTimestamp(10, time);
-      pstmt.setString(11, operator);
-      pstmt.setTimestamp(12, time);
-
-      pstmt.execute();
-    } finally {
-      DBUtils.close(pstmt);
-    }
+  private void createScorecard(Scorecard scorecard, long id, String operator, Date time) {
+    log.debug("insert record into scorecard with id:" + id);
+    executeSqlWithParam(
+        entityManager,
+        INSERT_SCORECARD,
+        newArrayList(
+            id,
+            scorecard.getScorecardStatus().getId(),
+            scorecard.getScorecardType().getId(),
+            scorecard.getCategory(),
+            scorecard.getName(),
+            scorecard.getVersion(),
+            scorecard.getMinScore(),
+            scorecard.getMaxScore(),
+            operator,
+            time,
+            operator,
+            time));
   }
 
   /**
@@ -322,48 +209,33 @@ public class ScorecardPersistence {
    * @throws IllegalArgumentException if any input is null or the operator is empty string.
    * @throws PersistenceException if error occurred while accessing the database.
    */
+  @Transactional
   public void updateScorecard(Scorecard scorecard, String operator) throws PersistenceException {
     if (scorecard == null) {
       throw new IllegalArgumentException("scorecard cannot be null.");
     }
-
     if (operator == null) {
       throw new IllegalArgumentException("operator cannot be null.");
     }
-
     if (operator.trim().length() == 0) {
       throw new IllegalArgumentException("operator cannot be empty String.");
     }
-
-    logger.log(
-        Level.DEBUG,
-        new LogMessage("Scorecard", new Long(scorecard.getId()), operator, "update Scorecard."));
-
-    Connection conn = createConnection();
-
+    log.debug(new LogMessage(scorecard.getId(), operator, "update Scorecard.").toString());
     try {
-      // get the old scorcard
+      // get the old scorecard
       Scorecard oldScorecard = getScorecard(scorecard.getId(), true);
-
       if (oldScorecard.isInUse()) {
-        logger.log(
-            Level.ERROR, new LogMessage("Scorecard", null, operator, "The scorecard is in use."));
+        log.error(new LogMessage(null, operator, "The scorecard is in use.").toString());
         throw new PersistenceException("The scorecard is in use. Id: " + scorecard.getId());
       }
-
       // increment the version number
       String version = incrementVersion(oldScorecard.getVersion());
-
       // get old group id
       Set oldGroupsIds = getGroupsIds(oldScorecard);
-
-      // create the group persistence
-      InformixGroupPersistence groupPersistence = new InformixGroupPersistence(conn);
-
       // create update time
-      Timestamp time = new Timestamp(System.currentTimeMillis());
+      var time = new Date();
       // update the scorecard data
-      updateScorecard(conn, scorecard, operator, time, version);
+      updateScorecard(scorecard, operator, time, version);
 
       // get the new groups
       Group[] newGroups = scorecard.getAllGroups();
@@ -374,7 +246,7 @@ public class ScorecardPersistence {
       List deletedGroupsIds = new ArrayList(oldGroupsIds);
 
       for (int i = 0; i < newGroups.length; i++) {
-        Long longId = new Long(newGroups[i].getId());
+        Long longId = newGroups[i].getId();
 
         // if is a new group - create it
         if (newGroups[i].getId() == NamedScorecardStructure.SENTINEL_ID) {
@@ -400,76 +272,44 @@ public class ScorecardPersistence {
 
       // delete the sections
       if (deletedSectionIds.size() > 0) {
-        new InformixSectionPersistence(conn).deleteSections(DBUtils.listToArray(deletedSectionIds));
+        sectionPersistence.deleteSections(DBUtils.listToArray(deletedSectionIds));
       }
 
       // delete the question
       if (deletedQuestionsIds.size() > 0) {
-        new InformixQuestionPersistence(conn)
-            .deleteQuestions(DBUtils.listToArray(deletedQuestionsIds));
+        questionPersistence.deleteQuestions(DBUtils.listToArray(deletedQuestionsIds));
       }
 
-      logger.log(Level.DEBUG, "commit the transaction.");
+      log.debug("commit the transaction.");
       // commit transaction and set the modification user and date
-      conn.commit();
       scorecard.setVersion(version);
       scorecard.setModificationTimestamp(time);
       scorecard.setModificationUser(operator);
-    } catch (SQLException ex) {
-      DBUtils.rollback(conn);
-
+    } catch (Exception ex) {
       String errMsg = scorecard + " op:" + operator;
-
-      try {
-        errMsg =
-            "Scorecard Status: "
-                + scorecard.getScorecardStatus().getId()
-                + " - Scorecard Type: "
-                + scorecard.getScorecardType().getId()
-                + " - Scorecard Category: "
-                + scorecard.getCategory()
-                + " - Scorecard Name: "
-                + scorecard.getName()
-                + " - Scorecard Version: "
-                + scorecard.getVersion()
-                + " - Scorecard Min Score: "
-                + scorecard.getMinScore()
-                + " - Scorecard Max Score: "
-                + scorecard.getMaxScore()
-                + " - Operator: "
-                + operator
-                + " - Scorecard ID: "
-                + scorecard.getId();
-      } catch (Exception e) {
-        logger.log(
-            Level.ERROR,
-            new LogMessage(
-                "Scorecard",
-                new Long(scorecard.getId()),
-                operator,
-                "Failed to update Scorecard." + errMsg,
-                ex));
-        throw new PersistenceException("Couldn't format error output:" + errMsg);
-      }
-
-      logger.log(
-          Level.ERROR,
-          new LogMessage(
-              "Scorecard",
-              new Long(scorecard.getId()),
-              operator,
-              "Failed to update Scorecard." + errMsg,
-              ex));
+      errMsg =
+          "Scorecard Status: "
+              + scorecard.getScorecardStatus().getId()
+              + " - Scorecard Type: "
+              + scorecard.getScorecardType().getId()
+              + " - Scorecard Category: "
+              + scorecard.getCategory()
+              + " - Scorecard Name: "
+              + scorecard.getName()
+              + " - Scorecard Version: "
+              + scorecard.getVersion()
+              + " - Scorecard Min Score: "
+              + scorecard.getMinScore()
+              + " - Scorecard Max Score: "
+              + scorecard.getMaxScore()
+              + " - Operator: "
+              + operator
+              + " - Scorecard ID: "
+              + scorecard.getId();
+      log.error(
+          new LogMessage(scorecard.getId(), operator, "Failed to update Scorecard." + errMsg, ex)
+              .toString());
       throw new PersistenceException("Error occurs while deleting the scorecard: " + errMsg, ex);
-    } catch (PersistenceException ex) {
-      DBUtils.rollback(conn);
-      logger.log(
-          Level.ERROR,
-          new LogMessage(
-              "Scorecard", new Long(scorecard.getId()), operator, "Fail to update Scorecard."));
-      throw ex;
-    } finally {
-      DBUtils.close(conn);
     }
   }
 
@@ -493,38 +333,28 @@ public class ScorecardPersistence {
   /**
    * Updates the Scorecard in the database.
    *
-   * @param conn the connection to use.
    * @param scorecard the scorecard to be updated.
    * @param operator the update operator.
    * @param time the operation timestamp.
    * @param version the scorecard version.
    * @throws SQLException if any database error occurs.
    */
-  private static void updateScorecard(
-      Connection conn, Scorecard scorecard, String operator, Timestamp time, String version)
-      throws SQLException {
-    logger.log(Level.DEBUG, "update scorecard with id : " + scorecard.getId());
-
-    PreparedStatement pstmt = null;
-
-    try {
-      pstmt = conn.prepareStatement(UPDATE_SCORECARD);
-
-      pstmt.setLong(1, scorecard.getScorecardStatus().getId());
-      pstmt.setLong(2, scorecard.getScorecardType().getId());
-      pstmt.setLong(3, scorecard.getCategory());
-      pstmt.setString(4, scorecard.getName());
-      pstmt.setString(5, version);
-      pstmt.setFloat(6, scorecard.getMinScore());
-      pstmt.setFloat(7, scorecard.getMaxScore());
-
-      pstmt.setString(8, operator);
-      pstmt.setTimestamp(9, time);
-      pstmt.setLong(10, scorecard.getId());
-      pstmt.executeUpdate();
-    } finally {
-      DBUtils.close(pstmt);
-    }
+  private void updateScorecard(Scorecard scorecard, String operator, Date time, String version) {
+    log.debug("update scorecard with id : " + scorecard.getId());
+    executeSqlWithParam(
+        entityManager,
+        UPDATE_SCORECARD,
+        newArrayList(
+            scorecard.getScorecardStatus().getId(),
+            scorecard.getScorecardType().getId(),
+            scorecard.getCategory(),
+            scorecard.getName(),
+            version,
+            scorecard.getMinScore(),
+            scorecard.getMaxScore(),
+            operator,
+            time,
+            scorecard.getId()));
   }
 
   /**
@@ -573,37 +403,22 @@ public class ScorecardPersistence {
    * @throws PersistenceException if error occurred while accessing the database.
    */
   public ScorecardType[] getAllScorecardTypes() throws PersistenceException {
-    logger.log(Level.DEBUG, "get all scorecard types.");
-
-    Connection conn = createConnection();
-    Statement stmt = null;
-    ResultSet rs = null;
-
+    log.debug("get all scorecard types.");
     try {
       // create statement and execute select query
-      stmt = conn.createStatement();
-      rs = stmt.executeQuery(SELECT_SCORECARD_TYPE);
-
+      var rs = executeSql(entityManager, SELECT_SCORECARD_TYPE);
       List result = new ArrayList();
-
       // for each row in the result set create new ScorecardType instance.
-      while (rs.next()) {
-        long id = rs.getLong("scorecard_type_id");
-        String name = rs.getString("name");
+      for (var row : rs) {
+        long id = getLong(row, "scorecard_type_id");
+        String name = getString(row, "name");
         result.add(new ScorecardType(id, name));
       }
-
       // convert the list to array
       return (ScorecardType[]) result.toArray(new ScorecardType[result.size()]);
-    } catch (SQLException ex) {
-      logger.log(
-          Level.ERROR,
-          "Failed to get all scorecard types. \n" + LogMessage.getExceptionStackTrace(ex));
+    } catch (Exception ex) {
+      log.error("Failed to get all scorecard types. \n", ex);
       throw new PersistenceException("Error occur during database operation.", ex);
-    } finally {
-      DBUtils.close(rs);
-      DBUtils.close(stmt);
-      DBUtils.close(conn);
     }
   }
 
@@ -614,37 +429,25 @@ public class ScorecardPersistence {
    * @throws PersistenceException if error occurred while accessing the database.
    */
   public QuestionType[] getAllQuestionTypes() throws PersistenceException {
-    logger.log(Level.DEBUG, "get all question types.");
-
-    Connection conn = createConnection();
-    Statement stmt = null;
-    ResultSet rs = null;
-
+    log.debug("get all question types.");
     try {
       // create statement and execute select query
-      stmt = conn.createStatement();
-      rs = stmt.executeQuery(SELECT_SCORECARD_QUESTION_TYPE);
+      var rs = executeSql(entityManager, SELECT_SCORECARD_QUESTION_TYPE);
 
       List result = new ArrayList();
 
       // for each row in the result set create new QuestionType instance.
-      while (rs.next()) {
-        long id = rs.getLong("scorecard_question_type_id");
-        String name = rs.getString("name");
+      for (var row : rs) {
+        Long id = getLong(row, "scorecard_question_type_id");
+        String name = getString(row, "name");
         result.add(new QuestionType(id, name));
       }
 
       // convert the list to array
       return (QuestionType[]) result.toArray(new QuestionType[result.size()]);
-    } catch (SQLException ex) {
-      logger.log(
-          Level.ERROR,
-          "Failed to get all question types. \n" + LogMessage.getExceptionStackTrace(ex));
+    } catch (Exception ex) {
+      log.error("Failed to get all question types. \n", ex);
       throw new PersistenceException("Error occur during database operation.", ex);
-    } finally {
-      DBUtils.close(rs);
-      DBUtils.close(stmt);
-      DBUtils.close(conn);
     }
   }
 
@@ -655,37 +458,22 @@ public class ScorecardPersistence {
    * @throws PersistenceException if error occurred while accessing the database.
    */
   public ScorecardStatus[] getAllScorecardStatuses() throws PersistenceException {
-    logger.log(Level.DEBUG, "get all scorecard status.");
-
-    Connection conn = createConnection();
-    Statement stmt = null;
-    ResultSet rs = null;
-
+    log.debug("get all scorecard status.");
     try {
       // create statement and execute select query
-      stmt = conn.createStatement();
-      rs = stmt.executeQuery(SELECT_SCORECARD_STATUS);
-
+      var rs = executeSql(entityManager, SELECT_SCORECARD_STATUS);
       List result = new ArrayList();
-
       // for each row in the result set create new QuestionType instance.
-      while (rs.next()) {
-        long id = rs.getLong("scorecard_status_id");
-        String name = rs.getString("name");
+      for (var row : rs) {
+        long id = getLong(row, "scorecard_status_id");
+        String name = getString(row, "name");
         result.add(new ScorecardStatus(id, name));
       }
-
       // convert the list to array
       return (ScorecardStatus[]) result.toArray(new ScorecardStatus[result.size()]);
-    } catch (SQLException ex) {
-      logger.log(
-          Level.ERROR,
-          "Failed to get all scorecard status. \n" + LogMessage.getExceptionStackTrace(ex));
+    } catch (Exception ex) {
+      log.error("Failed to get all scorecard status. \n", ex);
       throw new PersistenceException("Error occur during database operation.", ex);
-    } finally {
-      DBUtils.close(rs);
-      DBUtils.close(stmt);
-      DBUtils.close(conn);
     }
   }
 
@@ -703,37 +491,25 @@ public class ScorecardPersistence {
    */
   public Scorecard[] getScorecards(long[] ids, boolean complete) throws PersistenceException {
     DBUtils.checkIdsArray(ids, "ids");
-
-    logger.log(
-        Level.DEBUG,
+    log.debug(
         new LogMessage(
-            "Scorecard",
-            null,
-            null,
-            "retrieve scorecard with ids:"
-                + InformixPersistenceHelper.generateIdString(ids)
-                + ", and is "
-                + (complete ? "complete" : "incomplete")));
+                null,
+                null,
+                "retrieve scorecard with ids:"
+                    + ids
+                    + ", and is "
+                    + (complete ? "complete" : "incomplete"))
+            .toString());
+    Set inUseIds = selectInUse(ids);
+    List scorecards = getScorecards(ids, inUseIds);
 
-    Connection conn = createConnection();
-
-    try {
-      Set inUseIds = selectInUse(ids, conn);
-      List scorecards = getScorecards(conn, ids, inUseIds);
-
-      if (complete) {
-        InformixGroupPersistence groupPersistence = new InformixGroupPersistence(conn);
-
-        for (Iterator it = scorecards.iterator(); it.hasNext(); ) {
-          Scorecard card = (Scorecard) it.next();
-          card.addGroups(groupPersistence.getGroups(card.getId()));
-        }
+    if (complete) {
+      for (Iterator it = scorecards.iterator(); it.hasNext(); ) {
+        Scorecard card = (Scorecard) it.next();
+        card.addGroups(groupPersistence.getGroups(card.getId()));
       }
-
-      return (Scorecard[]) scorecards.toArray(new Scorecard[scorecards.size()]);
-    } finally {
-      DBUtils.close(conn);
     }
+    return (Scorecard[]) scorecards.toArray(new Scorecard[scorecards.size()]);
   }
 
   /**
@@ -748,38 +524,23 @@ public class ScorecardPersistence {
    *     is null or empty.
    * @throws PersistenceException if error occurred while accessing the persistence.
    */
-  public Scorecard[] getScorecards(CustomResultSet resultSet, boolean complete)
+  public Scorecard[] getScorecards(List<Map<String, Object>> resultSet, boolean complete)
       throws PersistenceException {
     if (resultSet == null) {
       throw new IllegalArgumentException("resultSet cannot be null.");
     }
-
-    Connection conn = createConnection();
-    InformixGroupPersistence groupPersistence = null;
     List scorecards = new ArrayList();
-
-    if (complete) {
-      groupPersistence = new InformixGroupPersistence(conn);
-    }
-
     try {
-      while (resultSet.next()) {
-        Scorecard scorecard = populateScorecard(resultSet);
-
+      for (var row : resultSet) {
+        Scorecard scorecard = populateScorecard(row);
         if (groupPersistence != null) {
           scorecard.addGroups(groupPersistence.getGroups(scorecard.getId()));
         }
-
         scorecards.add(scorecard);
       }
-
       return (Scorecard[]) scorecards.toArray(new Scorecard[scorecards.size()]);
-    } catch (NullColumnValueException ncve) {
-      throw new PersistenceException("Error occured fetching scorecards from the database.", ncve);
-    } catch (InvalidCursorStateException icse) {
+    } catch (Exception icse) {
       throw new PersistenceException("Error occured fetching scorecards from the database.", icse);
-    } finally {
-      DBUtils.close(conn);
     }
   }
 
@@ -800,45 +561,29 @@ public class ScorecardPersistence {
     if (projectCategoryId <= 0) {
       throw new IllegalArgumentException("The projectCategoryId should be positive.");
     }
-
-    logger.log(
-        Level.DEBUG,
+    log.debug(
         new LogMessage(
-            "Scorecard",
-            null,
-            null,
-            "retrieve scorecards id info with projectCategoryId:" + projectCategoryId));
-
-    Connection conn = createConnection();
-
-    PreparedStatement pstmt = null;
-    ResultSet rs = null;
-
+                null,
+                null,
+                "retrieve scorecards id info with projectCategoryId:" + projectCategoryId)
+            .toString());
     List scorecardsInfo = new ArrayList();
-
     try {
-      pstmt = conn.prepareStatement(SELECT_DEFAULT_SCORECARDS_ID_INFO + projectCategoryId);
-
-      rs = pstmt.executeQuery();
-
-      while (rs.next()) {
-        scorecardsInfo.add(new ScorecardIDInfo(rs.getLong(1), rs.getLong(2)));
+      var rs = executeSql(entityManager, SELECT_DEFAULT_SCORECARDS_ID_INFO + projectCategoryId);
+      for (var row : rs) {
+        scorecardsInfo.add(
+            new ScorecardIDInfo(getLong(row, "scorecard_type_id"), getLong(row, "scorecard_id")));
       }
-
       return (ScorecardIDInfo[]) scorecardsInfo.toArray(new ScorecardIDInfo[scorecardsInfo.size()]);
-    } catch (SQLException ex) {
-      logger.log(
-          Level.ERROR,
+    } catch (Exception ex) {
+      log.error(
           new LogMessage(
-              "ScoreCard",
-              null,
-              null,
-              "Fails to retrieve scorecards id info with projectCategoryId:" + projectCategoryId));
+                  null,
+                  null,
+                  "Fails to retrieve scorecards id info with projectCategoryId:"
+                      + projectCategoryId)
+              .toString());
       throw new PersistenceException("Error occurs during database operation.", ex);
-    } finally {
-      DBUtils.close(rs);
-      DBUtils.close(pstmt);
-      DBUtils.close(conn);
     }
   }
 
@@ -847,29 +592,26 @@ public class ScorecardPersistence {
    *
    * @param rs the source result set.
    * @return the Scorecard instance.
-   * @throws InvalidCursorStateException if any database error occurs.
-   * @throws NullColumnValueException if a null value is retrieved.
    */
-  private static Scorecard populateScorecard(CustomResultSet rs)
-      throws InvalidCursorStateException, NullColumnValueException {
-    Scorecard card = new Scorecard(rs.getLong("scorecard_id"));
-    card.setCategory(rs.getLong("project_category_id"));
-    card.setVersion(rs.getString("version"));
-    card.setMinScore(rs.getFloat("min_score"));
-    card.setMaxScore(rs.getFloat("max_score"));
-    card.setName(rs.getString("scorecard_name"));
+  private static Scorecard populateScorecard(Map<String, Object> rs) {
+    Scorecard card = new Scorecard(getLong(rs, "scorecard_id"));
+    card.setCategory(getLong(rs, "project_category_id"));
+    card.setVersion(getString(rs, "version"));
+    card.setMinScore(getFloat(rs, "min_score"));
+    card.setMaxScore(getFloat(rs, "max_score"));
+    card.setName(getString(rs, "scorecard_name"));
 
     ScorecardStatus status = new ScorecardStatus();
-    status.setId(rs.getLong("status_id"));
-    status.setName(rs.getString("status_name"));
+    status.setId(getLong(rs, "status_id"));
+    status.setName(getString(rs, "status_name"));
     card.setScorecardStatus(status);
 
-    card.setScorecardType(new ScorecardType(rs.getLong("type_id"), rs.getString("type_name")));
+    card.setScorecardType(new ScorecardType(getLong(rs, "type_id"), getString(rs, "type_name")));
 
-    card.setModificationUser(rs.getString("modify_user"));
-    card.setCreationUser(rs.getString("create_user"));
-    card.setCreationTimestamp(rs.getTimestamp("create_date"));
-    card.setModificationTimestamp(rs.getTimestamp("modify_date"));
+    card.setModificationUser(getString(rs, "modify_user"));
+    card.setCreationUser(getString(rs, "create_user"));
+    card.setCreationTimestamp(getDate(rs, "create_date"));
+    card.setModificationTimestamp(getDate(rs, "modify_date"));
 
     return card;
   }
@@ -877,54 +619,31 @@ public class ScorecardPersistence {
   /**
    * Returns the list of all scorecards with the id from the ids array.
    *
-   * @param conn the database connection to use.
    * @param ids the scorecards ids.
    * @param inUseIds the set of scorecards in use ids.
    * @return the list of Scorecards.
    * @throws PersistenceException if any error occurs.
    */
-  private static List getScorecards(Connection conn, long[] ids, Set inUseIds)
-      throws PersistenceException {
-    PreparedStatement pstmt = null;
-    ResultSet rs = null;
-
+  private List getScorecards(long[] ids, Set<Long> inUseIds) throws PersistenceException {
     try {
-      pstmt = conn.prepareStatement(SELECT_SCORECARD + DBUtils.createQuestionMarks(ids.length));
-
-      for (int i = 0; i < ids.length; i++) {
-        pstmt.setLong(i + 1, ids[i]);
-      }
-
-      rs = pstmt.executeQuery();
-
-      List result = new ArrayList();
-
-      while (rs.next()) {
-        Scorecard card = populateScorecard(rs);
-
-        if (inUseIds.contains(new Long(card.getId()))) {
+      var rs =
+          executeSqlWithParam(
+              entityManager,
+              SELECT_SCORECARD + DBUtils.createQuestionMarks(ids.length),
+              newArrayList(ids));
+      List<Scorecard> result = new ArrayList();
+      for (var row : rs) {
+        Scorecard card = populateScorecard(row);
+        if (inUseIds.contains(card.getId())) {
           card.setInUse(true);
         }
-
         result.add(card);
       }
-
       return result;
-    } catch (SQLException ex) {
-      logger.log(
-          Level.ERROR,
-          new LogMessage(
-              "ScoreCard",
-              null,
-              null,
-              "Fails to retrieve scorecards:"
-                  + InformixPersistenceHelper.generateIdString(ids)
-                  + ".",
-              ex));
+    } catch (Exception ex) {
+      log.error(
+          new LogMessage(null, null, "Fails to retrieve scorecards:" + ids + ".", ex).toString());
       throw new PersistenceException("Error occurs while retrieving scorecards.", ex);
-    } finally {
-      DBUtils.close(rs);
-      DBUtils.close(pstmt);
     }
   }
 
@@ -963,46 +682,27 @@ public class ScorecardPersistence {
    * Checks if the scorecard is in use or not. It returns the set of ids that are in use.
    *
    * @param ids the scorecards ids to check.
-   * @param conn the database connection to be used.
    * @return true if the scorecard is in use.
    * @throws PersistenceException if database error occurs.
    */
-  private static Set selectInUse(long[] ids, Connection conn) throws PersistenceException {
-    PreparedStatement pstmt = null;
-    ResultSet rs = null;
-    Set result = new HashSet();
-
+  private Set<Long> selectInUse(long[] ids) throws PersistenceException {
+    var result = new HashSet<Long>();
     try {
-      pstmt = conn.prepareStatement(SELECT_IN_USE_IDS + DBUtils.createQuestionMarks(ids.length));
-
-      for (int i = 0; i < ids.length; i++) {
-        pstmt.setString(i + 1, String.valueOf(ids[i]));
-
-        // pstmt.setLong(i + 1, ids[i]);
+      var rs =
+          executeSqlWithParam(
+              entityManager,
+              SELECT_IN_USE_IDS + DBUtils.createQuestionMarks(ids.length),
+              newArrayList(ids));
+      for (var row : rs) {
+        result.add(getLong(row, "parameter"));
       }
-
-      rs = pstmt.executeQuery();
-
-      while (rs.next()) {
-        result.add(new Long(rs.getString(1)));
-      }
-
       return result;
-    } catch (SQLException ex) {
-      logger.log(
-          Level.ERROR,
+    } catch (Exception ex) {
+      log.error(
           new LogMessage(
-              "ScoreCard",
-              null,
-              null,
-              "Fails to check if the scorecards:"
-                  + InformixPersistenceHelper.generateIdString(ids)
-                  + " in use or not.",
-              ex));
+                  null, null, "Fails to check if the scorecards:" + ids + " in use or not.", ex)
+              .toString());
       throw new PersistenceException("Error occurs during database operation.", ex);
-    } finally {
-      DBUtils.close(rs);
-      DBUtils.close(pstmt);
     }
   }
 }
