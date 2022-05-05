@@ -6,8 +6,8 @@ package com.topcoder.onlinereview.component.project.phase;
 import com.topcoder.onlinereview.component.id.DBHelper;
 import com.topcoder.onlinereview.component.id.IDGenerationException;
 import com.topcoder.onlinereview.component.id.IDGenerator;
-import com.topcoder.onlinereview.component.workday.DefaultWorkdays;
 import com.topcoder.onlinereview.component.workday.Workdays;
+import com.topcoder.onlinereview.component.workday.WorkdaysFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -238,6 +238,8 @@ public class PhasePersistence {
   private static final String PROJECT_PHASE_AUDIT_DELETE_SQL =
       "DELETE FROM project_phase_audit WHERE project_phase_id IN ";
 
+  @Autowired private WorkdaysFactory workdaysFactory;
+
   @Value("{phase.persistence.entity-manager-name}")
   private String entityManagerName;
 
@@ -305,8 +307,7 @@ public class PhasePersistence {
       return new Project[0];
     }
     // create workdays to be used to create the project
-    // TODO
-    Workdays workdays = new DefaultWorkdays();
+    Workdays workdays = workdaysFactory.createWorkdaysInstance();
 
     var result = executeSql(entityManager, SELECT_PROJECT_IDS + createQuestionMarks(projectIds));
     var projectsMap =

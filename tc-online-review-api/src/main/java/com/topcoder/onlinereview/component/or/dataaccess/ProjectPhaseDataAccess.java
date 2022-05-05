@@ -9,8 +9,10 @@ import com.topcoder.onlinereview.component.project.phase.PhaseStatus;
 import com.topcoder.onlinereview.component.project.phase.PhaseType;
 import com.topcoder.onlinereview.component.project.phase.Project;
 import com.topcoder.onlinereview.component.shared.dataaccess.ResultSetContainer;
-import com.topcoder.onlinereview.component.workday.DefaultWorkdaysFactory;
 import com.topcoder.onlinereview.component.workday.Workdays;
+import com.topcoder.onlinereview.component.workday.WorkdaysFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -24,7 +26,9 @@ import java.util.Map;
  * @author TCSASSEMBLER
  * @version 2.0
  */
+@Component
 public class ProjectPhaseDataAccess extends BaseDataAccess {
+    @Autowired private WorkdaysFactory workdaysFactory;
 
     /**
      * <p>Constructs new <code>ProjectPhaseDataAccess</code> instance. This implementation does nothing.</p>
@@ -96,7 +100,7 @@ public class ProjectPhaseDataAccess extends BaseDataAccess {
         // Convert returned data into Project objects
         Map<Long, Phase> cachedPhases = new HashMap<Long, Phase>();
         Map<Long, List<Object[]>> deferredDependencies = new HashMap<Long, List<Object[]>>();
-        Workdays workdays = new DefaultWorkdaysFactory(false).createWorkdaysInstance();
+        Workdays workdays = workdaysFactory.createWorkdaysInstance();
         Map<Long, Project> phProjects
             = new HashMap<>();
         Project currentPhProject = null;
