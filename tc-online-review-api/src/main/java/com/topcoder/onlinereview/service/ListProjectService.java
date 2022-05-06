@@ -42,14 +42,13 @@ import java.util.Set;
 
 @Service
 public class ListProjectService {
-
   @Autowired private ProjectManager projectManager;
   @Autowired private DeliverableManager deliverableManager;
   @Autowired private PhaseManager phaseManager;
   @Autowired private ContestEligibilityService contestEligibilityService;
+  @Autowired private LookupHelper lookupHelper;
 
-  public ListProjectResponse listProjects(
-      Integer activeTab, String scope, long userId, String role)
+  public ListProjectResponse listProjects(Integer activeTab, String scope, long userId, String role)
       throws BaseException {
     var result = new ListProjectResponse();
     // Get all project types defined in the database (e.g. Assembly, Component, etc.)
@@ -84,8 +83,8 @@ public class ListProjectService {
     String[][] myRoles = (myProjects) ? new String[projectCategories.length][] : null;
 
     // Fetch projects from the database. These projects will require further grouping
-    ProjectStatus draftStatus = LookupHelper.getProjectStatus("Draft");
-    ProjectStatus activeStatus = LookupHelper.getProjectStatus("Active");
+    ProjectStatus draftStatus = lookupHelper.getProjectStatus("Draft");
+    ProjectStatus activeStatus = lookupHelper.getProjectStatus("Active");
     Project[] ungroupedProjects;
     ProjectDataAccess projectDataAccess = new ProjectDataAccess();
     ProjectStatus[] projectStatuses = projectManager.getAllProjectStatuses();
@@ -338,7 +337,7 @@ public class ListProjectService {
    */
   private Deliverable[] getDeliverables(
       Project[][] projects, Phase[][][] phases, Resource[][][] resources)
-      throws DeliverablePersistenceException, DeliverableCheckingException {
+      throws DeliverablePersistenceException, DeliverableCheckingException, SearchBuilderException {
     DeliverableDataAccess deliverableDataAccess = new DeliverableDataAccess();
     Map<Long, Map<Long, Long>> deliverableTypes = deliverableDataAccess.getDeliverablesList();
 
