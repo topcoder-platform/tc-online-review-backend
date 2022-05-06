@@ -3,6 +3,8 @@
  */
 package com.topcoder.onlinereview.component.deliverable.late;
 
+import org.apache.commons.lang3.StringUtils;
+
 import java.util.Date;
 
 /**
@@ -629,7 +631,7 @@ public class LateDeliverable {
      */
     @Override
     public String toString() {
-        return Helper.concat(this.getClass().getName(), "{",
+        return StringUtils.join(this.getClass().getName(), "{",
             "id:", id,
             ", lateDeliverableType:", type,
             ", projectId:", projectId,

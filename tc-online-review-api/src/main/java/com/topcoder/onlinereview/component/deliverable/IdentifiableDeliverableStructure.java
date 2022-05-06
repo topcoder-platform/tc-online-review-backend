@@ -61,7 +61,7 @@ public abstract class IdentifiableDeliverableStructure implements Serializable {
      *             If id is <= 0
      */
     protected IdentifiableDeliverableStructure(long id) {
-        DeliverableHelper.checkGreaterThanZero(id, "id", null);
+        DeliverableHelper.checkGreaterThanZero(id, "id");
         this.id = id;
     }
 
@@ -77,7 +77,7 @@ public abstract class IdentifiableDeliverableStructure implements Serializable {
      *             If the id has already been set (i.e. the id field is not UNSET_ID)
      */
     public void setId(long id) {
-        DeliverableHelper.checkGreaterThanZero(id, "id", null);
+        DeliverableHelper.checkGreaterThanZero(id, "id");
 
         if (this.id == UNSET_ID) {
             // id has not been set yet.
