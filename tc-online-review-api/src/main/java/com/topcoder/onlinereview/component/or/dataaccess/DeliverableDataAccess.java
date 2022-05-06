@@ -3,49 +3,49 @@
  */
 package com.topcoder.onlinereview.component.or.dataaccess;
 
-import com.topcoder.onlinereview.component.shared.dataaccess.ResultSetContainer;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
+import static com.topcoder.onlinereview.util.CommonUtils.getLong;
+
 /**
- * <p>A simple DAO for deliverables backed up by Query Tool.</p>
+ * A simple DAO for deliverables backed up by Query Tool.
  *
  * @author TCSASSEMBLER
  * @version 2.0
  */
-public class DeliverableDataAccess extends BaseDataAccess {
+@Component
+public class DeliverableDataAccess {
+  @Autowired private BaseDataAccess baseDataAccess;
 
-    /**
-     * <p>Constructs new <code>DeliverableDataAccess</code> instance. This implementation does nothing.</p>
-     */
-    public DeliverableDataAccess() {
+  /**
+   * Gets the configuration for deliverables as set up in <code>deliverable_lu</code> database
+   * table.
+   *
+   * @return a <code>Map</code> mapping the resource role IDs to maps mapping the project phase type
+   *     IDs to IDs of deliverables.
+   */
+  public Map<Long, Map<Long, Long>> getDeliverablesList() {
+    Map<String, List<Map<String, Object>>> results =
+        baseDataAccess.runQuery("tcs_deliverables", (String) null, null);
+
+    Map<Long, Map<Long, Long>> deliverables = new HashMap<Long, Map<Long, Long>>();
+
+    var resourcesData = results.get("tcs_deliverables");
+    for (var row : resourcesData) {
+      long roleId = getLong(row, "resource_role_id");
+      long phaseTypeId = getLong(row, "phase_type_id");
+      long deliverableId = getLong(row, "deliverable_id");
+      if (!deliverables.containsKey(roleId)) {
+        deliverables.put(roleId, new HashMap<Long, Long>());
+      }
+      deliverables.get(roleId).put(phaseTypeId, deliverableId);
     }
 
-    /**
-     * <p>Gets the configuration for deliverables as set up in <code>deliverable_lu</code> database table.</p>
-     *
-     * @return a <code>Map</code> mapping the resource role IDs to maps mapping the project phase type IDs to IDs of
-     *         deliverables.
-     */
-    public Map<Long, Map<Long, Long>> getDeliverablesList() {
-        Map<String, ResultSetContainer> results = runQuery("tcs_deliverables", (String) null, null);
-
-        Map<Long, Map<Long, Long>> deliverables = new HashMap<Long, Map<Long, Long>>();
-
-        ResultSetContainer resourcesData = results.get("tcs_deliverables");
-        int recordNum = resourcesData.size();
-        for (int i = 0; i < recordNum; i++) {
-            long roleId = resourcesData.getLongItem(i, "resource_role_id");
-            long phaseTypeId = resourcesData.getLongItem(i, "phase_type_id");
-            long deliverableId = resourcesData.getLongItem(i, "deliverable_id");
-
-            if (!deliverables.containsKey(roleId)) {
-                deliverables.put(roleId, new HashMap<Long, Long>());
-            }
-            deliverables.get(roleId).put(phaseTypeId, deliverableId);
-        }
-
-        return deliverables;
-    }
+    return deliverables;
+  }
 }
