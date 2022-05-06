@@ -5,6 +5,8 @@ package com.topcoder.onlinereview.component.search.filter;
 
 
 import com.topcoder.onlinereview.component.search.ValidationResult;
+import com.topcoder.onlinereview.component.search.builder.AndFragmentBuilder;
+import com.topcoder.onlinereview.component.search.builder.SearchFragmentBuilder;
 
 import java.util.List;
 import java.util.Map;
@@ -61,15 +63,9 @@ public class AndFilter extends AbstractAssociativeFilter {
         return FilterHelper.isValidAssociativeFilter(validators, alias, filters);
     }
 
-    /**
-     * <p>Get the type of the Filter.</p>
-     *
-     *
-     * @return a integer representing the type of the Filter
-     * @deprecated This method has been deprecated.
-     */
-    public int getFilterType() {
-        return Filter.AND_FILTER;
+    @Override
+    public SearchFragmentBuilder getSearchFragmentBuilder() {
+        return new AndFragmentBuilder();
     }
 
     /**

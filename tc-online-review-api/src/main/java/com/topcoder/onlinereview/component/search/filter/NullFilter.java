@@ -4,6 +4,9 @@
 package com.topcoder.onlinereview.component.search.filter;
 
 import com.topcoder.onlinereview.component.search.ValidationResult;
+import com.topcoder.onlinereview.component.search.builder.NullFragmentBuilder;
+import com.topcoder.onlinereview.component.search.builder.RangeFragmentBuilder;
+import com.topcoder.onlinereview.component.search.builder.SearchFragmentBuilder;
 
 import java.util.Map;
 
@@ -67,21 +70,8 @@ public class NullFilter extends AbstractSimpleFilter {
             value, this);
     }
 
-    /**
-     * <p>
-     * Get the type of the Filter.
-     * </p>
-     * <p>
-     * This returns Integer.MIN_VALUE
-     * </p>
-     *
-     * @return a integer representing the type of the Filter
-     * @deprecated This method has been deprecated, because it is preferable to
-     *             examine the Filter class directly instead of relying on an
-     *             Integer constant.
-     */
-    public int getFilterType() {
-        return Integer.MIN_VALUE;
+    public SearchFragmentBuilder getSearchFragmentBuilder() {
+        return new NullFragmentBuilder();
     }
 
     /**

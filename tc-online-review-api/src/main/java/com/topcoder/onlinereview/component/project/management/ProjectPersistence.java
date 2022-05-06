@@ -186,80 +186,9 @@ import static com.topcoder.onlinereview.util.CommonUtils.getString;
 @Slf4j
 @Component
 public class ProjectPersistence {
-  /**
-   * Represents the default value for Project Id sequence name. It is used to create id generator
-   * for project. This value will be overridden by 'ProjectIdSequenceName' configuration parameter
-   * if it exist.
-   */
-  public static final String PROJECT_ID_SEQUENCE_NAME = "project_id_seq";
-
-  /**
-   * Represents the default value for project audit id sequence name. It is used to create id
-   * generator for project audit. This value will be overridden by 'ProjectAuditIdSequenceName'
-   * configuration parameter if it exist.
-   */
-  public static final String PROJECT_AUDIT_ID_SEQUENCE_NAME = "project_audit_id_seq";
-
-  /**
-   * Represents the default value for file type id sequence name. It is used to create id generator
-   * for file type. This value will be overridden by 'FileTypeIdGeneratorSequenceName' configuration
-   * parameter if it exist.
-   *
-   * @since 1.2
-   */
-  private static final String FILE_TYPE_ID_SEQUENCE_NAME = "file_type_id_seq";
-
-  /**
-   * Represents the default value for prize id sequence name. It is used to create id generator for
-   * prize. This value will be overridden by 'PrizeIdGeneratorSequenceName' configuration parameter
-   * if it exist.
-   *
-   * @since 1.2
-   */
-  private static final String PRIZE_ID_SEQUENCE_NAME = "prize_id_seq";
-
-  /**
-   * Represents the default value for studio spec id sequence name. It is used to create id
-   * generator for studio spec. This value will be overridden by 'StudioSpecIdGeneratorSequenceName'
-   * configuration parameter if it exist.
-   *
-   * @since 1.2
-   */
-  private static final String STUDIO_SPEC_ID_SEQUENCE_NAME = "studio_spec_id_seq";
-
-  /** Represents the name of connection name parameter in configuration. */
-  private static final String CONNECTION_NAME_PARAMETER = "ConnectionName";
-
-  /** Represents the name of connection factory namespace parameter in configuration. */
-  private static final String CONNECTION_FACTORY_NAMESPACE_PARAMETER = "ConnectionFactoryNS";
-
-  /** Represents the name of project id sequence name parameter in configuration. */
-  private static final String PROJECT_ID_SEQUENCE_NAME_PARAMETER = "ProjectIdSequenceName";
-
-  /** Represents the name of project audit id sequence name parameter in configuration. */
-  private static final String PROJECT_AUDIT_ID_SEQUENCE_NAME_PARAMETER =
-      "ProjectAuditIdSequenceName";
-
-  /**
-   * Represents the name of file type id sequence name parameter in configuration.
-   *
-   * @since 1.2
-   */
-  private static final String FILE_TYPE_ID_SEQUENCE_NAME_PARAMETER =
-      "FileTypeIdGeneratorSequenceName";
-
-  /**
-   * Represents the name of prize id sequence name parameter in configuration.
-   *
-   * @since 1.2
-   */
-  private static final String PRIZE_ID_SEQUENCE_NAME_PARAMETER = "PrizeIdGeneratorSequenceName";
-
   /** Represents the sql statement to query all project types. */
   private static final String QUERY_ALL_PROJECT_TYPES_SQL =
       "SELECT " + "project_type_id, name, description, is_generic FROM project_type_lu";
-
-
 
   /** Represents the sql statement to query all project categories. */
   private static final String QUERY_ALL_PROJECT_CATEGORIES_SQL =
@@ -608,22 +537,22 @@ public class ProjectPersistence {
   private static final String QUERY_PROJECT_IDS_WITH_PRIZE_SQL =
       "SELECT project_id FROM prize WHERE prize_id=";
 
-  @Value("{project.persistence.entity-manager-name}")
+  @Value("${project.persistence.entity-manager-name}")
   private String entityManagerName;
 
-  @Value("{project.persistence.project-id-sequence-name}")
+  @Value("${project.persistence.project-id-sequence-name:project_id_seq}")
   private String projectIdSeqName;
 
-  @Value("{project.persistence.project-audit-id-sequence-name}")
+  @Value("${project.persistence.project-audit-id-sequence-name:project_audit_id_seq}")
   private String projectAuditIdSeqName;
 
-  @Value("{project.persistence.file-type-id-sequence-name}")
+  @Value("${project.persistence.file-type-id-sequence-name:file_type_id_seq}")
   private String fileTypeIdSeqName;
 
-  @Value("{project.persistence.prize-id-sequence-name}")
+  @Value("${project.persistence.prize-id-sequence-name:prize_id_seq}")
   private String prizeIdSeqName;
 
-  @Value("{project.persistence.studio-spec-id-sequence-name}")
+  @Value("{$project.persistence.studio-spec-id-sequence-name:studio_spec_id_seq}")
   private String studioSpecIdSeqName;
 
   @Autowired private Map<String, EntityManager> entityManagerMap;

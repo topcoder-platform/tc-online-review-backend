@@ -4,6 +4,9 @@
 package com.topcoder.onlinereview.component.search.filter;
 
 import com.topcoder.onlinereview.component.search.ValidationResult;
+import com.topcoder.onlinereview.component.search.builder.EqualsFragmentBuilder;
+import com.topcoder.onlinereview.component.search.builder.RangeFragmentBuilder;
+import com.topcoder.onlinereview.component.search.builder.SearchFragmentBuilder;
 
 import java.util.Map;
 
@@ -47,15 +50,8 @@ public class EqualToFilter extends AbstractSimpleFilter {
         return FilterHelper.isValidSimpleFilter(validators, alias, fieldName, value, this);
     }
 
-    /**
-     * <p>Get the type of the Filter.</p>
-     *
-     *
-     * @return a integer representing the type of the Filter
-     * @deprecated This method has been deprecated.
-     */
-    public int getFilterType() {
-        return Filter.EQUAL_TO_FILTER;
+    public SearchFragmentBuilder getSearchFragmentBuilder() {
+        return new EqualsFragmentBuilder();
     }
 
     /**

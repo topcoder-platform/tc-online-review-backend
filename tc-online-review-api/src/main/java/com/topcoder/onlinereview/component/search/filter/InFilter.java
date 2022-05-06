@@ -5,6 +5,9 @@ package com.topcoder.onlinereview.component.search.filter;
 
 import com.topcoder.onlinereview.component.datavalidator.ObjectValidator;
 import com.topcoder.onlinereview.component.search.ValidationResult;
+import com.topcoder.onlinereview.component.search.builder.InFragmentBuilder;
+import com.topcoder.onlinereview.component.search.builder.RangeFragmentBuilder;
+import com.topcoder.onlinereview.component.search.builder.SearchFragmentBuilder;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -129,15 +132,8 @@ public class InFilter implements Filter {
         return ValidationResult.createValidResult();
     }
 
-    /**
-     * <p>Get the type of the Filter.</p>
-     *
-     *
-     * @return a integer representing the type of the Filter
-     * @deprecated This method has been deprecated.
-     */
-    public final int getFilterType() {
-        return Filter.IN_FILTER;
+    public SearchFragmentBuilder getSearchFragmentBuilder() {
+        return new InFragmentBuilder();
     }
 
     /**

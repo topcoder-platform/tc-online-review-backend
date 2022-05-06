@@ -5,6 +5,9 @@ package com.topcoder.onlinereview.component.search.filter;
 
 import com.topcoder.onlinereview.component.datavalidator.ObjectValidator;
 import com.topcoder.onlinereview.component.search.ValidationResult;
+import com.topcoder.onlinereview.component.search.builder.LikeFragmentBuilder;
+import com.topcoder.onlinereview.component.search.builder.RangeFragmentBuilder;
+import com.topcoder.onlinereview.component.search.builder.SearchFragmentBuilder;
 
 import java.util.Iterator;
 import java.util.Map;
@@ -232,16 +235,8 @@ public class LikeFilter implements Filter {
         }
     }
 
-    /**
-     * <p>Get the type of the Filter.</p>
-     *
-     *
-     *
-     * @return a integer representing the type of the LikeFilter
-     * @deprecated This method has been deprecated.
-     */
-    public final int getFilterType() {
-        return Filter.LIKE_FILTER;
+    public SearchFragmentBuilder getSearchFragmentBuilder() {
+        return new LikeFragmentBuilder();
     }
 
     /**
