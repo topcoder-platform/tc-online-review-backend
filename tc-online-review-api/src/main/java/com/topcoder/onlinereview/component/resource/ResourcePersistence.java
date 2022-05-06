@@ -3,7 +3,6 @@
  */
 package com.topcoder.onlinereview.component.resource;
 
-import com.topcoder.onlinereview.component.id.DBHelper;
 import com.topcoder.onlinereview.component.id.IDGenerationException;
 import com.topcoder.onlinereview.component.project.management.LogMessage;
 import org.slf4j.Logger;
@@ -277,8 +276,6 @@ public class ResourcePersistence {
 
   @Value("{resource.persistence.entity-manager-name}")
   private String entityManagerName;
-
-  @Autowired private DBHelper dbHelper;
 
   private EntityManager entityManager;
 
