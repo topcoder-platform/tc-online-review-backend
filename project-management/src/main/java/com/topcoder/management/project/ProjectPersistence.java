@@ -104,6 +104,22 @@ public interface ProjectPersistence {
     public Project[] getProjects(long[] ids) throws PersistenceException;
 
     /**
+     * <p>
+     * Retrieves an array of project instance from the persistence. The project instances are
+     * retrieved with their properties.
+     * </p>
+     *
+     * @param userId the user id.
+     * @param status the project status.
+     * @param my the my projects flag.
+     * @param hasManagerRole the manager role flag.
+     * @return An array of project instances.
+     * @throws PersistenceException if error occurred while accessing the database.
+     */
+    public Project[] getAllProjects(Long userId, ProjectStatus status, ProjectCategory[] categories, boolean my, boolean hasManagerRole) throws PersistenceException;
+
+
+    /**
      * Gets an array of all project types in the persistence. The project types are stored in 'project_type_lu' table.
      *
      * @return An array of all project types in the persistence.

@@ -8,6 +8,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
@@ -734,6 +735,44 @@ public abstract class AbstractInformixProjectPersistence implements ProjectPersi
         = "SELECT project_id FROM prize WHERE prize_id=";
 
     /**
+     * Represents the sql statement to query projects
+     */
+    private static final String QUERY_LIST_PROJECTS
+        = "SELECT p.project_id, p.project_category_id,"
+        + "(SELECT pi.value FROM project_info pi WHERE pi.project_id=p.project_id and pi.project_info_type_id=6) as project_name,"
+        + "(SELECT pi.value FROM project_info pi WHERE pi.project_id=p.project_id and pi.project_info_type_id=7) as project_version,"
+        + "(SELECT pi.value FROM project_info pi WHERE pi.project_id=p.project_id and pi.project_info_type_id=5) as root_catalog_id,"
+        + "(SELECT pi.value FROM project_info pi WHERE pi.project_id=p.project_id and pi.project_info_type_id=23) as winner_reference_id"
+        + " FROM project p"
+        + " WHERE p.project_status_id = ?";
+
+    /**
+     * Represents the column types for the result set which is returned by executing the sql statement to query
+     * projects.
+     */
+    private static final DataType[] QUERY_LIST_PROJECTS_COLUMN_TYPES = new DataType[]{Helper.LONG_TYPE, Helper.LONG_TYPE,
+        Helper.STRING_TYPE, Helper.STRING_TYPE, Helper.STRING_TYPE, Helper.STRING_TYPE};
+
+    /**
+     * Represents the sql condition statement to list user's projects
+     */
+    private static final String QUERY_LIST_PROJECTS_FOR_USER
+        = " and EXISTS (SELECT 1 FROM resource r WHERE r.project_id=p.project_id and r.user_id = ?)";
+
+    /**
+     * Represents the sql condition statement to list all projects for not logged in user
+     */
+    private static final String QUERY_LIST_PROJECTS_FOR_GUEST
+        = " and not EXISTS (SELECT 1 FROM contest_eligibility WHERE is_studio = 0 and contest_id=p.project_id)";
+
+    /**
+     * Represents the sql condition statement to list all projects for logged in user
+     */
+    private static final String QUERY_LIST_PROJECTS_ALL_FOR_USER
+        = " and (EXISTS (SELECT 1 FROM resource r WHERE r.project_id=p.project_id and r.user_id = ?)"
+        + " or not EXISTS (SELECT 1 FROM contest_eligibility WHERE is_studio = 0 and contest_id=p.project_id))";
+
+    /**
      * <p>
      * The factory instance used to create connection to the database. It is initialized in the constructor using
      * DBConnectionFactory component and never changed after that. It will be used in various persistence methods of
@@ -1202,6 +1241,61 @@ public abstract class AbstractInformixProjectPersistence implements ProjectPersi
                 Level.ERROR,
                 new LogMessage(null, null, "Fails to retrieving projects with ids: "
                     + idstring.substring(0, idstring.length() - 1), e));
+            if (conn != null) {
+                closeConnectionOnError(conn);
+            }
+            throw e;
+        }
+    }
+
+    /**
+     * <p>
+     * Retrieves an array of project instance from the persistence. The project instances are
+     * retrieved with their properties.
+     * </p>
+     *
+     * @param userId the user id.
+     * @param status the project status.
+     * @param my the my projects flag.
+     * @param hasManagerRole the manager role flag.
+     * @return An array of project instances.
+     * @throws PersistenceException if error occurred while accessing the database.
+     */
+    public Project[] getAllProjects(Long userId, ProjectStatus status, ProjectCategory[] categories, boolean my, boolean hasManagerRole) throws PersistenceException {
+
+        Connection conn = null;
+
+        String query = QUERY_LIST_PROJECTS;
+
+        List<Object> argsList = new ArrayList<>();
+        argsList.add(status.getId());
+
+        if (userId == null) {
+            query = query + QUERY_LIST_PROJECTS_FOR_GUEST;
+            getLogger().log(Level.DEBUG, "get all" + status.getName() + " projects");
+        } else if (my) {
+            query = query + QUERY_LIST_PROJECTS_FOR_USER;
+            argsList.add(userId);
+            getLogger().log(Level.DEBUG, "get my projects for user: " + userId.toString());
+        } else {
+            if (!hasManagerRole) {
+                query = query + QUERY_LIST_PROJECTS_ALL_FOR_USER;;
+                argsList.add(userId);
+            }
+            getLogger().log(Level.DEBUG, "get all" + status.getName() + " projects for user: " + userId.toString());
+        }
+
+        try {
+            // create the connection
+            conn = openConnection();
+
+            // get the project objects
+            Project[] projects = getProjectsList(query, argsList.toArray(), status, categories, conn);
+            closeConnection(conn);
+            return projects;
+        } catch (PersistenceException e) {
+            getLogger().log(
+                Level.ERROR, "Fails to retrieving projects");
             if (conn != null) {
                 closeConnectionOnError(conn);
             }
@@ -2893,6 +2987,41 @@ public abstract class AbstractInformixProjectPersistence implements ProjectPersi
         return projects;
     }
 
+        /**
+     * <p>
+     * Retrieves an array of project instance from the persistence.
+     * </p>
+     *
+     * @param query The sql statement.
+     * @param args The sql statement arguments.
+     * @param status The project status.
+     * @param categories The project category list.
+     * @param conn the database connection
+     * @return An array of project instances.
+     * @throws PersistenceException if error occurred while accessing the database.
+     */
+    private Project[] getProjectsList(String query, Object[] args, ProjectStatus status, ProjectCategory[] categories, Connection conn) throws PersistenceException {
+        // find projects in the table.
+        Object[][] rows = Helper.doQuery(conn, query, args, QUERY_LIST_PROJECTS_COLUMN_TYPES);
+
+        // create the Project array.
+        Project[] projects = new Project[rows.length];
+
+        Map<Long, ProjectCategory> categoryMap = makeProjectCategoriesMap(categories);
+        for (int i = 0; i < rows.length; ++i) {
+            Object[] row = rows[i];
+
+            // create a new instance of Project class
+            Project project = new Project((Long) row[0], categoryMap.get((Long) row[1]), status);
+            project.setProperty("Project Name", row[2]);
+            project.setProperty("Project Version", row[3]);
+            project.setProperty("Root Catalog ID", row[4]);
+            project.setProperty("Winner External Reference ID", row[5]);
+            projects[i] = project;
+        }
+        return projects;
+    }
+
     /**
      * Gets an array of all project types in the persistence. The project types are stored in 'project_type_lu' table.
      *
@@ -3215,6 +3344,20 @@ public abstract class AbstractInformixProjectPersistence implements ProjectPersi
         }
 
         return projectCategories;
+    }
+
+    /**
+     * <p>Builds the map to be used for looking up the project categories by IDs.</p>
+     *
+     * @param categories a <code>ProjectCategory</code> array listing existing project categories.
+     * @return a <code>Map</code> mapping the category IDs to categories.
+     */
+    private Map<Long, ProjectCategory> makeProjectCategoriesMap(ProjectCategory[] categories) {
+        Map<Long, ProjectCategory> categoriesMap = new HashMap<Long, ProjectCategory>(categories.length);
+        for (ProjectCategory category : categories) {
+            categoriesMap.put(category.getId(), category);
+        }
+        return categoriesMap;
     }
 
     /**
