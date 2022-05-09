@@ -8,107 +8,50 @@ import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.AmazonS3URI;
 import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.S3Object;
-import com.cronos.onlinereview.Constants;
-import com.cronos.onlinereview.dataaccess.ProjectDataAccess;
-import com.cronos.onlinereview.dataaccess.ResourceDataAccess;
-import com.cronos.onlinereview.external.ExternalUser;
-import com.cronos.onlinereview.external.RetrievalException;
-import com.cronos.onlinereview.external.UserRetrieval;
-import com.cronos.onlinereview.external.impl.DBUserRetrieval;
-import com.cronos.onlinereview.model.ClientProject;
-import com.cronos.onlinereview.model.CockpitProject;
-import com.cronos.onlinereview.model.DefaultScorecard;
-import com.cronos.onlinereview.phases.PRHelper;
-import com.cronos.onlinereview.phases.PaymentsHelper;
-import com.cronos.termsofuse.dao.ProjectTermsOfUseDao;
-import com.cronos.termsofuse.dao.TermsOfUseDao;
-import com.cronos.termsofuse.dao.UserTermsOfUseDao;
-import com.opensymphony.xwork2.ActionContext;
-import com.opensymphony.xwork2.ActionSupport;
-import com.opensymphony.xwork2.TextProvider;
-import com.topcoder.date.workdays.DefaultWorkdaysFactory;
-import com.topcoder.date.workdays.Workdays;
-import com.topcoder.db.connectionfactory.ConfigurationException;
-import com.topcoder.db.connectionfactory.DBConnectionException;
-import com.topcoder.db.connectionfactory.DBConnectionFactory;
-import com.topcoder.db.connectionfactory.DBConnectionFactoryImpl;
-import com.topcoder.db.connectionfactory.UnknownConnectionException;
-import com.topcoder.management.deliverable.Deliverable;
-import com.topcoder.management.deliverable.DeliverableManager;
-import com.topcoder.management.deliverable.Submission;
-import com.topcoder.management.deliverable.Upload;
-import com.topcoder.management.deliverable.UploadManager;
-import com.topcoder.management.deliverable.late.LateDeliverable;
-import com.topcoder.management.deliverable.late.LateDeliverableManager;
-import com.topcoder.management.deliverable.persistence.DeliverableCheckingException;
-import com.topcoder.management.deliverable.persistence.DeliverablePersistenceException;
-import com.topcoder.management.deliverable.search.DeliverableFilterBuilder;
-import com.topcoder.management.deliverable.search.SubmissionFilterBuilder;
-import com.topcoder.management.deliverable.search.UploadFilterBuilder;
-import com.topcoder.management.payment.ProjectPayment;
-import com.topcoder.management.payment.ProjectPaymentAdjustmentManager;
-import com.topcoder.management.payment.ProjectPaymentManager;
-import com.topcoder.management.phase.PhaseManagementException;
-import com.topcoder.management.phase.PhaseManager;
-import com.topcoder.management.project.Project;
-import com.topcoder.management.project.ProjectManager;
-import com.topcoder.management.project.ProjectStatus;
-import com.topcoder.management.project.link.ProjectLinkManager;
-import com.topcoder.management.resource.Resource;
-import com.topcoder.management.resource.ResourceManager;
-import com.topcoder.management.resource.ResourceRole;
-import com.topcoder.management.resource.persistence.ResourcePersistenceException;
-import com.topcoder.management.resource.search.ResourceFilterBuilder;
-import com.topcoder.management.review.ReviewManagementException;
-import com.topcoder.management.review.ReviewManager;
-import com.topcoder.management.review.data.Comment;
-import com.topcoder.management.review.data.Review;
-import com.topcoder.management.reviewfeedback.ReviewFeedbackManager;
-import com.topcoder.management.scorecard.PersistenceException;
-import com.topcoder.management.scorecard.ScorecardManager;
-import com.topcoder.management.scorecard.data.Group;
-import com.topcoder.management.scorecard.data.Scorecard;
-import com.topcoder.management.scorecard.data.Section;
+import com.topcoder.onlinereview.component.deliverable.Deliverable;
+import com.topcoder.onlinereview.component.deliverable.DeliverableCheckingException;
+import com.topcoder.onlinereview.component.deliverable.DeliverableManager;
+import com.topcoder.onlinereview.component.deliverable.DeliverablePersistenceException;
 import com.topcoder.onlinereview.component.deliverable.Submission;
+import com.topcoder.onlinereview.component.deliverable.Upload;
+import com.topcoder.onlinereview.component.deliverable.UploadManager;
+import com.topcoder.onlinereview.component.deliverable.late.LateDeliverable;
 import com.topcoder.onlinereview.component.exception.BaseException;
+import com.topcoder.onlinereview.component.or.dataaccess.ProjectDataAccess;
+import com.topcoder.onlinereview.component.or.model.ClientProject;
+import com.topcoder.onlinereview.component.or.model.CockpitProject;
 import com.topcoder.onlinereview.component.project.management.Project;
+import com.topcoder.onlinereview.component.project.management.ProjectManager;
 import com.topcoder.onlinereview.component.project.management.ProjectStatus;
+import com.topcoder.onlinereview.component.project.payment.ProjectPayment;
+import com.topcoder.onlinereview.component.project.phase.Dependency;
 import com.topcoder.onlinereview.component.project.phase.Phase;
+import com.topcoder.onlinereview.component.project.phase.PhaseManagementException;
+import com.topcoder.onlinereview.component.project.phase.PhaseManager;
 import com.topcoder.onlinereview.component.project.phase.PhaseStatus;
 import com.topcoder.onlinereview.component.resource.Resource;
+import com.topcoder.onlinereview.component.resource.ResourceFilterBuilder;
+import com.topcoder.onlinereview.component.resource.ResourceManager;
+import com.topcoder.onlinereview.component.resource.ResourcePersistenceException;
+import com.topcoder.onlinereview.component.resource.ResourceRole;
 import com.topcoder.onlinereview.component.review.Comment;
+import com.topcoder.onlinereview.component.review.Review;
+import com.topcoder.onlinereview.component.review.ReviewManagementException;
+import com.topcoder.onlinereview.component.review.ReviewManager;
 import com.topcoder.onlinereview.component.scorecard.Group;
+import com.topcoder.onlinereview.component.scorecard.PersistenceException;
 import com.topcoder.onlinereview.component.scorecard.Scorecard;
+import com.topcoder.onlinereview.component.scorecard.ScorecardManager;
 import com.topcoder.onlinereview.component.scorecard.Section;
-import com.topcoder.project.phases.Dependency;
-import com.topcoder.project.phases.Phase;
-import com.topcoder.project.phases.PhaseStatus;
-import com.topcoder.project.phases.template.DefaultPhaseTemplate;
-import com.topcoder.project.phases.template.PhaseTemplate;
-import com.topcoder.project.phases.template.PhaseTemplatePersistence;
-import com.topcoder.project.phases.template.StartDateGenerator;
-import com.topcoder.project.phases.template.persistence.XmlPhaseTemplatePersistence;
-import com.topcoder.search.builder.SearchBuilderException;
-import com.topcoder.search.builder.filter.AndFilter;
-import com.topcoder.search.builder.filter.EqualToFilter;
-import com.topcoder.search.builder.filter.Filter;
-import com.topcoder.search.builder.filter.NotFilter;
-import com.topcoder.search.builder.filter.OrFilter;
-import com.topcoder.servlet.request.DisallowedDirectoryException;
-import com.topcoder.servlet.request.FileUpload;
-import com.topcoder.servlet.request.LocalFileUpload;
-import com.topcoder.shared.util.ApplicationServer;
-import com.topcoder.shared.util.TCContext;
-import com.topcoder.util.errorhandling.BaseException;
-import com.topcoder.util.errorhandling.BaseRuntimeException;
-import com.topcoder.util.log.Level;
-import com.topcoder.util.log.Log;
-import com.topcoder.util.log.LogManager;
-import com.topcoder.web.ejb.forums.Forums;
-import com.topcoder.web.ejb.forums.ForumsHome;
+import com.topcoder.onlinereview.component.search.SearchBuilderException;
+import com.topcoder.onlinereview.component.search.filter.AndFilter;
+import com.topcoder.onlinereview.component.search.filter.EqualToFilter;
+import com.topcoder.onlinereview.component.search.filter.Filter;
+import com.topcoder.onlinereview.component.search.filter.NotFilter;
+import com.topcoder.onlinereview.component.search.filter.OrFilter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.tomcat.util.http.fileupload.FileUpload;
 
-import javax.ejb.CreateException;
 import javax.naming.Context;
 import javax.naming.NamingException;
 import javax.servlet.http.HttpServletRequest;
@@ -170,14 +113,9 @@ public class ActionsHelper {
     private static final String PHASES_TEMPLATE_PERSISTENCE_NAMESPACE = "com.topcoder.project.phases.template.persistence.XmlPhaseTemplatePersistence";
 
     /**
-     * This helper class is used for creating the managers.
-     */
-    private static final ManagerCreationHelper managerCreationHelper = new ManagerCreationHelper();
-
-    /**
      * Used for caching loaded scorecards.
      */
-    private static final Map<Long, Scorecard> cachedScorecards = new HashMap<Long, Scorecard>();
+    private static final Map<Long, Scorecard> cachedScorecards = new HashMap<>();
 
     /**
      * constant for software user forum role prefix.
@@ -213,7 +151,7 @@ public class ActionsHelper {
     /**
      * AWS S3 client
      */
-    private static final AmazonS3Client s3Client;
+//    private static final AmazonS3Client s3Client;
 
     /**
      * Expire time for presigned s3 url in millis
@@ -223,25 +161,25 @@ public class ActionsHelper {
     /**
      * AWS S3 bucket name
      */
-    private static final String s3Bucket;
+//    private static final String s3Bucket;
 
     /**
      * AWS S3 bucket DMZ name
      */
-    private static final String s3BucketDmz;
+//    private static final String s3BucketDmz;
 
-    static {
-        try {
-            ClassLoader loader = ActionsHelper.class.getClassLoader();
-            URL credentialURL = loader.getResource(AWS_CREDENTIALS_FILE);
-            s3Bucket = ConfigHelper.getS3Bucket();
-            s3BucketDmz = ConfigHelper.getS3BucketDmz();
-            presignedExpireMillis = ConfigHelper.getPreSignedExpTimeMilis();
-            s3Client = new AmazonS3Client(new PropertiesCredentials(new File(credentialURL.getFile())));
-        } catch (Throwable e) {
-            throw new RuntimeException("Failed load to Amazon S3 CLient", e);
-        }
-    }
+//    static {
+//        try {
+//            ClassLoader loader = ActionsHelper.class.getClassLoader();
+//            URL credentialURL = loader.getResource(AWS_CREDENTIALS_FILE);
+//            s3Bucket = ConfigHelper.getS3Bucket();
+//            s3BucketDmz = ConfigHelper.getS3BucketDmz();
+//            presignedExpireMillis = ConfigHelper.getPreSignedExpTimeMilis();
+//            s3Client = new AmazonS3Client(new PropertiesCredentials(new File(credentialURL.getFile())));
+//        } catch (Throwable e) {
+//            throw new RuntimeException("Failed load to Amazon S3 CLient", e);
+//        }
+//    }
 
     /**
      * This constructor is declared private to prohibit instantiation of the
@@ -541,35 +479,23 @@ public class ActionsHelper {
      *                                  happened, not denial of access).
      * @throws BaseException if any error occurs.
      */
-    public static String produceErrorReport(TextProvider textProvider, HttpServletRequest request, String permission,
+    public static String produceErrorReport(Map<String, String> textProvider, HttpServletRequest request, String permission,
             String reasonKey, Boolean getRedirectUrlFromReferer) throws BaseException {
-        // If the user is not logged in, this is the reason
-        // why they don't have permissions to do the job. Let the user login first
-        if (getRedirectUrlFromReferer != null && !AuthorizationHelper.isUserLoggedIn(request)) {
-            AuthorizationHelper.setLoginRedirect(request, getRedirectUrlFromReferer);
-            return Constants.NOT_AUTHORIZED_FORWARD_NAME;
-        }
-
-        // Gather roles, so tabs will be displayed,
-        // but only do this if roles haven't been gathered yet
-        if (request.getAttribute("roles") == null) {
-            AuthorizationHelper.gatherUserRoles(request);
-        }
 
         // Place error title into request
         if (permission == null) {
-            request.setAttribute("errorTitle", textProvider.getText("Error.Title.General"));
+            request.setAttribute("errorTitle", textProvider.get("Error.Title.General"));
         } else {
             if ("Error.NoPermission".equalsIgnoreCase(reasonKey)) {
-                log.log(Level.WARN, "Authorization failures. User tried to perform " + permission
+                log.warn("Authorization failures. User tried to perform " + permission
                         + " which he/she doesn't have permission.");
             }
-            request.setAttribute("errorTitle", textProvider.getText("Error.Title." + permission.replaceAll(" ", "")));
+            request.setAttribute("errorTitle", textProvider.get("Error.Title." + permission.replaceAll(" ", "")));
         }
         // Place error message (reason) into request
-        request.setAttribute("errorMessage", textProvider.getText(reasonKey));
+        request.setAttribute("errorMessage", textProvider.get(reasonKey));
         // Find appropriate forward and return it
-        return Constants.USER_ERROR_FORWARD_NAME;
+        return ORConstants.USER_ERROR_FORWARD_NAME;
     }
 
     /**
@@ -608,71 +534,18 @@ public class ActionsHelper {
         validateParameterNotNull(messageProperty, "messageProperty");
         validateParameterNotNull(errorKey, "errorKey");
 
-        if (ActionContext.getContext() != null) {
-            ActionSupport action = (ActionSupport) ActionContext.getContext().getActionInvocation().getAction();
-
-            String text = action.getText(errorKey);
-
-            if (messageProperty.equals(GLOBAL_MESSAGE)) {
-                action.addActionError(text);
-
-            } else {
-                action.addFieldError(messageProperty, text);
-            }
-        }
-    }
-
-    /**
-     * Add error to the request.
-     *
-     * @param request         the http servlet request
-     * @param messageProperty the message property
-     * @param errorKey        the error key
-     * @param args            the arguments
-     * @throws IllegalArgumentException if any of the parameters are
-     *                                  <code>null</code>, or if any of the
-     *                                  <code>messageProperty</code> or
-     *                                  <code>errorKey</code> parameters are empty
-     *                                  strings.
-     */
-    public static void addErrorToRequest(HttpServletRequest request, String messageProperty, String errorKey,
-            Object... args) {
-        // Validate the parameters.
-        validateParameterNotNull(request, "request");
-        validateParameterNotNull(messageProperty, "messageProperty");
-        validateParameterNotNull(errorKey, "errorKey");
-
-        if (ActionContext.getContext() != null) {
-            ActionSupport action = (ActionSupport) ActionContext.getContext().getActionInvocation().getAction();
-
-            String text = action.getText(errorKey, Arrays.asList(args));
-
-            if (messageProperty.equals(GLOBAL_MESSAGE)) {
-                action.addActionError(text);
-
-            } else {
-                action.addFieldError(messageProperty, text);
-            }
-        }
-    }
-
-    /**
-     * Check if the error presents or not.
-     * 
-     * @return true if error exists.
-     * @param request the http request
-     * @throws IllegalArgumentException if <code>request</code> parameter is
-     *                                  <code>null</code>.
-     */
-    public static boolean isErrorsPresent(HttpServletRequest request) {
-        // Validate parameter
-        validateParameterNotNull(request, "request");
-
-        if (ActionContext.getContext() != null) {
-            ActionSupport action = (ActionSupport) ActionContext.getContext().getActionInvocation().getAction();
-            return action.hasErrors();
-        }
-        return false;
+//        if (ActionContext.getContext() != null) {
+//            ActionSupport action = (ActionSupport) ActionContext.getContext().getActionInvocation().getAction();
+//
+//            String text = action.getText(errorKey);
+//
+//            if (messageProperty.equals(GLOBAL_MESSAGE)) {
+//                action.addActionError(text);
+//
+//            } else {
+//                action.addFieldError(messageProperty, text);
+//            }
+//        }
     }
 
     /**
@@ -806,27 +679,27 @@ public class ActionsHelper {
      *                                  <code>null</code>.
      */
     public static void retrieveAndStoreBasicProjectInfo(HttpServletRequest request, Project project,
-            TextProvider textProvider) {
+            Map<String, String> textProvider) {
         // Validate parameters
-        validateParameterNotNull(request, "request");
-        validateParameterNotNull(project, "project");
-        validateParameterNotNull(textProvider, "textProvider");
-
-        // Retrieve the name of the Project Category icon
-        String categoryIconName = ConfigHelper.getProjectCategoryIconName(project.getProjectCategory().getName());
-        // And place it into request
-        request.setAttribute("categoryIconName", categoryIconName);
-
-        String rootCatalogID = (String) project.getProperty("Root Catalog ID");
-        // Retrieve Root Catalog icon's filename
-        String rootCatalogIcon = ConfigHelper.getRootCatalogIconNameSm(rootCatalogID);
-        // Retrieve the name of Root Catalog for this project
-        String rootCatalogName = textProvider.getText(ConfigHelper.getRootCatalogAltTextKey(rootCatalogID));
-
-        // Place the filename of the icon for Root Catalog into request
-        request.setAttribute("rootCatalogIcon", rootCatalogIcon);
-        // Place the name of the Root Catalog for the current project into request
-        request.setAttribute("rootCatalogName", rootCatalogName);
+//        validateParameterNotNull(request, "request");
+//        validateParameterNotNull(project, "project");
+//        validateParameterNotNull(textProvider, "textProvider");
+//
+//        // Retrieve the name of the Project Category icon
+//        String categoryIconName = ConfigHelper.getProjectCategoryIconName(project.getProjectCategory().getName());
+//        // And place it into request
+//        request.setAttribute("categoryIconName", categoryIconName);
+//
+//        String rootCatalogID = (String) project.getProperty("Root Catalog ID");
+//        // Retrieve Root Catalog icon's filename
+//        String rootCatalogIcon = ConfigHelper.getRootCatalogIconNameSm(rootCatalogID);
+//        // Retrieve the name of Root Catalog for this project
+//        String rootCatalogName = textProvider.get(ConfigHelper.getRootCatalogAltTextKey(rootCatalogID));
+//
+//        // Place the filename of the icon for Root Catalog into request
+//        request.setAttribute("rootCatalogIcon", rootCatalogIcon);
+//        // Place the name of the Root Catalog for the current project into request
+//        request.setAttribute("rootCatalogName", rootCatalogName);
     }
 
     /**
@@ -839,7 +712,7 @@ public class ActionsHelper {
      * @throws IllegalArgumentException if any of the parameters are
      *                                  <code>null</code>.
      */
-    public static void retrieveAndStoreMyRole(HttpServletRequest request, TextProvider textProvider) {
+    public static void retrieveAndStoreMyRole(HttpServletRequest request, Map<String, String> textProvider) {
         // Validate parameters
         validateParameterNotNull(request, "request");
         validateParameterNotNull(textProvider, "textProvider");
@@ -902,24 +775,24 @@ public class ActionsHelper {
             userIDs[i] = userID;
         }
 
-        UserRetrieval userRetrieval = ActionsHelper.createUserRetrieval(request);
-        ExternalUser[] users = userRetrieval.retrieveUsers(userIDs);
-
-        if (users == null) {
-            throw new BaseException("Error during user retrieval in populateEmailProperty() method.");
-        }
-        Map<Long, String> emailsMap = new HashMap<Long, String>();
-        for (ExternalUser user : users) {
-            emailsMap.put(user.getId(), user.getEmail());
-        }
-
-        for (int i = 0; i < resources.length; i++) {
-            String email = emailsMap.get(userIDs[i]);
-            if (email == null) {
-                throw new BaseException("Can't retrieve email property for the resourceId: " + resources[i].getId());
-            }
-            resources[i].setProperty("Email", email);
-        }
+//        UserRetrieval userRetrieval = ActionsHelper.createUserRetrieval(request);
+//        ExternalUser[] users = userRetrieval.retrieveUsers(userIDs);
+//
+//        if (users == null) {
+//            throw new BaseException("Error during user retrieval in populateEmailProperty() method.");
+//        }
+//        Map<Long, String> emailsMap = new HashMap<Long, String>();
+//        for (ExternalUser user : users) {
+//            emailsMap.put(user.getId(), user.getEmail());
+//        }
+//
+//        for (int i = 0; i < resources.length; i++) {
+//            String email = emailsMap.get(userIDs[i]);
+//            if (email == null) {
+//                throw new BaseException("Can't retrieve email property for the resourceId: " + resources[i].getId());
+//            }
+//            resources[i].setProperty("Email", email);
+//        }
     }
 
     /**
@@ -938,18 +811,18 @@ public class ActionsHelper {
      * @throws IllegalArgumentException if any of the parameters are
      *                                  <code>null</code>.
      */
-    private static String determineRolesForResources(HttpServletRequest request, TextProvider textProvider,
+    private static String determineRolesForResources(HttpServletRequest request, Map<String, String> textProvider,
             Resource[] resources) {
         // Validate parameter
         validateParameterNotNull(textProvider, "textProvider");
         validateParameterNotNull(resources, "resources");
-
-        if (AuthorizationHelper.hasUserRole(request, Constants.GLOBAL_MANAGER_ROLE_NAME)) {
-            return textProvider.getText("ResourceRole." + Constants.MANAGER_ROLE_NAME.replaceAll(" ", ""));
-        }
-        if (AuthorizationHelper.hasUserRole(request, Constants.COCKPIT_PROJECT_USER_ROLE_NAME)) {
-            return textProvider.getText("ResourceRole." + Constants.MANAGER_ROLE_NAME.replaceAll(" ", ""));
-        }
+//
+//        if (AuthorizationHelper.hasUserRole(request, Constants.GLOBAL_MANAGER_ROLE_NAME)) {
+//            return textProvider.getText("ResourceRole." + Constants.MANAGER_ROLE_NAME.replaceAll(" ", ""));
+//        }
+//        if (AuthorizationHelper.hasUserRole(request, Constants.COCKPIT_PROJECT_USER_ROLE_NAME)) {
+//            return textProvider.getText("ResourceRole." + Constants.MANAGER_ROLE_NAME.replaceAll(" ", ""));
+//        }
 
         List<String> roleNames = new ArrayList<String>();
         // Add individual roles to the list
@@ -964,11 +837,11 @@ public class ActionsHelper {
         // If a list is empty, than the user either
         // is not logged in or belongs to the Public group
         if (roleNames.isEmpty()) {
-            roleNames.add(Constants.PUBLIC_ROLE_NAME);
+            roleNames.add(ORConstants.PUBLIC_ROLE_NAME);
         }
         // Avoid unneeded object creation of the list contains single item
         if (roleNames.size() == 1) {
-            return textProvider.getText("ResourceRole." + roleNames.get(0).replaceAll(" ", ""));
+            return textProvider.get("ResourceRole." + roleNames.get(0).replaceAll(" ", ""));
         }
 
         StringBuilder roles = new StringBuilder(32);
@@ -978,7 +851,7 @@ public class ActionsHelper {
             if (roles.length() != 0) {
                 roles.append('/');
             }
-            roles.append(textProvider.getText("ResourceRole." + roleName.replaceAll(" ", "")));
+            roles.append(textProvider.get("ResourceRole." + roleName.replaceAll(" ", "")));
         }
         // Return the resulting string
         return roles.toString();
@@ -1038,7 +911,7 @@ public class ActionsHelper {
         validateParameterNotNull(project, "project");
 
         // Get all phases for the project
-        com.topcoder.project.phases.Project phProj = manager.getPhases(project.getId());
+        var phProj = manager.getPhases(project.getId());
         return (phProj != null) ? phProj.getAllPhases() : new Phase[0];
     }
 
@@ -1272,16 +1145,16 @@ public class ActionsHelper {
                 // Handle Post-Mortem, Approval, Iterative Review phases differently. Those
                 // resources are not mapped
                 // to phase type so they must be discovered based on resource role name
-                if (phase.getPhaseType().getName().equals(Constants.POST_MORTEM_PHASE_NAME)) {
-                    if (resource.getResourceRole().getName().equals(Constants.POST_MORTEM_REVIEWER_ROLE_NAME)) {
+                if (phase.getPhaseType().getName().equals(ORConstants.POST_MORTEM_PHASE_NAME)) {
+                    if (resource.getResourceRole().getName().equals(ORConstants.POST_MORTEM_REVIEWER_ROLE_NAME)) {
                         foundResources.add(resource);
                     }
-                } else if (phase.getPhaseType().getName().equals(Constants.APPROVAL_PHASE_NAME)) {
-                    if (resource.getResourceRole().getName().equals(Constants.APPROVER_ROLE_NAME)) {
+                } else if (phase.getPhaseType().getName().equals(ORConstants.APPROVAL_PHASE_NAME)) {
+                    if (resource.getResourceRole().getName().equals(ORConstants.APPROVER_ROLE_NAME)) {
                         foundResources.add(resource);
                     }
-                } else if (phase.getPhaseType().getName().equals(Constants.ITERATIVE_REVIEW_PHASE_NAME)) {
-                    if (resource.getResourceRole().getName().equals(Constants.ITERATIVE_REVIEWER_ROLE_NAME)) {
+                } else if (phase.getPhaseType().getName().equals(ORConstants.ITERATIVE_REVIEW_PHASE_NAME)) {
+                    if (resource.getResourceRole().getName().equals(ORConstants.ITERATIVE_REVIEWER_ROLE_NAME)) {
                         foundResources.add(resource);
                     }
                 } else {
@@ -1313,7 +1186,7 @@ public class ActionsHelper {
         List<Resource> submitters = new ArrayList<Resource>();
         // Search for the appropriate resources and add them to the list
         for (Resource resource : resources) {
-            if (resource.getResourceRole().getName().equalsIgnoreCase(Constants.SUBMITTER_ROLE_NAME)) {
+            if (resource.getResourceRole().getName().equalsIgnoreCase(ORConstants.SUBMITTER_ROLE_NAME)) {
                 submitters.add(resource);
             }
         }
@@ -1342,17 +1215,17 @@ public class ActionsHelper {
         }
 
         if (winnerId != null) {
-            long submitterRoleId = LookupHelper.getResourceRole("Submitter").getId();
-
-            AndFilter fullFilter = new AndFilter(
-                    Arrays.asList(ResourceFilterBuilder.createResourceRoleIdFilter(submitterRoleId),
-                            ResourceFilterBuilder.createProjectIdFilter(projectId),
-                            ResourceFilterBuilder.createUserIdFilter(winnerId)));
-
-            Resource[] submitters = resourceManager.searchResources(fullFilter);
-            if (submitters.length > 0) {
-                return submitters[0];
-            }
+//            long submitterRoleId = LookupHelper.getResourceRole("Submitter").getId();
+//
+//            AndFilter fullFilter = new AndFilter(
+//                    Arrays.asList(ResourceFilterBuilder.createResourceRoleIdFilter(submitterRoleId),
+//                            ResourceFilterBuilder.createProjectIdFilter(projectId),
+//                            ResourceFilterBuilder.createUserIdFilter(winnerId)));
+//
+//            Resource[] submitters = resourceManager.searchResources(fullFilter);
+//            if (submitters.length > 0) {
+//                return submitters[0];
+//            }
             return null;
         }
         return null;
@@ -1513,17 +1386,17 @@ public class ActionsHelper {
             // No phases -- no deliverables
             return new Deliverable[0];
 
-        case 1:
-            // If there is only one phase in the provided array,
-            // create filter for it directly (no OR filters needed)
-            filter = DeliverableFilterBuilder.createPhaseIdFilter(phases[0].getId());
-            break;
+//        case 1:
+//            // If there is only one phase in the provided array,
+//            // create filter for it directly (no OR filters needed)
+//            filter = DeliverableFilterBuilder.createPhaseIdFilter(phases[0].getId());
+//            break;
 
         default:
             List<Filter> phaseFilters = new ArrayList<Filter>();
             // Prepare a list of filters for each phase in the array of phases
             for (Phase phase : phases) {
-                phaseFilters.add(DeliverableFilterBuilder.createPhaseIdFilter(phase.getId()));
+//                phaseFilters.add(DeliverableFilterBuilder.createPhaseIdFilter(phase.getId()));
             }
             // Combine all filters using OR operator
             filter = new OrFilter(phaseFilters);
@@ -1642,45 +1515,45 @@ public class ActionsHelper {
      * @throws RetrievalException       if some error happened during external user
      *                                  retrieval.
      */
-    public static ExternalUser[] getExternalUsersForResources(UserRetrieval retrieval, Resource[] resources)
-            throws RetrievalException {
-        // Validate parameters
-        ActionsHelper.validateParameterNotNull(retrieval, "retrieval");
-        ActionsHelper.validateParameterNotNull(resources, "resources");
-
-        // If there are no resource for this project defined, there will be no external
-        // users
-        if (resources.length == 0) {
-            return new ExternalUser[0];
-        }
-
-        // Prepare an array to store External User IDs
-        long[] extUserIds = new long[resources.length];
-        // Fill the array with user IDs retrieved from resource properties
-        for (int i = 0; i < resources.length; ++i) {
-            extUserIds[i] = resources[i].getUserId();
-        }
-
-        // Retrieve external users to the temporary array
-        ExternalUser[] extUsers = retrieval.retrieveUsers(extUserIds);
-
-        // This is final array for External User objects. It is needed because the
-        // previous
-        // operation may return shorter array than there are resources for the project
-        // (sometimes several resources can be associated with one external user)
-        ExternalUser[] allExtUsers = new ExternalUser[resources.length];
-
-        for (int i = 0; i < extUserIds.length; ++i) {
-            for (ExternalUser extUser : extUsers) {
-                if (extUser.getId() == extUserIds[i]) {
-                    allExtUsers[i] = extUser;
-                    break;
-                }
-            }
-        }
-
-        return allExtUsers;
-    }
+//    public static ExternalUser[] getExternalUsersForResources(UserRetrieval retrieval, Resource[] resources)
+//            throws RetrievalException {
+//        // Validate parameters
+//        ActionsHelper.validateParameterNotNull(retrieval, "retrieval");
+//        ActionsHelper.validateParameterNotNull(resources, "resources");
+//
+//        // If there are no resource for this project defined, there will be no external
+//        // users
+//        if (resources.length == 0) {
+//            return new ExternalUser[0];
+//        }
+//
+//        // Prepare an array to store External User IDs
+//        long[] extUserIds = new long[resources.length];
+//        // Fill the array with user IDs retrieved from resource properties
+//        for (int i = 0; i < resources.length; ++i) {
+//            extUserIds[i] = resources[i].getUserId();
+//        }
+//
+//        // Retrieve external users to the temporary array
+//        ExternalUser[] extUsers = retrieval.retrieveUsers(extUserIds);
+//
+//        // This is final array for External User objects. It is needed because the
+//        // previous
+//        // operation may return shorter array than there are resources for the project
+//        // (sometimes several resources can be associated with one external user)
+//        ExternalUser[] allExtUsers = new ExternalUser[resources.length];
+//
+//        for (int i = 0; i < extUserIds.length; ++i) {
+//            for (ExternalUser extUser : extUsers) {
+//                if (extUser.getId() == extUserIds[i]) {
+//                    allExtUsers[i] = extUser;
+//                    break;
+//                }
+//            }
+//        }
+//
+//        return allExtUsers;
+//    }
 
     /**
      * <p>
@@ -1704,26 +1577,27 @@ public class ActionsHelper {
     public static Submission[] getProjectSubmissions(long projectId, String submissionTypeName,
                                                      String submissionStatusName, boolean includeDeleted) throws BaseException {
 
-        List<Filter> filters = new ArrayList<Filter>();
-        filters.add(SubmissionFilterBuilder.createProjectIdFilter(projectId));
-
-        if (submissionTypeName != null) {
-            long submissionTypeId = LookupHelper.getSubmissionType(submissionTypeName).getId();
-            filters.add(SubmissionFilterBuilder.createSubmissionTypeIdFilter(submissionTypeId));
-        }
-
-        if (submissionStatusName != null) {
-            long submissionStatusId = LookupHelper.getSubmissionStatus(submissionStatusName).getId();
-            filters.add(SubmissionFilterBuilder.createSubmissionStatusIdFilter(submissionStatusId));
-        }
-
-        if (!includeDeleted) {
-            // Exclude the Deleted status
-            long deletedStatusId = LookupHelper.getSubmissionStatus("Deleted").getId();
-            filters.add(new NotFilter(SubmissionFilterBuilder.createSubmissionStatusIdFilter(deletedStatusId)));
-        }
-
-        return createUploadManager().searchSubmissions(new AndFilter(filters));
+//        List<Filter> filters = new ArrayList<Filter>();
+//        filters.add(SubmissionFilterBuilder.createProjectIdFilter(projectId));
+//
+//        if (submissionTypeName != null) {
+//            long submissionTypeId = LookupHelper.getSubmissionType(submissionTypeName).getId();
+//            filters.add(SubmissionFilterBuilder.createSubmissionTypeIdFilter(submissionTypeId));
+//        }
+//
+//        if (submissionStatusName != null) {
+//            long submissionStatusId = LookupHelper.getSubmissionStatus(submissionStatusName).getId();
+//            filters.add(SubmissionFilterBuilder.createSubmissionStatusIdFilter(submissionStatusId));
+//        }
+//
+//        if (!includeDeleted) {
+//            // Exclude the Deleted status
+//            long deletedStatusId = LookupHelper.getSubmissionStatus("Deleted").getId();
+//            filters.add(new NotFilter(SubmissionFilterBuilder.createSubmissionStatusIdFilter(deletedStatusId)));
+//        }
+//
+//        return createUploadManager().searchSubmissions(new AndFilter(filters));
+        return null;
     }
 
     /**
@@ -1748,26 +1622,27 @@ public class ActionsHelper {
     public static Submission[] getResourceSubmissions(long resourceID, String submissionTypeName,
             String submissionStatusName, boolean includeDeleted) throws BaseException {
 
-        List<Filter> filters = new ArrayList<Filter>();
-        filters.add(SubmissionFilterBuilder.createResourceIdFilter(resourceID));
-
-        if (submissionTypeName != null) {
-            long submissionTypeId = LookupHelper.getSubmissionType(submissionTypeName).getId();
-            filters.add(SubmissionFilterBuilder.createSubmissionTypeIdFilter(submissionTypeId));
-        }
-
-        if (submissionStatusName != null) {
-            long submissionStatusId = LookupHelper.getSubmissionStatus(submissionStatusName).getId();
-            filters.add(SubmissionFilterBuilder.createSubmissionStatusIdFilter(submissionStatusId));
-        }
-
-        if (!includeDeleted) {
-            // Exclude the Deleted status
-            long deletedStatusId = LookupHelper.getSubmissionStatus("Deleted").getId();
-            filters.add(new NotFilter(SubmissionFilterBuilder.createSubmissionStatusIdFilter(deletedStatusId)));
-        }
-
-        return createUploadManager().searchSubmissions(new AndFilter(filters));
+//        List<Filter> filters = new ArrayList<Filter>();
+//        filters.add(SubmissionFilterBuilder.createResourceIdFilter(resourceID));
+//
+//        if (submissionTypeName != null) {
+//            long submissionTypeId = LookupHelper.getSubmissionType(submissionTypeName).getId();
+//            filters.add(SubmissionFilterBuilder.createSubmissionTypeIdFilter(submissionTypeId));
+//        }
+//
+//        if (submissionStatusName != null) {
+//            long submissionStatusId = LookupHelper.getSubmissionStatus(submissionStatusName).getId();
+//            filters.add(SubmissionFilterBuilder.createSubmissionStatusIdFilter(submissionStatusId));
+//        }
+//
+//        if (!includeDeleted) {
+//            // Exclude the Deleted status
+//            long deletedStatusId = LookupHelper.getSubmissionStatus("Deleted").getId();
+//            filters.add(new NotFilter(SubmissionFilterBuilder.createSubmissionStatusIdFilter(deletedStatusId)));
+//        }
+//
+//        return createUploadManager().searchSubmissions(new AndFilter(filters));
+        return null;
     }
 
     /**
@@ -1787,7 +1662,7 @@ public class ActionsHelper {
     public static Submission getEarliestActiveSubmission(long projectId, String submissionTypeName)
             throws BaseException {
         Submission[] submissions = getProjectSubmissions(projectId, submissionTypeName,
-                Constants.ACTIVE_SUBMISSION_STATUS_NAME, false);
+                ORConstants.ACTIVE_SUBMISSION_STATUS_NAME, false);
         Submission earliestSubmission = null;
         for (Submission submission : submissions) {
             if (earliestSubmission == null
@@ -1807,13 +1682,13 @@ public class ActionsHelper {
      * @throws IllegalArgumentException                             if any of the
      *                                                              parameters are
      *                                                              <code>null</code>.
-     * @throws com.topcoder.management.project.PersistenceException if an error
+     * @throws com.topcoder.onlinereview.component.project.management.PersistenceException if an error
      *                                                              occurred while
      *                                                              accessing the
      *                                                              database.
      */
     public static Project getProjectForSubmission(Submission submission)
-            throws com.topcoder.management.project.PersistenceException {
+            throws com.topcoder.onlinereview.component.project.management.PersistenceException {
         // Validate parameters
         ActionsHelper.validateParameterNotNull(submission, "submission");
 
@@ -1849,7 +1724,7 @@ public class ActionsHelper {
             final Phase phase = phases[i];
 
             if (phase.getPhaseType().getName().equalsIgnoreCase(phaseName)) {
-                return (!phase.getPhaseStatus().getName().equalsIgnoreCase(Constants.SCHEDULED_PH_STATUS_NAME));
+                return (!phase.getPhaseStatus().getName().equalsIgnoreCase(ORConstants.SCHEDULED_PH_STATUS_NAME));
             }
         }
         return false;
@@ -1876,11 +1751,11 @@ public class ActionsHelper {
             // Get this phase's type name
             String phaseName = phase.getPhaseType().getName();
 
-            if (phaseName.equalsIgnoreCase(Constants.REGISTRATION_PHASE_NAME)
-                    || phaseName.equalsIgnoreCase(Constants.SUBMISSION_PHASE_NAME)
-                    || phaseName.equalsIgnoreCase(Constants.CHECKPOINT_SUBMISSION_PHASE_NAME)
-                    || phaseName.equalsIgnoreCase(Constants.CHECKPOINT_SCREENING_PHASE_NAME)
-                    || phaseName.equalsIgnoreCase(Constants.CHECKPOINT_REVIEW_PHASE_NAME)) {
+            if (phaseName.equalsIgnoreCase(ORConstants.REGISTRATION_PHASE_NAME)
+                    || phaseName.equalsIgnoreCase(ORConstants.SUBMISSION_PHASE_NAME)
+                    || phaseName.equalsIgnoreCase(ORConstants.CHECKPOINT_SUBMISSION_PHASE_NAME)
+                    || phaseName.equalsIgnoreCase(ORConstants.CHECKPOINT_SCREENING_PHASE_NAME)
+                    || phaseName.equalsIgnoreCase(ORConstants.CHECKPOINT_REVIEW_PHASE_NAME)) {
                 if (prevPhase) {
                     return true;
                 }
@@ -1888,10 +1763,10 @@ public class ActionsHelper {
                 continue;
             }
             prevPhase = true;
-            if (phaseName.equalsIgnoreCase(Constants.REVIEW_PHASE_NAME)
-                    || phaseName.equalsIgnoreCase(Constants.ITERATIVE_REVIEW_PHASE_NAME)
-                    || phaseName.equalsIgnoreCase(Constants.APPEALS_PHASE_NAME)
-                    || phaseName.equalsIgnoreCase(Constants.APPEALS_RESPONSE_PHASE_NAME)) {
+            if (phaseName.equalsIgnoreCase(ORConstants.REVIEW_PHASE_NAME)
+                    || phaseName.equalsIgnoreCase(ORConstants.ITERATIVE_REVIEW_PHASE_NAME)
+                    || phaseName.equalsIgnoreCase(ORConstants.APPEALS_PHASE_NAME)
+                    || phaseName.equalsIgnoreCase(ORConstants.APPEALS_RESPONSE_PHASE_NAME)) {
                 if (!phase.getPhaseStatus().getName().equals(PhaseStatus.CLOSED.getName())) {
                     return false;
                 }
@@ -1944,8 +1819,8 @@ public class ActionsHelper {
             // those
             // phases is currently Open), return false, as we are not past Appeals Response
             // one
-            if (phaseName.equalsIgnoreCase(Constants.REGISTRATION_PHASE_NAME)
-                    || phaseName.equalsIgnoreCase(Constants.SUBMISSION_PHASE_NAME)) {
+            if (phaseName.equalsIgnoreCase(ORConstants.REGISTRATION_PHASE_NAME)
+                    || phaseName.equalsIgnoreCase(ORConstants.SUBMISSION_PHASE_NAME)) {
                 return false;
             }
             // Skip the Open or Scheduled phase, as only Closed phases make interest
@@ -1954,15 +1829,15 @@ public class ActionsHelper {
             }
             // If Appeals response is the closed phase,
             // then definitely the project is at after Appeals Response stage
-            if (phaseName.equalsIgnoreCase(Constants.APPEALS_RESPONSE_PHASE_NAME)) {
+            if (phaseName.equalsIgnoreCase(ORConstants.APPEALS_RESPONSE_PHASE_NAME)) {
                 return true;
             }
             // If the phase Review or Appeals is found, but there were other closed phases
             // after them,
             // regard this as after Appeals Response (if Appeals Response is actually
             // absent)
-            if (anyOtherPhaseFound && (phaseName.equalsIgnoreCase(Constants.APPEALS_PHASE_NAME)
-                    || phaseName.equalsIgnoreCase(Constants.REVIEW_PHASE_NAME))) {
+            if (anyOtherPhaseFound && (phaseName.equalsIgnoreCase(ORConstants.APPEALS_PHASE_NAME)
+                    || phaseName.equalsIgnoreCase(ORConstants.REVIEW_PHASE_NAME))) {
                 return true;
             }
             anyOtherPhaseFound = true;
@@ -1986,13 +1861,14 @@ public class ActionsHelper {
      *                              handlers should be returned
      */
     public static PhaseManager createPhaseManager(boolean registerPhaseHandlers) {
-        if (registerPhaseHandlers) {
-            // get Phase Manager with handlers
-            return managerCreationHelper.getPhaseManager();
-        } else {
-            // get Phase Manager without handlers
-            return managerCreationHelper.getPhaseManagerWithoutHandlers();
-        }
+//        if (registerPhaseHandlers) {
+//            // get Phase Manager with handlers
+//            return managerCreationHelper.getPhaseManager();
+//        } else {
+//            // get Phase Manager without handlers
+//            return managerCreationHelper.getPhaseManagerWithoutHandlers();
+//        }
+        return null;
     }
 
     /**
@@ -2001,9 +1877,9 @@ public class ActionsHelper {
      *
      * @return instance of the class ProjectPaymentAdjustmentManager
      */
-    public static ProjectPaymentAdjustmentManager createProjectPaymentAdjustmentManager() {
-        return managerCreationHelper.getProjectPaymentAdjustmentManager();
-    }
+//    public static ProjectPaymentAdjustmentManager createProjectPaymentAdjustmentManager() {
+//        return managerCreationHelper.getProjectPaymentAdjustmentManager();
+//    }
 
     /**
      * This static method helps to create an object of
@@ -2011,9 +1887,9 @@ public class ActionsHelper {
      *
      * @return instance of the class ProjectPaymentManager
      */
-    public static ProjectPaymentManager createProjectPaymentManager() {
-        return managerCreationHelper.getProjectPaymentManager();
-    }
+//    public static ProjectPaymentManager createProjectPaymentManager() {
+//        return managerCreationHelper.getProjectPaymentManager();
+//    }
 
     /**
      * This static method helps to create an object of the
@@ -2024,7 +1900,8 @@ public class ActionsHelper {
      *                                  <code>null</code>.
      */
     public static ProjectManager createProjectManager() {
-        return managerCreationHelper.getProjectManager();
+//        return managerCreationHelper.getProjectManager();
+        return null;
     }
 
     /**
@@ -2032,10 +1909,10 @@ public class ActionsHelper {
      * <code>ResourceManager</code> class.
      *
      * @return a newly created instance of the class.
-     * @throws BaseRuntimeException if any error occurs.
      */
     public static ResourceManager createResourceManager() {
-        return managerCreationHelper.getResourceManager();
+//        return managerCreationHelper.getResourceManager();
+        return null;
     }
 
     /**
@@ -2045,7 +1922,8 @@ public class ActionsHelper {
      * @return a newly created instance of the class.
      */
     public static ReviewManager createReviewManager() {
-        return managerCreationHelper.getReviewManager();
+//        return managerCreationHelper.getReviewManager();
+        return null;
     }
 
     /**
@@ -2054,9 +1932,9 @@ public class ActionsHelper {
      *
      * @return a newly created instance of the class.
      */
-    public static LateDeliverableManager createLateDeliverableManager() {
-        return managerCreationHelper.getLateDeliverableManager();
-    }
+//    public static LateDeliverableManager createLateDeliverableManager() {
+//        return managerCreationHelper.getLateDeliverableManager();
+//    }
 
     /**
      * This static method helps to create an object of the
@@ -2065,7 +1943,8 @@ public class ActionsHelper {
      * @return a newly created instance of the class.
      */
     public static ScorecardManager createScorecardManager() {
-        return managerCreationHelper.getScorecardManager();
+//        return managerCreationHelper.getScorecardManager();
+        return null;
     }
 
     /**
@@ -2075,7 +1954,8 @@ public class ActionsHelper {
      * @return a newly created instance of the class.
      */
     public static DeliverableManager createDeliverableManager() {
-        return managerCreationHelper.getDeliverableManager();
+//        return managerCreationHelper.getDeliverableManager();
+        return null;
     }
 
     /**
@@ -2083,10 +1963,10 @@ public class ActionsHelper {
      * <code>UploadManager</code> class.
      *
      * @return a newly created instance of the class.
-     * @throws BaseRuntimeException if any error occurs.
      */
     public static UploadManager createUploadManager() {
-        return managerCreationHelper.getUploadManager();
+//        return managerCreationHelper.getUploadManager();
+        return null;
     }
 
     /**
@@ -2096,36 +1976,36 @@ public class ActionsHelper {
      * @return a newly created instance of the class.
      * @throws BaseRuntimeException if any error occurs.
      */
-    public static ProjectLinkManager createProjectLinkManager() {
-        return managerCreationHelper.getProjectLinkManager();
-    }
+//    public static ProjectLinkManager createProjectLinkManager() {
+//        return managerCreationHelper.getProjectLinkManager();
+//    }
 
     /**
      * Gets the <code>UserTermsOfUseDao</code> instance.
      *
      * @return the <code>UserTermsOfUseDao</code> instance.
      */
-    public static UserTermsOfUseDao getUserTermsOfUseDao() {
-        return managerCreationHelper.getUserTermsOfUseDao();
-    }
+//    public static UserTermsOfUseDao getUserTermsOfUseDao() {
+//        return managerCreationHelper.getUserTermsOfUseDao();
+//    }
 
     /**
      * Gets the <code>ProjectTermsOfUseDao</code> instance.
      *
      * @return the <code>ProjectTermsOfUseDao</code> instance.
      */
-    public static ProjectTermsOfUseDao getProjectTermsOfUseDao() {
-        return managerCreationHelper.getProjectTermsOfUseDao();
-    }
+//    public static ProjectTermsOfUseDao getProjectTermsOfUseDao() {
+//        return managerCreationHelper.getProjectTermsOfUseDao();
+//    }
 
     /**
      * Gets the <code>ProjectTermsOfUseDao</code> instance.
      *
      * @return the <code>ProjectTermsOfUseDao</code> instance.
      */
-    public static TermsOfUseDao getTermsOfUseDao() {
-        return managerCreationHelper.getTermsOfUseDao();
-    }
+//    public static TermsOfUseDao getTermsOfUseDao() {
+//        return managerCreationHelper.getTermsOfUseDao();
+//    }
 
     /**
      * This static method helps to create an object of the
@@ -2134,9 +2014,9 @@ public class ActionsHelper {
      * @return a newly created instance of the class.
      * @throws BaseRuntimeException if any error occurs.
      */
-    public static ReviewFeedbackManager createReviewFeedbackManager() {
-        return managerCreationHelper.getReviewFeedbackManager();
-    }
+//    public static ReviewFeedbackManager createReviewFeedbackManager() {
+//        return managerCreationHelper.getReviewFeedbackManager();
+//    }
 
     /**
      * This static method helps to create an object of the
@@ -2159,24 +2039,24 @@ public class ActionsHelper {
      *                                                          parameters are
      *                                                          missing.
      */
-    public static UserRetrieval createUserRetrieval(HttpServletRequest request)
-            throws com.cronos.onlinereview.external.ConfigException {
-        // Validate parameter
-        validateParameterNotNull(request, "request");
-
-        // Try retrieving Upload Retrieval from the request's attribute first
-        UserRetrieval manager = (UserRetrieval) request.getAttribute("userRetrieval");
-        // If this is the first time this method is called for the request,
-        // create a new instance of the object
-        if (manager == null) {
-            manager = new DBUserRetrieval(DB_CONNECTION_NAMESPACE);
-            // Place newly-created object into the request as attribute
-            request.setAttribute("userRetrieval", manager);
-        }
-
-        // Return the Upload Retrieval object
-        return manager;
-    }
+//    public static UserRetrieval createUserRetrieval(HttpServletRequest request)
+//            throws com.cronos.onlinereview.external.ConfigException {
+//        // Validate parameter
+//        validateParameterNotNull(request, "request");
+//
+//        // Try retrieving Upload Retrieval from the request's attribute first
+//        UserRetrieval manager = (UserRetrieval) request.getAttribute("userRetrieval");
+//        // If this is the first time this method is called for the request,
+//        // create a new instance of the object
+//        if (manager == null) {
+//            manager = new DBUserRetrieval(DB_CONNECTION_NAMESPACE);
+//            // Place newly-created object into the request as attribute
+//            request.setAttribute("userRetrieval", manager);
+//        }
+//
+//        // Return the Upload Retrieval object
+//        return manager;
+//    }
 
     /**
      * This static method helps to create an object of the <code>FileUpload</code>
@@ -2197,10 +2077,10 @@ public class ActionsHelper {
      *                                                             allowed
      *                                                             directories.
      */
-    public static FileUpload createFileUploadManager(HttpServletRequest request)
-            throws DisallowedDirectoryException, com.topcoder.servlet.request.ConfigurationException {
-        return createFileUploadManager(request, LOCAL_STORAGE_NAMESPACE);
-    }
+//    public static FileUpload createFileUploadManager(HttpServletRequest request)
+//            throws DisallowedDirectoryException, com.topcoder.servlet.request.ConfigurationException {
+//        return createFileUploadManager(request, LOCAL_STORAGE_NAMESPACE);
+//    }
 
     /**
      * This static method helps to create an object of the <code>FileUpload</code>
@@ -2222,24 +2102,24 @@ public class ActionsHelper {
      *                                                             allowed
      *                                                             directories.
      */
-    public static FileUpload createFileUploadManager(HttpServletRequest request, String namespace)
-            throws DisallowedDirectoryException, com.topcoder.servlet.request.ConfigurationException {
-        // Validate parameter
-        validateParameterNotNull(request, "request");
-
-        // Try retrieving File Upload from the request's attribute first
-        FileUpload fileUpload = (FileUpload) request.getAttribute(namespace);
-        // If this is the first time this method is called for the request,
-        // create a new instance of the object
-        if (fileUpload == null) {
-            fileUpload = new LocalFileUpload(namespace);
-            // Place newly-created object into the request as attribute
-            request.setAttribute(namespace, fileUpload);
-        }
-
-        // Return the File Upload object
-        return fileUpload;
-    }
+//    public static FileUpload createFileUploadManager(HttpServletRequest request, String namespace)
+//            throws DisallowedDirectoryException, com.topcoder.servlet.request.ConfigurationException {
+//        // Validate parameter
+//        validateParameterNotNull(request, "request");
+//
+//        // Try retrieving File Upload from the request's attribute first
+//        FileUpload fileUpload = (FileUpload) request.getAttribute(namespace);
+//        // If this is the first time this method is called for the request,
+//        // create a new instance of the object
+//        if (fileUpload == null) {
+//            fileUpload = new LocalFileUpload(namespace);
+//            // Place newly-created object into the request as attribute
+//            request.setAttribute(namespace, fileUpload);
+//        }
+//
+//        // Return the File Upload object
+//        return fileUpload;
+//    }
 
     /**
      * This static method helps to get a list of cockpit projects belonging to the
@@ -2248,25 +2128,25 @@ public class ActionsHelper {
      * @param request the request
      * @return a list of cockpit projects
      */
-    public static List<CockpitProject> getCockpitProjects(HttpServletRequest request) {
-        validateParameterNotNull(request, "request");
-
-        long userId = AuthorizationHelper.getLoggedInUserId(request);
-
-        List<CockpitProject> cockpitProjects = new ArrayList<CockpitProject>();
-
-        CockpitProject project = new CockpitProject();
-        project.setId(0);
-        project.setName("-------------");
-        cockpitProjects.add(project);
-
-        if (AuthorizationHelper.hasUserRole(request, Constants.GLOBAL_MANAGER_ROLE_NAME)) {
-            cockpitProjects.addAll(new ProjectDataAccess().getAllCockpitProjects());
-        } else {
-            cockpitProjects.addAll(new ProjectDataAccess().getCockpitProjectsForUser(userId));
-        }
-        return cockpitProjects;
-    }
+//    public static List<CockpitProject> getCockpitProjects(HttpServletRequest request) {
+//        validateParameterNotNull(request, "request");
+//
+//        long userId = AuthorizationHelper.getLoggedInUserId(request);
+//
+//        List<CockpitProject> cockpitProjects = new ArrayList<CockpitProject>();
+//
+//        CockpitProject project = new CockpitProject();
+//        project.setId(0);
+//        project.setName("-------------");
+//        cockpitProjects.add(project);
+//
+//        if (AuthorizationHelper.hasUserRole(request, ORConstants.GLOBAL_MANAGER_ROLE_NAME)) {
+//            cockpitProjects.addAll(new ProjectDataAccess().getAllCockpitProjects());
+//        } else {
+//            cockpitProjects.addAll(new ProjectDataAccess().getCockpitProjectsForUser(userId));
+//        }
+//        return cockpitProjects;
+//    }
 
     /**
      * This static method helps to get a list of <code>ClientProject</code>.
@@ -2278,26 +2158,26 @@ public class ActionsHelper {
      * @throws IllegalArgumentException if <code>request</code> parameter is
      *                                  <code>null</code>.
      */
-    public static List<ClientProject> getClientProjects(HttpServletRequest request) {
-        validateParameterNotNull(request, "request");
-
-        long userId = AuthorizationHelper.getLoggedInUserId(request);
-
-        List<ClientProject> clientProjects = new ArrayList<ClientProject>();
-
-        // We first add an empty client project for a default selection.
-        ClientProject project = new ClientProject();
-        project.setId(0);
-        project.setName("-------------");
-        clientProjects.add(project);
-
-        if (AuthorizationHelper.hasUserRole(request, Constants.GLOBAL_MANAGER_ROLE_NAME)) {
-            clientProjects.addAll(new ProjectDataAccess().getAllClientProjects());
-        } else {
-            clientProjects.addAll(new ProjectDataAccess().getClientProjectsForUser(userId));
-        }
-        return clientProjects;
-    }
+//    public static List<ClientProject> getClientProjects(HttpServletRequest request) {
+//        validateParameterNotNull(request, "request");
+//
+//        long userId = AuthorizationHelper.getLoggedInUserId(request);
+//
+//        List<ClientProject> clientProjects = new ArrayList<ClientProject>();
+//
+//        // We first add an empty client project for a default selection.
+//        ClientProject project = new ClientProject();
+//        project.setId(0);
+//        project.setName("-------------");
+//        clientProjects.add(project);
+//
+//        if (AuthorizationHelper.hasUserRole(request, ORConstants.GLOBAL_MANAGER_ROLE_NAME)) {
+//            clientProjects.addAll(new ProjectDataAccess().getAllClientProjects());
+//        } else {
+//            clientProjects.addAll(new ProjectDataAccess().getClientProjectsForUser(userId));
+//        }
+//        return clientProjects;
+//    }
 
     /**
      * This static method helps to create an object of the
@@ -2307,21 +2187,21 @@ public class ActionsHelper {
      *         parameter is <code>null</code>.
      * @throws BaseException if any error happens during object creation.
      */
-    public static PhaseTemplate createPhaseTemplate() throws BaseException {
-        // Create phase template persistence
-        PhaseTemplatePersistence persistence = new XmlPhaseTemplatePersistence(PHASES_TEMPLATE_PERSISTENCE_NAMESPACE);
-        // Create start date generator
-        StartDateGenerator generator = new StartDateGenerator() {
-            public Date generateStartDate() {
-                return new Date();
-            }
-        };
-
-        // Create workdays instance
-        Workdays workdays = (new DefaultWorkdaysFactory()).createWorkdaysInstance();
-
-        return new DefaultPhaseTemplate(persistence, generator, workdays);
-    }
+//    public static PhaseTemplate createPhaseTemplate() throws BaseException {
+//        // Create phase template persistence
+//        PhaseTemplatePersistence persistence = new XmlPhaseTemplatePersistence(PHASES_TEMPLATE_PERSISTENCE_NAMESPACE);
+//        // Create start date generator
+//        StartDateGenerator generator = new StartDateGenerator() {
+//            public Date generateStartDate() {
+//                return new Date();
+//            }
+//        };
+//
+//        // Create workdays instance
+//        Workdays workdays = (new DefaultWorkdaysFactory()).createWorkdaysInstance();
+//
+//        return new DefaultPhaseTemplate(persistence, generator, workdays);
+//    }
 
     /**
      * Set Completion Timestamp while the project turn to completed, Cancelled -
@@ -2333,18 +2213,18 @@ public class ActionsHelper {
      */
     public static void setProjectCompletionDate(Project project, ProjectStatus newProjectStatus, Format format) {
 
-        String name = newProjectStatus.getName();
-        if ("Completed".equals(name) || "Cancelled - Failed Review".equals(name) || "Deleted".equals(name)
-                || "Cancelled - Failed Screening".equals(name) || "Cancelled - Zero Submissions".equals(name)
-                || "Cancelled - Winner Unresponsive".equals(name) || "Cancelled - Client Request".equals(name)
-                || "Cancelled - Requirements Infeasible".equals(name)) {
-
-            if (format == null) {
-                format = new SimpleDateFormat(ConfigHelper.getDateFormat());
-            }
-
-            project.setProperty("Completion Timestamp", format.format(new Date()));
-        }
+//        String name = newProjectStatus.getName();
+//        if ("Completed".equals(name) || "Cancelled - Failed Review".equals(name) || "Deleted".equals(name)
+//                || "Cancelled - Failed Screening".equals(name) || "Cancelled - Zero Submissions".equals(name)
+//                || "Cancelled - Winner Unresponsive".equals(name) || "Cancelled - Client Request".equals(name)
+//                || "Cancelled - Requirements Infeasible".equals(name)) {
+//
+//            if (format == null) {
+//                format = new SimpleDateFormat(ConfigHelper.getDateFormat());
+//            }
+//
+//            project.setProperty("Completion Timestamp", format.format(new Date()));
+//        }
     }
 
     /**
@@ -2355,26 +2235,26 @@ public class ActionsHelper {
      * @param projectPhases the project phases
      */
     public static void setProjectRatingDate(Project project, Phase[] projectPhases, Format format) {
-        Date endDate = null;
-        for (int i = 0; projectPhases != null && i < projectPhases.length; i++) {
-            if ("Submission".equals(projectPhases[i].getPhaseType().getName())) {
-                endDate = projectPhases[i].getActualEndDate();
-                if (endDate == null) {
-                    endDate = projectPhases[i].getScheduledEndDate();
-                }
-                break;
-            }
-        }
-
-        if (endDate == null) {
-            return;
-        }
-
-        if (format == null) {
-            format = new SimpleDateFormat(ConfigHelper.getDateFormat());
-        }
-
-        project.setProperty("Rated Timestamp", format.format(endDate));
+//        Date endDate = null;
+//        for (int i = 0; projectPhases != null && i < projectPhases.length; i++) {
+//            if ("Submission".equals(projectPhases[i].getPhaseType().getName())) {
+//                endDate = projectPhases[i].getActualEndDate();
+//                if (endDate == null) {
+//                    endDate = projectPhases[i].getScheduledEndDate();
+//                }
+//                break;
+//            }
+//        }
+//
+//        if (endDate == null) {
+//            return;
+//        }
+//
+//        if (format == null) {
+//            format = new SimpleDateFormat(ConfigHelper.getDateFormat());
+//        }
+//
+//        project.setProperty("Rated Timestamp", format.format(endDate));
     }
 
     /**
@@ -2400,111 +2280,111 @@ public class ActionsHelper {
      * @param getRedirectUrlFromReferer if it is a redirect url from referer
      * @throws BaseException if any error occurs.
      */
-    public static CorrectnessCheckResult checkForCorrectProjectId(TextProvider textProvider, HttpServletRequest request,
-            String permission, boolean getRedirectUrlFromReferer) throws BaseException {
-        // Prepare bean that will be returned as the result
-        CorrectnessCheckResult result = new CorrectnessCheckResult();
-
-        if (permission == null || permission.trim().length() == 0) {
-            permission = null;
-        }
-
-        // Verify that Project ID was specified and denotes correct project
-        String pidParam = request.getParameter("pid");
-        if (pidParam == null || pidParam.trim().length() == 0) {
-            result.setResult(
-                    produceErrorReport(textProvider, request, permission, "Error.ProjectIdNotSpecified", false));
-            // Return the result of the check
-            return result;
-        }
-
-        long pid;
-
-        try {
-            // Try to convert specified pid parameter to its integer representation
-            pid = Long.parseLong(pidParam, 10);
-        } catch (NumberFormatException nfe) {
-            result.setResult(produceErrorReport(textProvider, request, permission, "Error.ProjectNotFound", false));
-            // Return the result of the check
-            return result;
-        }
-
-        // Obtain an instance of Project Manager
-        ProjectManager projMgr = createProjectManager();
-        // Get Project by its id
-        Project project = projMgr.getProject(pid);
-        // Verify that project with given ID exists
-        if (project == null) {
-            result.setResult(produceErrorReport(textProvider, request, permission, "Error.ProjectNotFound", false));
-            // Return the result of the check
-            return result;
-        }
-
-        // Store Project object in the result bean
-        result.setProject(project);
-        // Place project as attribute in the request
-        request.setAttribute("project", project);
-
-        // Gather the roles the user has for current request
-        AuthorizationHelper.gatherUserRoles(request, pid);
-
-        request.setAttribute("isAdmin",
-                AuthorizationHelper.hasUserRole(request, Constants.MANAGER_ROLE_NAME)
-                        || AuthorizationHelper.hasUserRole(request, Constants.GLOBAL_MANAGER_ROLE_NAME)
-                        || AuthorizationHelper.hasUserRole(request, Constants.COCKPIT_PROJECT_USER_ROLE_NAME));
-
-        // If permission parameter was not null or empty string ...
-        if (permission != null) {
-            // ... verify that this permission is granted for currently logged in user
-            if (!AuthorizationHelper.hasUserPermission(request, permission)) {
-                // If it does not, and the user is logged in, display a message about the lack
-                // of
-                // permissions, otherwise redirect the request to the Login page
-                result.setResult(produceErrorReport(textProvider, request, permission, "Error.NoPermission",
-                        getRedirectUrlFromReferer));
-                // Return the result of the check
-                return result;
-            }
-        }
-
-        // new eligibility constraints checks
-        try {
-            if (AuthorizationHelper.isUserLoggedIn(request)) {
-
-                // if the user is logged in and is a resource of this project or a global
-                // manager, continue
-                Resource[] myResources = (Resource[]) request.getAttribute("myResources");
-                if ((myResources == null || myResources.length == 0)
-                        && !AuthorizationHelper.hasUserRole(request, Constants.GLOBAL_MANAGER_ROLE_NAME)
-                        && !AuthorizationHelper.hasUserRole(request, Constants.COCKPIT_PROJECT_USER_ROLE_NAME)) {
-                    // if he's not a resource, check if the project has eligibility constraints
-                    if (EJBLibraryServicesLocator.getContestEligibilityService().hasEligibility(pid, false)) {
-                        result.setResult(
-                                produceErrorReport(textProvider, request, permission, "Error.ProjectNotFound", false));
-                        // Return the result of the check
-                        return result;
-                    }
-                }
-            } else {
-                // if the user is not logged in and the project has any eligibility constraint,
-                // ask for login
-                if (EJBLibraryServicesLocator.getContestEligibilityService().hasEligibility(pid, false)) {
-                    result.setResult(produceErrorReport(textProvider, request, permission, "Error.NoPermission",
-                            getRedirectUrlFromReferer));
-                    // Return the result of the check
-                    return result;
-                }
-            }
-        } catch (Exception e) {
-            throw new BaseException("It was not possible to verify eligibility for project id " + pid, e);
-        }
-
-        // At this point, redirect-after-login attribute should be removed (if it
-        // exists)
-        AuthorizationHelper.removeLoginRedirect(request);
-
-        return result;
-    }
+//    public static CorrectnessCheckResult checkForCorrectProjectId(TextProvider textProvider, HttpServletRequest request,
+//            String permission, boolean getRedirectUrlFromReferer) throws BaseException {
+//        // Prepare bean that will be returned as the result
+//        CorrectnessCheckResult result = new CorrectnessCheckResult();
+//
+//        if (permission == null || permission.trim().length() == 0) {
+//            permission = null;
+//        }
+//
+//        // Verify that Project ID was specified and denotes correct project
+//        String pidParam = request.getParameter("pid");
+//        if (pidParam == null || pidParam.trim().length() == 0) {
+//            result.setResult(
+//                    produceErrorReport(textProvider, request, permission, "Error.ProjectIdNotSpecified", false));
+//            // Return the result of the check
+//            return result;
+//        }
+//
+//        long pid;
+//
+//        try {
+//            // Try to convert specified pid parameter to its integer representation
+//            pid = Long.parseLong(pidParam, 10);
+//        } catch (NumberFormatException nfe) {
+//            result.setResult(produceErrorReport(textProvider, request, permission, "Error.ProjectNotFound", false));
+//            // Return the result of the check
+//            return result;
+//        }
+//
+//        // Obtain an instance of Project Manager
+//        ProjectManager projMgr = createProjectManager();
+//        // Get Project by its id
+//        Project project = projMgr.getProject(pid);
+//        // Verify that project with given ID exists
+//        if (project == null) {
+//            result.setResult(produceErrorReport(textProvider, request, permission, "Error.ProjectNotFound", false));
+//            // Return the result of the check
+//            return result;
+//        }
+//
+//        // Store Project object in the result bean
+//        result.setProject(project);
+//        // Place project as attribute in the request
+//        request.setAttribute("project", project);
+//
+//        // Gather the roles the user has for current request
+//        AuthorizationHelper.gatherUserRoles(request, pid);
+//
+//        request.setAttribute("isAdmin",
+//                AuthorizationHelper.hasUserRole(request, Constants.MANAGER_ROLE_NAME)
+//                        || AuthorizationHelper.hasUserRole(request, Constants.GLOBAL_MANAGER_ROLE_NAME)
+//                        || AuthorizationHelper.hasUserRole(request, Constants.COCKPIT_PROJECT_USER_ROLE_NAME));
+//
+//        // If permission parameter was not null or empty string ...
+//        if (permission != null) {
+//            // ... verify that this permission is granted for currently logged in user
+//            if (!AuthorizationHelper.hasUserPermission(request, permission)) {
+//                // If it does not, and the user is logged in, display a message about the lack
+//                // of
+//                // permissions, otherwise redirect the request to the Login page
+//                result.setResult(produceErrorReport(textProvider, request, permission, "Error.NoPermission",
+//                        getRedirectUrlFromReferer));
+//                // Return the result of the check
+//                return result;
+//            }
+//        }
+//
+//        // new eligibility constraints checks
+//        try {
+//            if (AuthorizationHelper.isUserLoggedIn(request)) {
+//
+//                // if the user is logged in and is a resource of this project or a global
+//                // manager, continue
+//                Resource[] myResources = (Resource[]) request.getAttribute("myResources");
+//                if ((myResources == null || myResources.length == 0)
+//                        && !AuthorizationHelper.hasUserRole(request, Constants.GLOBAL_MANAGER_ROLE_NAME)
+//                        && !AuthorizationHelper.hasUserRole(request, Constants.COCKPIT_PROJECT_USER_ROLE_NAME)) {
+//                    // if he's not a resource, check if the project has eligibility constraints
+//                    if (EJBLibraryServicesLocator.getContestEligibilityService().hasEligibility(pid, false)) {
+//                        result.setResult(
+//                                produceErrorReport(textProvider, request, permission, "Error.ProjectNotFound", false));
+//                        // Return the result of the check
+//                        return result;
+//                    }
+//                }
+//            } else {
+//                // if the user is not logged in and the project has any eligibility constraint,
+//                // ask for login
+//                if (EJBLibraryServicesLocator.getContestEligibilityService().hasEligibility(pid, false)) {
+//                    result.setResult(produceErrorReport(textProvider, request, permission, "Error.NoPermission",
+//                            getRedirectUrlFromReferer));
+//                    // Return the result of the check
+//                    return result;
+//                }
+//            }
+//        } catch (Exception e) {
+//            throw new BaseException("It was not possible to verify eligibility for project id " + pid, e);
+//        }
+//
+//        // At this point, redirect-after-login attribute should be removed (if it
+//        // exists)
+//        AuthorizationHelper.removeLoginRedirect(request);
+//
+//        return result;
+//    }
 
     /**
      * Populate project_result and component_inquiry for new submitters.
@@ -2526,127 +2406,121 @@ public class ActionsHelper {
             return;
         }
 
-        try {
-            DBConnectionFactory dbconn = new DBConnectionFactoryImpl(DB_CONNECTION_NAMESPACE);
-            conn = dbconn.createConnection();
-            log.log(Level.DEBUG,
-                    "create db connection with default connection name from DBConnectionFactoryImpl with namespace:"
-                            + DB_CONNECTION_NAMESPACE);
-            long projectId = project.getId();
-            // retrieve and update component_inquiry_id
-            long componentInquiryId = getNextComponentInquiryId(conn, newSubmitters.size());
-            long componentId = getProjectLongValue(project, "Component ID");
-            long phaseId = 111 + project.getProjectCategory().getId();
-            log.log(Level.DEBUG, "calculated phaseId for Project: " + projectId + " phaseId: " + phaseId);
-            long version = getProjectLongValue(project, "Version ID");
-
-            // old_reliability has been removed, because introduction of new reliability
-            // calculator
-            ps = conn.prepareStatement("INSERT INTO project_result "
-                    + "(project_id, user_id, rating_ind, valid_submission_ind, old_rating) "
-                    + "values (?, ?, ?, ?, ?)");
-
-            componentInquiryStmt = conn.prepareStatement("INSERT INTO component_inquiry "
-                    + "(component_inquiry_id, component_id, user_id, project_id, phase, tc_user_id, agreed_to_terms, rating, version, create_time) "
-                    + "values (?, ?, ?, ?, ?, ?, 1, ?, ?, current)");
-
-            existStmt = conn.prepareStatement("SELECT 1 FROM PROJECT_RESULT WHERE user_id = ? and project_id = ?");
-
-            existCIStmt = conn.prepareStatement("SELECT 1 FROM component_inquiry WHERE user_id = ? and project_id = ?");
-
-            ratingStmt = conn.prepareStatement(
-                    "SELECT rating, phase_id, (select project_category_id from project where project_id = ?) as project_category_id from user_rating where user_id = ? ");
-
-            for (Long userId : newSubmitters) {
-                // Check if projectResult exist
-                existStmt.clearParameters();
-                existStmt.setLong(1, userId);
-                existStmt.setLong(2, projectId);
-                boolean existPR = existStmt.executeQuery().next();
-
-                // Check if component_inquiry exist
-                existCIStmt.clearParameters();
-                existCIStmt.setLong(1, userId);
-                existCIStmt.setLong(2, projectId);
-                boolean existCI = existCIStmt.executeQuery().next();
-
-                // Retrieve oldRating
-                double oldRating = 0;
-                ResultSet rs;
-                if (!existPR || !existCI) {
-                    ratingStmt.clearParameters();
-                    ratingStmt.setLong(1, projectId);
-                    ratingStmt.setLong(2, userId);
-                    rs = ratingStmt.executeQuery();
-
-                    // If the project belongs to a rated category, the user gets the rating that
-                    // belongs to the
-                    // category. Otherwise, the highest available rating is used.
-                    while (rs.next()) {
-                        if (!isRatedCategory(rs.getLong(3))) {
-                            if (oldRating < rs.getLong(1)) {
-                                oldRating = rs.getLong(1);
-                            }
-                        } else if (rs.getLong(3) + 111 == rs.getLong(2)) {
-                            oldRating = rs.getLong(1);
-                        }
-                    }
-                    close(rs);
-                }
-
-                if (!existPR) {
-                    // add project_result
-                    ps.setLong(1, projectId);
-                    ps.setLong(2, userId);
-                    ps.setLong(3, 0);
-                    ps.setLong(4, 0);
-
-                    if (oldRating == 0) {
-                        ps.setNull(5, Types.DOUBLE);
-                    } else {
-                        ps.setDouble(5, oldRating);
-                    }
-                    ps.addBatch();
-                }
-
-                // add component_inquiry
-                if (!existCI && componentId > 0) {
-                    log.log(Level.DEBUG, "adding component_inquiry for projectId: " + projectId + " userId: " + userId);
-                    componentInquiryStmt.setLong(1, componentInquiryId++);
-                    componentInquiryStmt.setLong(2, componentId);
-                    componentInquiryStmt.setLong(3, userId);
-                    componentInquiryStmt.setLong(4, projectId);
-                    // All competition types except for design and development should have null
-                    // phase id.
-                    if (categoryId == 1 || categoryId == 2) {
-                        componentInquiryStmt.setLong(5, phaseId);
-                    } else {
-                        componentInquiryStmt.setNull(5, Types.INTEGER);
-                    }
-                    componentInquiryStmt.setLong(6, userId);
-                    componentInquiryStmt.setDouble(7, oldRating);
-                    componentInquiryStmt.setLong(8, version);
-                    componentInquiryStmt.addBatch();
-                }
-            }
-            ps.executeBatch();
-            componentInquiryStmt.executeBatch();
-        } catch (UnknownConnectionException e) {
-            throw new BaseException("Failed to create connection", e);
-        } catch (ConfigurationException e) {
-            throw new BaseException("Failed to config for DBNamespace", e);
-        } catch (SQLException e) {
-            throw new BaseException("Failed to populate project_result", e);
-        } catch (DBConnectionException e) {
-            throw new BaseException("Failed to return DBConnection", e);
-        } finally {
-            close(componentInquiryStmt);
-            close(ps);
-            close(existStmt);
-            close(existCIStmt);
-            close(ratingStmt);
-            close(conn);
-        }
+//        try {
+//            DBConnectionFactory dbconn = new DBConnectionFactoryImpl(DB_CONNECTION_NAMESPACE);
+//            conn = dbconn.createConnection();
+//            log.debug(
+//                    "create db connection with default connection name from DBConnectionFactoryImpl with namespace:"
+//                            + DB_CONNECTION_NAMESPACE);
+//            long projectId = project.getId();
+//            // retrieve and update component_inquiry_id
+//            long componentInquiryId = getNextComponentInquiryId(conn, newSubmitters.size());
+//            long componentId = getProjectLongValue(project, "Component ID");
+//            long phaseId = 111 + project.getProjectCategory().getId();
+//            log.debug( "calculated phaseId for Project: " + projectId + " phaseId: " + phaseId);
+//            long version = getProjectLongValue(project, "Version ID");
+//
+//            // old_reliability has been removed, because introduction of new reliability
+//            // calculator
+//            ps = conn.prepareStatement("INSERT INTO project_result "
+//                    + "(project_id, user_id, rating_ind, valid_submission_ind, old_rating) "
+//                    + "values (?, ?, ?, ?, ?)");
+//
+//            componentInquiryStmt = conn.prepareStatement("INSERT INTO component_inquiry "
+//                    + "(component_inquiry_id, component_id, user_id, project_id, phase, tc_user_id, agreed_to_terms, rating, version, create_time) "
+//                    + "values (?, ?, ?, ?, ?, ?, 1, ?, ?, current)");
+//
+//            existStmt = conn.prepareStatement("SELECT 1 FROM PROJECT_RESULT WHERE user_id = ? and project_id = ?");
+//
+//            existCIStmt = conn.prepareStatement("SELECT 1 FROM component_inquiry WHERE user_id = ? and project_id = ?");
+//
+//            ratingStmt = conn.prepareStatement(
+//                    "SELECT rating, phase_id, (select project_category_id from project where project_id = ?) as project_category_id from user_rating where user_id = ? ");
+//
+//            for (Long userId : newSubmitters) {
+//                // Check if projectResult exist
+//                existStmt.clearParameters();
+//                existStmt.setLong(1, userId);
+//                existStmt.setLong(2, projectId);
+//                boolean existPR = existStmt.executeQuery().next();
+//
+//                // Check if component_inquiry exist
+//                existCIStmt.clearParameters();
+//                existCIStmt.setLong(1, userId);
+//                existCIStmt.setLong(2, projectId);
+//                boolean existCI = existCIStmt.executeQuery().next();
+//
+//                // Retrieve oldRating
+//                double oldRating = 0;
+//                ResultSet rs;
+//                if (!existPR || !existCI) {
+//                    ratingStmt.clearParameters();
+//                    ratingStmt.setLong(1, projectId);
+//                    ratingStmt.setLong(2, userId);
+//                    rs = ratingStmt.executeQuery();
+//
+//                    // If the project belongs to a rated category, the user gets the rating that
+//                    // belongs to the
+//                    // category. Otherwise, the highest available rating is used.
+//                    while (rs.next()) {
+//                        if (!isRatedCategory(rs.getLong(3))) {
+//                            if (oldRating < rs.getLong(1)) {
+//                                oldRating = rs.getLong(1);
+//                            }
+//                        } else if (rs.getLong(3) + 111 == rs.getLong(2)) {
+//                            oldRating = rs.getLong(1);
+//                        }
+//                    }
+//                    close(rs);
+//                }
+//
+//                if (!existPR) {
+//                    // add project_result
+//                    ps.setLong(1, projectId);
+//                    ps.setLong(2, userId);
+//                    ps.setLong(3, 0);
+//                    ps.setLong(4, 0);
+//
+//                    if (oldRating == 0) {
+//                        ps.setNull(5, Types.DOUBLE);
+//                    } else {
+//                        ps.setDouble(5, oldRating);
+//                    }
+//                    ps.addBatch();
+//                }
+//
+//                // add component_inquiry
+//                if (!existCI && componentId > 0) {
+//                    log.debug( "adding component_inquiry for projectId: " + projectId + " userId: " + userId);
+//                    componentInquiryStmt.setLong(1, componentInquiryId++);
+//                    componentInquiryStmt.setLong(2, componentId);
+//                    componentInquiryStmt.setLong(3, userId);
+//                    componentInquiryStmt.setLong(4, projectId);
+//                    // All competition types except for design and development should have null
+//                    // phase id.
+//                    if (categoryId == 1 || categoryId == 2) {
+//                        componentInquiryStmt.setLong(5, phaseId);
+//                    } else {
+//                        componentInquiryStmt.setNull(5, Types.INTEGER);
+//                    }
+//                    componentInquiryStmt.setLong(6, userId);
+//                    componentInquiryStmt.setDouble(7, oldRating);
+//                    componentInquiryStmt.setLong(8, version);
+//                    componentInquiryStmt.addBatch();
+//                }
+//            }
+//            ps.executeBatch();
+//            componentInquiryStmt.executeBatch();
+//        } catch (Exception e) {
+//            throw new BaseException("Failed to populate project_result", e);
+//        } finally {
+//            close(componentInquiryStmt);
+//            close(ps);
+//            close(existStmt);
+//            close(existCIStmt);
+//            close(ratingStmt);
+//            close(conn);
+//        }
     }
 
     /**
@@ -2659,28 +2533,28 @@ public class ActionsHelper {
         Connection conn = null;
         PreparedStatement ps = null;
         ResultSet rs = null;
-        try {
-            DBConnectionFactory dbconn = new DBConnectionFactoryImpl(DB_CONNECTION_NAMESPACE);
-            conn = dbconn.createConnection();
-            log.log(Level.DEBUG,
-                    "create db connection with default connection name from DBConnectionFactoryImpl with namespace:"
-                            + DB_CONNECTION_NAMESPACE);
-            String sqlStr = "select root_category_id " + "    from comp_catalog cc," + "         categories pcat "
-                    + "    where cc.component_id = ? " + "    and cc.status_id = 102 "
-                    + "    and pcat.category_id = cc.root_category_id";
-            ps = conn.prepareStatement(sqlStr);
-            ps.setString(1, componentId.toString());
-            rs = ps.executeQuery();
-            if (rs.next()) {
-                return rs.getString("root_category_id");
-            }
-        } catch (Exception e) {
-            // Ignore if no corresponding root_category_id exist
-        } finally {
-            close(rs);
-            close(ps);
-            close(conn);
-        }
+//        try {
+//            DBConnectionFactory dbconn = new DBConnectionFactoryImpl(DB_CONNECTION_NAMESPACE);
+//            conn = dbconn.createConnection();
+//            log.debug(
+//                    "create db connection with default connection name from DBConnectionFactoryImpl with namespace:"
+//                            + DB_CONNECTION_NAMESPACE);
+//            String sqlStr = "select root_category_id " + "    from comp_catalog cc," + "         categories pcat "
+//                    + "    where cc.component_id = ? " + "    and cc.status_id = 102 "
+//                    + "    and pcat.category_id = cc.root_category_id";
+//            ps = conn.prepareStatement(sqlStr);
+//            ps.setString(1, componentId.toString());
+//            rs = ps.executeQuery();
+//            if (rs.next()) {
+//                return rs.getString("root_category_id");
+//            }
+//        } catch (Exception e) {
+//            // Ignore if no corresponding root_category_id exist
+//        } finally {
+//            close(rs);
+//            close(ps);
+//            close(conn);
+//        }
 
         return "9926572"; // If we can't find a catalog, assume it's an Application
     }
@@ -2691,41 +2565,42 @@ public class ActionsHelper {
      * @return the default scorecards list
      * @throws BaseException if error occurs
      */
-    public static List<DefaultScorecard> getDefaultScorecards() throws BaseException {
-        Connection conn = null;
-        Statement stmt = null;
-        ResultSet rs = null;
-        try {
-            DBConnectionFactory dbconn = new DBConnectionFactoryImpl(DB_CONNECTION_NAMESPACE);
-            conn = dbconn.createConnection();
-            log.log(Level.DEBUG,
-                    "create db connection with default connection name from DBConnectionFactoryImpl with namespace:"
-                            + DB_CONNECTION_NAMESPACE);
-            String sqlString = "select ds.*, st.name from default_scorecard ds, scorecard_type_lu st "
-                    + "where ds.scorecard_type_id = st.scorecard_type_id";
-
-            stmt = conn.createStatement();
-            rs = stmt.executeQuery(sqlString);
-            List<DefaultScorecard> list = new ArrayList<DefaultScorecard>();
-            while (rs.next()) {
-                DefaultScorecard scorecard = new DefaultScorecard();
-                scorecard.setCategory(rs.getInt("project_category_id"));
-                scorecard.setScorecardType(rs.getInt("scorecard_type_id"));
-                scorecard.setScorecardId(rs.getLong("scorecard_id"));
-                scorecard.setName(rs.getString("name"));
-                list.add(scorecard);
-            }
-            return list;
-        } catch (DBConnectionException e) {
-            throw new BaseException("Failed to return DBConnection", e);
-        } catch (SQLException e) {
-            throw new BaseException("Failed to retrieve default scorecard", e);
-        } finally {
-            close(rs);
-            close(stmt);
-            close(conn);
-        }
-    }
+//    public static List<DefaultScorecard> getDefaultScorecards() throws BaseException {
+//        Connection conn = null;
+//        Statement stmt = null;
+//        ResultSet rs = null;
+//        try {
+//            DBConnectionFactory dbconn = new DBConnectionFactoryImpl(DB_CONNECTION_NAMESPACE);
+//            conn = dbconn.createConnection();
+//            log.debug(
+//                    "create db connection with default connection name from DBConnectionFactoryImpl with namespace:"
+//                            + DB_CONNECTION_NAMESPACE);
+//            String sqlString = "select ds.*, st.name from default_scorecard ds, scorecard_type_lu st "
+//                    + "where ds.scorecard_type_id = st.scorecard_type_id";
+//
+//            stmt = conn.createStatement();
+//            rs = stmt.executeQuery(sqlString);
+//            List<DefaultScorecard> list = new ArrayList<DefaultScorecard>();
+//            while (rs.next()) {
+//                DefaultScorecard scorecard = new DefaultScorecard();
+//                scorecard.setCategory(rs.getInt("project_category_id"));
+//                scorecard.setScorecardType(rs.getInt("scorecard_type_id"));
+//                scorecard.setScorecardId(rs.getLong("scorecard_id"));
+//                scorecard.setName(rs.getString("name"));
+//                list.add(scorecard);
+//            }
+//            return list;
+//        } catch (DBConnectionException e) {
+//            throw new BaseException("Failed to return DBConnection", e);
+//        } catch (SQLException e) {
+//            throw new BaseException("Failed to retrieve default scorecard", e);
+//        } finally {
+//            close(rs);
+//            close(stmt);
+//            close(conn);
+//        }
+//        return null;
+//    }
 
     /**
      * Delete project_result and component_inquiry for new submitters if oldRole is
@@ -2776,38 +2651,38 @@ public class ActionsHelper {
             return;
         }
 
-        try {
-            DBConnectionFactory dbconn = new DBConnectionFactoryImpl(DB_CONNECTION_NAMESPACE);
-            conn = dbconn.createConnection();
-
-            log.log(Level.DEBUG,
-                    "create db connection with default connection name from DBConnectionFactoryImpl with namespace:"
-                            + DB_CONNECTION_NAMESPACE);
-
-            // delete from project_result
-            ps = conn.prepareStatement("delete from project_result where project_id = ? and user_id = ?");
-            ps.setLong(1, project.getId());
-            ps.setLong(2, userId);
-            ps.executeUpdate();
-            close(ps);
-
-            // delete from component_inquiry
-            ps = conn.prepareStatement("delete from component_inquiry where project_id = ? and user_id = ?");
-            ps.setLong(1, project.getId());
-            ps.setLong(2, userId);
-            ps.executeUpdate();
-        } catch (UnknownConnectionException e) {
-            throw new BaseException("Failed to create connection", e);
-        } catch (ConfigurationException e) {
-            throw new BaseException("Failed to config for DBNamespace", e);
-        } catch (SQLException e) {
-            throw new BaseException("Failed to delete from project_result or component_inquiry", e);
-        } catch (DBConnectionException e) {
-            throw new BaseException("Failed to return DBConnection", e);
-        } finally {
-            close(ps);
-            close(conn);
-        }
+//        try {
+//            DBConnectionFactory dbconn = new DBConnectionFactoryImpl(DB_CONNECTION_NAMESPACE);
+//            conn = dbconn.createConnection();
+//
+//            log.debug(
+//                    "create db connection with default connection name from DBConnectionFactoryImpl with namespace:"
+//                            + DB_CONNECTION_NAMESPACE);
+//
+//            // delete from project_result
+//            ps = conn.prepareStatement("delete from project_result where project_id = ? and user_id = ?");
+//            ps.setLong(1, project.getId());
+//            ps.setLong(2, userId);
+//            ps.executeUpdate();
+//            close(ps);
+//
+//            // delete from component_inquiry
+//            ps = conn.prepareStatement("delete from component_inquiry where project_id = ? and user_id = ?");
+//            ps.setLong(1, project.getId());
+//            ps.setLong(2, userId);
+//            ps.executeUpdate();
+//        } catch (UnknownConnectionException e) {
+//            throw new BaseException("Failed to create connection", e);
+//        } catch (ConfigurationException e) {
+//            throw new BaseException("Failed to config for DBNamespace", e);
+//        } catch (SQLException e) {
+//            throw new BaseException("Failed to delete from project_result or component_inquiry", e);
+//        } catch (DBConnectionException e) {
+//            throw new BaseException("Failed to return DBConnection", e);
+//        } finally {
+//            close(ps);
+//            close(conn);
+//        }
     }
 
     /**
@@ -2819,26 +2694,26 @@ public class ActionsHelper {
      * @throws BaseException if any error occurs
      */
     public static void resetProjectResultWithChangedScores(Project project, String operator) throws BaseException {
-        Connection conn = null;
-        try {
-            DBConnectionFactory dbconn = new DBConnectionFactoryImpl(DB_CONNECTION_NAMESPACE);
-            conn = dbconn.createConnection();
-            log.log(Level.DEBUG,
-                    "create db connection with default connection name from DBConnectionFactoryImpl with namespace:"
-                            + DB_CONNECTION_NAMESPACE);
-
-            if (isStudioProject(project)) {
-                PaymentsHelper.processAutomaticPayments(project.getId(), operator);
-            } else {
-                PRHelper.populateProjectResult(project.getId(), conn, operator);
-            }
-        } catch (DBConnectionException e) {
-            throw new BaseException("Failed to return DBConnection", e);
-        } catch (SQLException e) {
-            throw new BaseException("Failed to resetProjectResultWithChangedScores for project " + project.getId(), e);
-        } finally {
-            close(conn);
-        }
+//        Connection conn = null;
+//        try {
+//            DBConnectionFactory dbconn = new DBConnectionFactoryImpl(DB_CONNECTION_NAMESPACE);
+//            conn = dbconn.createConnection();
+//            log.debug(
+//                    "create db connection with default connection name from DBConnectionFactoryImpl with namespace:"
+//                            + DB_CONNECTION_NAMESPACE);
+//
+//            if (isStudioProject(project)) {
+//                PaymentsHelper.processAutomaticPayments(project.getId(), operator);
+//            } else {
+//                PRHelper.populateProjectResult(project.getId(), conn, operator);
+//            }
+//        } catch (DBConnectionException e) {
+//            throw new BaseException("Failed to return DBConnection", e);
+//        } catch (SQLException e) {
+//            throw new BaseException("Failed to resetProjectResultWithChangedScores for project " + project.getId(), e);
+//        } finally {
+//            close(conn);
+//        }
     }
 
     /**
@@ -2850,28 +2725,28 @@ public class ActionsHelper {
      * @throws BaseException if any error occurs
      */
     public static void updateProjectResultForAdvanceScreening(long projectId, long userId) throws BaseException {
-        Connection conn = null;
-        PreparedStatement pstmt = null;
-        try {
-            DBConnectionFactory dbconn = new DBConnectionFactoryImpl(DB_CONNECTION_NAMESPACE);
-            conn = dbconn.createConnection();
-            log.log(Level.DEBUG,
-                    "create db connection with default connection name from DBConnectionFactoryImpl with namespace:"
-                            + DB_CONNECTION_NAMESPACE);
-
-            pstmt = conn.prepareStatement(
-                    "update project_result set rating_ind=1, valid_submission_ind=1 where project_id=? and user_id=?");
-            pstmt.setLong(1, projectId);
-            pstmt.setLong(2, userId);
-            pstmt.execute();
-        } catch (DBConnectionException e) {
-            throw new BaseException("Failed to return DBConnection", e);
-        } catch (SQLException e) {
-            throw new BaseException("Failed to updateProjectResultForScreening for project " + projectId, e);
-        } finally {
-            close(pstmt);
-            close(conn);
-        }
+//        Connection conn = null;
+//        PreparedStatement pstmt = null;
+//        try {
+//            DBConnectionFactory dbconn = new DBConnectionFactoryImpl(DB_CONNECTION_NAMESPACE);
+//            conn = dbconn.createConnection();
+//            log.debug(
+//                    "create db connection with default connection name from DBConnectionFactoryImpl with namespace:"
+//                            + DB_CONNECTION_NAMESPACE);
+//
+//            pstmt = conn.prepareStatement(
+//                    "update project_result set rating_ind=1, valid_submission_ind=1 where project_id=? and user_id=?");
+//            pstmt.setLong(1, projectId);
+//            pstmt.setLong(2, userId);
+//            pstmt.execute();
+//        } catch (DBConnectionException e) {
+//            throw new BaseException("Failed to return DBConnection", e);
+//        } catch (SQLException e) {
+//            throw new BaseException("Failed to updateProjectResultForScreening for project " + projectId, e);
+//        } finally {
+//            close(pstmt);
+//            close(conn);
+//        }
     }
 
     /**
@@ -2883,34 +2758,35 @@ public class ActionsHelper {
      * @throws BaseException if error occurs
      */
     public static int getVersionUsingComponentVersionId(long componentVersionId) throws BaseException {
-        Connection conn = null;
-        PreparedStatement ps = null;
-        ResultSet rs = null;
-        try {
-            DBConnectionFactory dbconn = new DBConnectionFactoryImpl(DB_CONNECTION_NAMESPACE);
-            conn = dbconn.createConnection();
-            log.log(Level.DEBUG,
-                    "create db connection with default connection name from DBConnectionFactoryImpl with namespace:"
-                            + DB_CONNECTION_NAMESPACE);
-
-            ps = conn.prepareStatement("select version from comp_versions where comp_vers_id = ?");
-            ps.setLong(1, componentVersionId);
-            rs = ps.executeQuery();
-
-            if (rs.next()) {
-                return rs.getInt("version");
-            }
-
-            return 0;
-        } catch (DBConnectionException e) {
-            throw new BaseException("Failed to return DBConnection", e);
-        } catch (SQLException e) {
-            throw new BaseException("Failed to retrieve version for " + componentVersionId, e);
-        } finally {
-            close(rs);
-            close(ps);
-            close(conn);
-        }
+//        Connection conn = null;
+//        PreparedStatement ps = null;
+//        ResultSet rs = null;
+//        try {
+//            DBConnectionFactory dbconn = new DBConnectionFactoryImpl(DB_CONNECTION_NAMESPACE);
+//            conn = dbconn.createConnection();
+//            log.debug(
+//                    "create db connection with default connection name from DBConnectionFactoryImpl with namespace:"
+//                            + DB_CONNECTION_NAMESPACE);
+//
+//            ps = conn.prepareStatement("select version from comp_versions where comp_vers_id = ?");
+//            ps.setLong(1, componentVersionId);
+//            rs = ps.executeQuery();
+//
+//            if (rs.next()) {
+//                return rs.getInt("version");
+//            }
+//
+//            return 0;
+//        } catch (DBConnectionException e) {
+//            throw new BaseException("Failed to return DBConnection", e);
+//        } catch (SQLException e) {
+//            throw new BaseException("Failed to retrieve version for " + componentVersionId, e);
+//        } finally {
+//            close(rs);
+//            close(ps);
+//            close(conn);
+//        }
+        return 0;
     }
 
     /**
@@ -2922,41 +2798,42 @@ public class ActionsHelper {
      * @throws BaseException if any error
      */
     private static long getNextComponentInquiryId(Connection conn, int count) throws BaseException {
-        String tableName = ConfigHelper.getPropertyValue("component_inquiry.tablename", "sequence_object");
-        String nameField = ConfigHelper.getPropertyValue("component_inquiry.name", "name");
-        String currentValueField = ConfigHelper.getPropertyValue("component_inquiry.current_value", "current_value");
-        String getNextID = "SELECT max(" + currentValueField + ") FROM " + tableName + " WHERE " + nameField
-                + " = 'main_sequence'";
-        String updateNextID = "UPDATE " + tableName + " SET " + currentValueField + " = ? " + " WHERE " + nameField
-                + " = 'main_sequence'" + " AND " + currentValueField + " = ? ";
-        PreparedStatement getNextIDStmt = null;
-        PreparedStatement updateNextIDStmt = null;
-        ResultSet rs = null;
-
-        try {
-            getNextIDStmt = conn.prepareStatement(getNextID);
-            updateNextIDStmt = conn.prepareStatement(updateNextID);
-            while (true) {
-                rs = getNextIDStmt.executeQuery();
-                rs.next();
-                long currentValue = rs.getLong(1);
-
-                // Update the next value
-                updateNextIDStmt.clearParameters();
-                updateNextIDStmt.setLong(1, currentValue + count);
-                updateNextIDStmt.setLong(2, currentValue);
-                int ret = updateNextIDStmt.executeUpdate();
-                if (ret > 0) {
-                    return currentValue;
-                }
-            }
-        } catch (SQLException e) {
-            throw new BaseException("Failed to retrieve next component_inquiry_id", e);
-        } finally {
-            close(rs);
-            close(getNextIDStmt);
-            close(updateNextIDStmt);
-        }
+//        String tableName = ConfigHelper.getPropertyValue("component_inquiry.tablename", "sequence_object");
+//        String nameField = ConfigHelper.getPropertyValue("component_inquiry.name", "name");
+//        String currentValueField = ConfigHelper.getPropertyValue("component_inquiry.current_value", "current_value");
+//        String getNextID = "SELECT max(" + currentValueField + ") FROM " + tableName + " WHERE " + nameField
+//                + " = 'main_sequence'";
+//        String updateNextID = "UPDATE " + tableName + " SET " + currentValueField + " = ? " + " WHERE " + nameField
+//                + " = 'main_sequence'" + " AND " + currentValueField + " = ? ";
+//        PreparedStatement getNextIDStmt = null;
+//        PreparedStatement updateNextIDStmt = null;
+//        ResultSet rs = null;
+//
+//        try {
+//            getNextIDStmt = conn.prepareStatement(getNextID);
+//            updateNextIDStmt = conn.prepareStatement(updateNextID);
+//            while (true) {
+//                rs = getNextIDStmt.executeQuery();
+//                rs.next();
+//                long currentValue = rs.getLong(1);
+//
+//                // Update the next value
+//                updateNextIDStmt.clearParameters();
+//                updateNextIDStmt.setLong(1, currentValue + count);
+//                updateNextIDStmt.setLong(2, currentValue);
+//                int ret = updateNextIDStmt.executeUpdate();
+//                if (ret > 0) {
+//                    return currentValue;
+//                }
+//            }
+//        } catch (SQLException e) {
+//            throw new BaseException("Failed to retrieve next component_inquiry_id", e);
+//        } finally {
+//            close(rs);
+//            close(getNextIDStmt);
+//            close(updateNextIDStmt);
+//        }
+        return 0;
     }
 
     /**
@@ -2985,7 +2862,7 @@ public class ActionsHelper {
             try {
                 connection.close();
             } catch (SQLException e) {
-                log.log(Level.ERROR, "Error closing JDBC Connection: " + e.getMessage());
+                log.error( "Error closing JDBC Connection: " + e.getMessage());
             }
         }
     }
@@ -3000,7 +2877,7 @@ public class ActionsHelper {
             try {
                 statement.close();
             } catch (SQLException e) {
-                log.log(Level.ERROR, "Error closing JDBC Statement: " + e.getMessage());
+                log.error( "Error closing JDBC Statement: " + e.getMessage());
             }
         }
     }
@@ -3015,7 +2892,7 @@ public class ActionsHelper {
             try {
                 resultSet.close();
             } catch (SQLException e) {
-                log.log(Level.ERROR, "Error closing JDBC ResultSet: " + e.getMessage());
+                log.error( "Error closing JDBC ResultSet: " + e.getMessage());
             }
         }
     }
@@ -3038,12 +2915,12 @@ public class ActionsHelper {
      * @throws CreateException if failed to create
      * @throws NamingException if any naming error
      */
-    private static Forums getForumBean() throws RemoteException, CreateException, NamingException {
-        Context context = TCContext.getInitial(ApplicationServer.FORUMS_HOST_URL);
-        ForumsHome forumsHome = (ForumsHome) context.lookup(ForumsHome.EJB_REF_NAME);
-        return forumsHome.create();
-        // return EJBLibraryServicesLocator.getForumsService();
-    }
+//    private static Forums getForumBean() throws RemoteException, CreateException, NamingException {
+//        Context context = TCContext.getInitial(ApplicationServer.FORUMS_HOST_URL);
+//        ForumsHome forumsHome = (ForumsHome) context.lookup(ForumsHome.EJB_REF_NAME);
+//        return forumsHome.create();
+//        // return EJBLibraryServicesLocator.getForumsService();
+//    }
 
     /**
      * Add forum permissions.
@@ -3073,16 +2950,16 @@ public class ActionsHelper {
                 return;
             }
 
-            Forums forumBean = getForumBean();
-            String roleId = SOFTWARE_USER_FORUM_ROLE_PREFIX + forumId;
-
-            if (moderator) {
-                roleId = SOFTWARE_MODERATOR_FORUM_ROLE_PREFIX + forumId;
-            }
-
-            for (Long userId : users) {
-                forumBean.assignRole(userId, roleId);
-            }
+//            Forums forumBean = getForumBean();
+//            String roleId = SOFTWARE_USER_FORUM_ROLE_PREFIX + forumId;
+//
+//            if (moderator) {
+//                roleId = SOFTWARE_MODERATOR_FORUM_ROLE_PREFIX + forumId;
+//            }
+//
+//            for (Long userId : users) {
+//                forumBean.assignRole(userId, roleId);
+//            }
         } catch (Exception e) {
             throw new BaseException("Error adding forum permissions for project id " + project.getId(), e);
         }
@@ -3114,17 +2991,17 @@ public class ActionsHelper {
                 return;
             }
 
-            Forums forumBean = getForumBean();
-
-            // just be safe, remove both roles, since we start assigning two roles.
-            String userRoleId = SOFTWARE_USER_FORUM_ROLE_PREFIX + forumId;
-            String moderatorRoleId = SOFTWARE_MODERATOR_FORUM_ROLE_PREFIX + forumId;
-
-            for (Long userId : users) {
-                forumBean.removeRole(userId, userRoleId);
-                forumBean.removeRole(userId, moderatorRoleId);
-                forumBean.removeUserPermission(userId, forumId);
-            }
+//            Forums forumBean = getForumBean();
+//
+//            // just be safe, remove both roles, since we start assigning two roles.
+//            String userRoleId = SOFTWARE_USER_FORUM_ROLE_PREFIX + forumId;
+//            String moderatorRoleId = SOFTWARE_MODERATOR_FORUM_ROLE_PREFIX + forumId;
+//
+//            for (Long userId : users) {
+//                forumBean.removeRole(userId, userRoleId);
+//                forumBean.removeRole(userId, moderatorRoleId);
+//                forumBean.removeUserPermission(userId, forumId);
+//            }
 
         } catch (Exception e) {
             throw new BaseException("Error removing forum permissions for project id " + project.getId(), e);
@@ -3157,10 +3034,10 @@ public class ActionsHelper {
                 return;
             }
 
-            Forums forumBean = getForumBean();
-            for (Long userId : users) {
-                forumBean.createCategoryWatch(userId, forumId);
-            }
+//            Forums forumBean = getForumBean();
+//            for (Long userId : users) {
+//                forumBean.createCategoryWatch(userId, forumId);
+//            }
         } catch (Exception e) {
             throw new BaseException("Error adding forum permissions for project id " + project.getId(), e);
         }
@@ -3193,10 +3070,10 @@ public class ActionsHelper {
                 return;
             }
 
-            Forums forumBean = getForumBean();
-            for (Long userId : users) {
-                forumBean.deleteCategoryWatch(userId, forumId);
-            }
+//            Forums forumBean = getForumBean();
+//            for (Long userId : users) {
+//                forumBean.deleteCategoryWatch(userId, forumId);
+//            }
         } catch (Exception e) {
             throw new BaseException("Error removing forum permissions for project id " + project.getId(), e);
         }
@@ -3230,12 +3107,12 @@ public class ActionsHelper {
      * @throws BaseException if an unexpected error occurs.
      */
     public static Upload[] getPhaseUploads(long projectPhaseId, String uploadTypeName) throws BaseException {
-        List<Filter> filters = new ArrayList<Filter>();
-        filters.add(UploadFilterBuilder.createProjectPhaseIdFilter(projectPhaseId));
-        if (uploadTypeName != null) {
-            long uploadTypeId = LookupHelper.getUploadType(uploadTypeName).getId();
-            filters.add(UploadFilterBuilder.createUploadTypeIdFilter(uploadTypeId));
-        }
+        List<Filter> filters = new ArrayList<>();
+//        filters.add(UploadFilterBuilder.createProjectPhaseIdFilter(projectPhaseId));
+//        if (uploadTypeName != null) {
+//            long uploadTypeId = LookupHelper.getUploadType(uploadTypeName).getId();
+//            filters.add(UploadFilterBuilder.createUploadTypeIdFilter(uploadTypeId));
+//        }
 
         return createUploadManager().searchUploads(new AndFilter(filters));
     }
@@ -3351,14 +3228,12 @@ public class ActionsHelper {
      *                                                                retrieving
      *                                                                resource
      *                                                                roles.
-     * @throws com.cronos.onlinereview.dataaccess.DataAccessException if an
-     *                                                                unexpected
-     *                                                                error occurs.
      */
     public static Resource[] searchUserResources(long userId, ProjectStatus status)
             throws ResourcePersistenceException {
-        ResourceDataAccess resourceDataAccess = new ResourceDataAccess();
-        return resourceDataAccess.searchUserResources(userId, status, createResourceManager());
+//        ResourceDataAccess resourceDataAccess = new ResourceDataAccess();
+//        return resourceDataAccess.searchUserResources(userId, status, createResourceManager());
+        return null;
     }
 
     /**
@@ -3453,7 +3328,7 @@ public class ActionsHelper {
         // is no specification
         // submission deliverable already completed by other resource
         boolean toAdd = true;
-        if (Constants.SPECIFICATION_SUBMISSION_DELIVERABLE_NAME.equals(deliverable.getName())) {
+        if (ORConstants.SPECIFICATION_SUBMISSION_DELIVERABLE_NAME.equals(deliverable.getName())) {
             toAdd = !isSpecificationSubmissionAlreadyDelivered(deliverable, allDeliverables);
         }
         if (toAdd) {
@@ -3477,7 +3352,7 @@ public class ActionsHelper {
     private static boolean isSpecificationSubmissionAlreadyDelivered(Deliverable deliverable,
             Deliverable[] allDeliverables) {
         for (Deliverable otherDeliverable : allDeliverables) {
-            if (Constants.SPECIFICATION_SUBMISSION_DELIVERABLE_NAME.equals(otherDeliverable.getName())
+            if (ORConstants.SPECIFICATION_SUBMISSION_DELIVERABLE_NAME.equals(otherDeliverable.getName())
                     && (otherDeliverable.getPhase() == deliverable.getPhase()) && otherDeliverable.isComplete()
                     && (otherDeliverable.getResource() != deliverable.getResource())) {
                 return true;
@@ -3496,33 +3371,33 @@ public class ActionsHelper {
     public static Map<Long, String> getDeliverableIdToNameMap(HttpServletRequest request) throws BaseException {
         Map<Long, String> idToNameMap = (Map<Long, String>) request.getAttribute("deliverableIdToNameMap");
 
-        if (idToNameMap == null) {
-            Connection conn = null;
-            Statement stmt = null;
-            ResultSet rs = null;
-            try {
-                idToNameMap = new HashMap<Long, String>();
-
-                DBConnectionFactory dbconn = new DBConnectionFactoryImpl(DB_CONNECTION_NAMESPACE);
-                conn = dbconn.createConnection();
-
-                stmt = conn.createStatement();
-                rs = stmt.executeQuery("SELECT deliverable_id, name FROM deliverable_lu");
-
-                while (rs.next()) {
-                    idToNameMap.put(rs.getLong("deliverable_id"), rs.getString("name"));
-                }
-
-                request.setAttribute("deliverableIdToNameMap", idToNameMap);
-            } catch (SQLException e) {
-                throw new BaseException("Failed to retrieve map for deliverable id to deliverable name", e);
-            } finally {
-                close(rs);
-                close(stmt);
-                close(conn);
-            }
-
-        }
+//        if (idToNameMap == null) {
+//            Connection conn = null;
+//            Statement stmt = null;
+//            ResultSet rs = null;
+//            try {
+//                idToNameMap = new HashMap<Long, String>();
+//
+//                DBConnectionFactory dbconn = new DBConnectionFactoryImpl(DB_CONNECTION_NAMESPACE);
+//                conn = dbconn.createConnection();
+//
+//                stmt = conn.createStatement();
+//                rs = stmt.executeQuery("SELECT deliverable_id, name FROM deliverable_lu");
+//
+//                while (rs.next()) {
+//                    idToNameMap.put(rs.getLong("deliverable_id"), rs.getString("name"));
+//                }
+//
+//                request.setAttribute("deliverableIdToNameMap", idToNameMap);
+//            } catch (SQLException e) {
+//                throw new BaseException("Failed to retrieve map for deliverable id to deliverable name", e);
+//            } finally {
+//                close(rs);
+//                close(stmt);
+//                close(conn);
+//            }
+//
+//        }
 
         return idToNameMap;
     }
@@ -3544,8 +3419,8 @@ public class ActionsHelper {
             // Build filters
             List<Filter> roleFilters = new ArrayList<Filter>();
             for (String roleName : roleNames) {
-                ResourceRole role = LookupHelper.getResourceRole(roleName);
-                roleFilters.add(ResourceFilterBuilder.createResourceRoleIdFilter(role.getId()));
+//                ResourceRole role = LookupHelper.getResourceRole(roleName);
+//                roleFilters.add(ResourceFilterBuilder.createResourceRoleIdFilter(role.getId()));
             }
             Filter filterProject = ResourceFilterBuilder.createProjectIdFilter(projectID);
             Filter filterRole = new OrFilter(roleFilters);
@@ -3577,11 +3452,11 @@ public class ActionsHelper {
      * @throws BaseException if an unexpected error occurs.
      */
     public static List<String> getEmailsByUserIDs(HttpServletRequest request, List<Long> userIDs) throws BaseException {
-        UserRetrieval userRetrieval = createUserRetrieval(request);
+//        UserRetrieval userRetrieval = createUserRetrieval(request);
 
         List<String> emails = new ArrayList<String>();
         for (Long userID : userIDs) {
-            emails.add(userRetrieval.retrieveUser(userID).getEmail());
+//            emails.add(userRetrieval.retrieveUser(userID).getEmail());
         }
         return emails;
     }
@@ -3616,35 +3491,35 @@ public class ActionsHelper {
      */
     public static void logDownloadAttempt(HttpServletRequest request, Upload upload, boolean successful)
             throws BaseException {
-        Connection conn = null;
-        PreparedStatement insertStmt = null;
-        try {
-            DBConnectionFactory dbconn = new DBConnectionFactoryImpl(DB_CONNECTION_NAMESPACE);
-            conn = dbconn.createConnection();
-
-            insertStmt = conn.prepareStatement("INSERT INTO project_download_audit VALUES (?,?,?,?,current)");
-            insertStmt.setLong(1, upload.getId());
-            if (AuthorizationHelper.isUserLoggedIn(request)) {
-                insertStmt.setLong(2, AuthorizationHelper.getLoggedInUserId(request));
-            } else {
-                insertStmt.setNull(2, Types.INTEGER);
-            }
-            insertStmt.setString(3, request.getRemoteAddr());
-            insertStmt.setBoolean(4, successful);
-            insertStmt.executeUpdate();
-
-        } catch (UnknownConnectionException e) {
-            throw new BaseException("Failed to create connection", e);
-        } catch (ConfigurationException e) {
-            throw new BaseException("Failed to config for DBNamespace", e);
-        } catch (DBConnectionException e) {
-            throw new BaseException("Failed to return DBConnection", e);
-        } catch (SQLException e) {
-            log.log(Level.ERROR, "Failed to save download attempt to project_download_audit table." + e);
-        } finally {
-            close(insertStmt);
-            close(conn);
-        }
+//        Connection conn = null;
+//        PreparedStatement insertStmt = null;
+//        try {
+//            DBConnectionFactory dbconn = new DBConnectionFactoryImpl(DB_CONNECTION_NAMESPACE);
+//            conn = dbconn.createConnection();
+//
+//            insertStmt = conn.prepareStatement("INSERT INTO project_download_audit VALUES (?,?,?,?,current)");
+//            insertStmt.setLong(1, upload.getId());
+//            if (AuthorizationHelper.isUserLoggedIn(request)) {
+//                insertStmt.setLong(2, AuthorizationHelper.getLoggedInUserId(request));
+//            } else {
+//                insertStmt.setNull(2, Types.INTEGER);
+//            }
+//            insertStmt.setString(3, request.getRemoteAddr());
+//            insertStmt.setBoolean(4, successful);
+//            insertStmt.executeUpdate();
+//
+//        } catch (UnknownConnectionException e) {
+//            throw new BaseException("Failed to create connection", e);
+//        } catch (ConfigurationException e) {
+//            throw new BaseException("Failed to config for DBNamespace", e);
+//        } catch (DBConnectionException e) {
+//            throw new BaseException("Failed to return DBConnection", e);
+//        } catch (SQLException e) {
+//            log.error( "Failed to save download attempt to project_download_audit table." + e);
+//        } finally {
+//            close(insertStmt);
+//            close(conn);
+//        }
     }
 
     /**
@@ -3671,20 +3546,20 @@ public class ActionsHelper {
 
         // Get all the Post Mortem Reviewers
         Filter filterProject = ResourceFilterBuilder.createProjectIdFilter(project.getId());
-        long postMortemRoleId = LookupHelper.getResourceRole(Constants.POST_MORTEM_REVIEWER_ROLE_NAME).getId();
-        Filter filterResourceRole = ResourceFilterBuilder.createResourceRoleIdFilter(postMortemRoleId);
-        Filter filter = new AndFilter(filterProject, filterResourceRole);
-        Resource[] resources = resMgr.searchResources(filter);
-
-        // Delete the Post Mortem Reviewers
-        for (Resource resource : resources) {
-            resMgr.removeResource(resource, operator);
-        }
-
-        // Delete the Post Mortem Phase
-        com.topcoder.project.phases.Project phProject = postMortemPhase.getProject();
-        phProject.removePhase(postMortemPhase);
-        phaseManager.updatePhases(phProject, operator);
+//        long postMortemRoleId = LookupHelper.getResourceRole(ORConstants.POST_MORTEM_REVIEWER_ROLE_NAME).getId();
+//        Filter filterResourceRole = ResourceFilterBuilder.createResourceRoleIdFilter(postMortemRoleId);
+//        Filter filter = new AndFilter(filterProject, filterResourceRole);
+//        Resource[] resources = resMgr.searchResources(filter);
+//
+//        // Delete the Post Mortem Reviewers
+//        for (Resource resource : resources) {
+//            resMgr.removeResource(resource, operator);
+//        }
+//
+//        // Delete the Post Mortem Phase
+//        var phProject = postMortemPhase.getProject();
+//        phProject.removePhase(postMortemPhase);
+//        phaseManager.updatePhases(phProject, operator);
     }
 
     /**
@@ -3748,39 +3623,39 @@ public class ActionsHelper {
     public static void outputDownloadS3File(String url, String key, String contentDisposition,
             HttpServletResponse response) throws IOException {
         try {
-            log.log(Level.INFO, "Will download from S3 with key " + key + " for url " + url);
+            log.info( "Will download from S3 with key " + key + " for url " + url);
 
-            S3Object s3Object = s3Client.getObject(new GetObjectRequest(s3Bucket, key));
-            InputStream in = (InputStream) s3Object.getObjectContent();
-
-            response.setHeader("Content-Type", s3Object.getObjectMetadata().getContentType());
-            response.setStatus(HttpServletResponse.SC_OK);
-            response.setIntHeader("Content-Length", (int) s3Object.getObjectMetadata().getContentLength());
-            response.setHeader("Content-Disposition", contentDisposition);
-
-            response.flushBuffer();
-
-            OutputStream out = null;
-
-            try {
-                out = response.getOutputStream();
-                byte[] buffer = new byte[65536];
-
-                for (;;) {
-                    int numOfBytesRead = in.read(buffer);
-                    if (numOfBytesRead == -1) {
-                        break;
-                    }
-                    out.write(buffer, 0, numOfBytesRead);
-                }
-            } finally {
-                in.close();
-                if (out != null) {
-                    out.close();
-                }
-            }
+//            S3Object s3Object = s3Client.getObject(new GetObjectRequest(s3Bucket, key));
+//            InputStream in = (InputStream) s3Object.getObjectContent();
+//
+//            response.setHeader("Content-Type", s3Object.getObjectMetadata().getContentType());
+//            response.setStatus(HttpServletResponse.SC_OK);
+//            response.setIntHeader("Content-Length", (int) s3Object.getObjectMetadata().getContentLength());
+//            response.setHeader("Content-Disposition", contentDisposition);
+//
+//            response.flushBuffer();
+//
+//            OutputStream out = null;
+//
+//            try {
+//                out = response.getOutputStream();
+//                byte[] buffer = new byte[65536];
+//
+//                for (;;) {
+//                    int numOfBytesRead = in.read(buffer);
+//                    if (numOfBytesRead == -1) {
+//                        break;
+//                    }
+//                    out.write(buffer, 0, numOfBytesRead);
+//                }
+//            } finally {
+//                in.close();
+//                if (out != null) {
+//                    out.close();
+//                }
+//            }
         } catch (Exception e) {
-            log.log(Level.ERROR, "ex: " + e.getMessage());
+            log.error( "ex: " + e.getMessage());
             throw new IOException("Error S3 download", e);
         }
     }
@@ -3792,12 +3667,13 @@ public class ActionsHelper {
      * @return true if uploadfile is on dmz bucket
      */
     public static boolean isDmzBucket(String url) {
-        AmazonS3URI s3Uri = isS3Url(url);
-        if (s3Uri == null) {
-            return false;
-        }
-        log.log(Level.INFO, "S3 Bucket from url: " + s3Uri.getBucket());
-        return s3BucketDmz.equals(s3Uri.getBucket());
+//        AmazonS3URI s3Uri = isS3Url(url);
+//        if (s3Uri == null) {
+//            return false;
+//        }
+//        log.info( "S3 Bucket from url: " + s3Uri.getBucket());
+//        return s3BucketDmz.equals(s3Uri.getBucket());
+        return false;
     }
 
     /**

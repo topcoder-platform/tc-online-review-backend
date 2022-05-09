@@ -5,8 +5,6 @@ package com.topcoder.onlinereview.component.scorecard;
 
 import com.topcoder.onlinereview.component.search.SearchBundle;
 import com.topcoder.onlinereview.component.search.filter.Filter;
-import com.topcoder.search.builder.SearchBundle;
-import com.topcoder.search.builder.filter.Filter;
 
 import java.util.List;
 
