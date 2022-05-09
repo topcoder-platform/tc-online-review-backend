@@ -3,33 +3,29 @@ package com.topcoder.onlinereview.component.project.management;
 import com.topcoder.onlinereview.component.datavalidator.IntegerValidator;
 import com.topcoder.onlinereview.component.datavalidator.LongValidator;
 import com.topcoder.onlinereview.component.datavalidator.StringValidator;
+import com.topcoder.onlinereview.component.search.SearchBuilderException;
 import com.topcoder.onlinereview.component.search.SearchBundle;
+import com.topcoder.onlinereview.component.search.SearchBundleManager;
 import com.topcoder.onlinereview.component.search.filter.Filter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static com.google.common.collect.Lists.newArrayList;
-
 @Component
 public class ProjectManager {
-  public static final String NAMESPACE = "com.topcoder.management.project";
   private static final String PROJECT_SEARCH_BUNDLE = "ProjectSearchBundle";
-  private static final String PERSISTENCE_CLASS = "PersistenceClass";
-  private static final String PERSISTENCE_NAMESPACE = "PersistenceNamespace";
-  private static final String VALIDATOR_CLASS = "ValidatorClass";
-  private static final String VALIDATOR_NAMESPACE = "ValidatorNamespace";
-  private static final String SEARCH_BUILDER_NAMESPACE = "SearchBuilderNamespace";
-  private static final int MAX_LENGTH_OF_NAME = 64;
-  private static final int MAX_LENGTH_OF_VALUE = 4096;
   @Autowired private ProjectPersistence persistence;
+  @Autowired private SearchBundleManager searchBundleManager;
   private SearchBundle searchBundle;
   @Autowired private ProjectValidator validator;
 
-  public ProjectManager() {
+  @PostConstruct
+  public void postRun() {
+    searchBundle = searchBundleManager.getSearchBundle(PROJECT_SEARCH_BUNDLE);
     this.setValidationMap();
   }
 
@@ -56,12 +52,9 @@ public class ProjectManager {
   public Project[] searchProjects(Filter filter) throws PersistenceException {
     Helper.checkObjectNotNull(filter, "filter");
     try {
-      // TODO
-      //      CustomResultSet result = (CustomResultSet) this.searchBundle.search(filter);
-      return this.persistence.getProjects(newArrayList());
-      //    } catch (SearchBuilderException var3) {
-      //      throw new PersistenceException("error occurs when getting search result.", var3);
-    } catch (ClassCastException var4) {
+      var result = this.searchBundle.search(filter);
+      return this.persistence.getProjects(result);
+    } catch (ClassCastException | SearchBuilderException var4) {
       throw new PersistenceException("error occurs when trying to get ids.", var4);
     }
   }

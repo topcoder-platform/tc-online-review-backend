@@ -7,6 +7,7 @@ import com.topcoder.onlinereview.component.deliverable.Deliverable;
 import com.topcoder.onlinereview.component.deliverable.DeliverableChecker;
 import com.topcoder.onlinereview.component.deliverable.DeliverableCheckingException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -32,10 +33,10 @@ import static com.topcoder.onlinereview.util.CommonUtils.getDate;
  */
 @Component
 public class TestCasesDeliverableChecker implements DeliverableChecker {
-  @Value("{deliverable.persistence.entity-manager-name}")
+  @Value("${deliverable.persistence.entity-manager-name}")
   private String entityManagerName;
 
-  @Autowired private Map<String, EntityManager> entityManagerMap;
+  @Autowired @Qualifier("entityManagerMap")private Map<String, EntityManager> entityManagerMap;
   private EntityManager entityManager;
 
   @PostConstruct

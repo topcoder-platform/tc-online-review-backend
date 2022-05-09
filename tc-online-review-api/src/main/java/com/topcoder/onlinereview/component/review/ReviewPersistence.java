@@ -11,9 +11,11 @@ import com.topcoder.onlinereview.component.id.IDGenerationException;
 import com.topcoder.onlinereview.component.id.IDGenerator;
 import com.topcoder.onlinereview.component.project.management.LogMessage;
 import com.topcoder.onlinereview.component.search.SearchBundle;
+import com.topcoder.onlinereview.component.search.SearchBundleManager;
 import com.topcoder.onlinereview.component.search.filter.Filter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -99,7 +101,6 @@ public class ReviewPersistence {
 
   /** Represents the id generator name used to get reviewIDGenerator from IDGeneratorFactory. */
   public static final String REVIEW_ID_SEQ = "review_id_seq";
-
   /**
    * Represents the id generator name used to get reviewCommentIDGenerator from IDGeneratorFactory.
    */
@@ -107,29 +108,14 @@ public class ReviewPersistence {
 
   /** Represents the id generator name used to get reviewItemIDGenerator from IDGeneratorFactory. */
   public static final String REVIEW_ITEM_ID_SEQ = "review_item_id_seq";
-
   /**
    * Represents the id generator name used to get reviewItemCommentIDGenerator from
    * IDGeneratorFactory.
    */
   public static final String REVIEW_ITEM_COMMENT_ID_SEQ = "review_item_comment_id_seq";
 
-  /** Represents the name of connection name parameter in configuration. */
-  private static final String CONNECTION_NAME_PARAMETER = "connection.name";
-
-  /** Represents the name of connection factory namespace parameter in configuration. */
-  private static final String CONNECTION_FACTORY_NAMESPACE_PARAMETER =
-      "connection.factory_namespace";
-
-  /** Represents the name of connection factory class parameter in configuration. */
-  private static final String CONNECTION_FACTORY_CLASS_PARAMETER = "connection.factory_class";
-
-  /** Represents the name of search bundle manager namespace parameter in configuration. */
-  private static final String SEARCH_BUNDLE_MANAGER_NAMESPACE_PARAMETER =
-      "search_bundle_manager_namespace";
-
   /** Represents the name of search bundle name parameter in configuration. */
-  private static final String SEARCH_BUNDLE_NAME_PARAMETER = "search_bundle_name";
+  private static final String SEARCH_BUNDLE_NAME = "Review Search Bundle";
 
   /** Represents the review table. */
   private static final String REVIEW_TABLE = "review";
@@ -371,10 +357,14 @@ public class ReviewPersistence {
    */
   private IDGenerator reviewItemCommentIDGenerator;
 
-  @Autowired private Map<String, EntityManager> entityManagerMap;
-  @Autowired private DBHelper dbHelper;
+  @Autowired
+  @Qualifier("entityManagerMap")
+  private Map<String, EntityManager> entityManagerMap;
 
-  @Value("{review.persistence.entity-manager-name}")
+  @Autowired private DBHelper dbHelper;
+  @Autowired private SearchBundleManager searchBundleManager;
+
+  @Value("${review.persistence.entity-manager-name}")
   private String entityManagerName;
 
   private EntityManager entityManager;
@@ -386,6 +376,7 @@ public class ReviewPersistence {
     reviewItemIDGenerator = new IDGenerator(REVIEW_ITEM_ID_SEQ, dbHelper);
     reviewItemCommentIDGenerator = new IDGenerator(REVIEW_ITEM_COMMENT_ID_SEQ, dbHelper);
     entityManager = entityManagerMap.get(entityManagerName);
+    searchBundle = searchBundleManager.getSearchBundle(SEARCH_BUNDLE_NAME);
     // create the searchable fields map.
     Map<String, ObjectValidator> fieldsMap = new HashMap<>();
     ObjectValidator notNullValidator = new NotValidator(new NullValidator());

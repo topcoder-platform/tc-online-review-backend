@@ -20,14 +20,14 @@ import javax.sql.DataSource;
 public class PersistenceDSConfiguration {
   @Bean
   @ConfigurationProperties(prefix = "spring.ds-datasource")
-  public DataSource idsDataSource() {
+  public DataSource dsDataSource() {
     return DataSourceBuilder.create().build();
   }
 
   @Bean
   public LocalContainerEntityManagerFactoryBean dsEntityManager() {
     LocalContainerEntityManagerFactoryBean em = new LocalContainerEntityManagerFactoryBean();
-    em.setDataSource(idsDataSource());
+    em.setDataSource(dsDataSource());
     em.setPackagesToScan(new String[] {"com.topcoder.onlinereview.entity.ds"});
     em.setJpaVendorAdapter(new HibernateJpaVendorAdapter());
     return em;

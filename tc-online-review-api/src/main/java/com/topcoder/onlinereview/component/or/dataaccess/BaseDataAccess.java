@@ -12,6 +12,7 @@ import com.topcoder.onlinereview.component.resource.ResourceRole;
 import com.topcoder.onlinereview.component.shared.dataaccess.DataAccess;
 import com.topcoder.onlinereview.component.shared.dataaccess.Request;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -39,7 +40,7 @@ public class BaseDataAccess {
   @Value("{data-access.entity-manager-name}")
   private String entityManagerName;
 
-  @Autowired private Map<String, EntityManager> entityManagerMap;
+  @Autowired @Qualifier("entityManagerMap")private Map<String, EntityManager> entityManagerMap;
   private EntityManager entityManager;
 
   @PostConstruct

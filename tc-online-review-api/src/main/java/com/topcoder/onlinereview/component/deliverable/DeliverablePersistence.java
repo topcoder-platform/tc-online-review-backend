@@ -5,6 +5,7 @@
 package com.topcoder.onlinereview.component.deliverable;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -65,10 +66,10 @@ public class DeliverablePersistence {
           + "INNER JOIN submission_status_lu ON submission.submission_status_id = submission_status_lu.submission_status_id "
           + "WHERE deliverable_lu.per_submission = 1 AND submission_status_lu.name = 'Active' AND ";
 
-  @Value("{deliverable.persistence.entity-manager-name}")
+  @Value("${deliverable.persistence.entity-manager-name}")
   private String entityManagerName;
 
-  @Autowired private Map<String, EntityManager> entityManagerMap;
+  @Autowired @Qualifier("entityManagerMap")private Map<String, EntityManager> entityManagerMap;
   private EntityManager entityManager;
 
   @PostConstruct

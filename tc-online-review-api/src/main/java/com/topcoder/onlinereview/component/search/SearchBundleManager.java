@@ -6,7 +6,6 @@ package com.topcoder.onlinereview.component.search;
 import com.topcoder.onlinereview.component.datavalidator.NotValidator;
 import com.topcoder.onlinereview.component.datavalidator.NullValidator;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
@@ -30,18 +29,17 @@ import static java.util.stream.Collectors.toMap;
 @Component
 public class SearchBundleManager {
   private Map<String, SearchBundle> searchBundleMap = new HashMap<>();
-  @Value("${search.bundles}")
-  private List<SearchBundleConfig> searchBundleConfigList;
+  @Autowired private SearchBundleConfig searchBundleConfigList;
   @Autowired private SearchStrategy searchStrategy;
 
   @PostConstruct
   public void postRun() {
-    for (var sbc : searchBundleConfigList) {
+    for (var sbc : searchBundleConfigList.getData()) {
       searchBundleMap.put(
           sbc.getName(),
           new SearchBundle(
               sbc.getName(),
-              sbc.getFields().keySet().stream()
+              sbc.getFields().stream()
                   .collect(toMap(k -> k, k -> new NotValidator(new NullValidator()))),
               sbc.getAlias(),
               sbc.getContext(),

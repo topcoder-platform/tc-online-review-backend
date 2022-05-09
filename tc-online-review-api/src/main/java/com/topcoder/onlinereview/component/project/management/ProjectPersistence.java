@@ -9,6 +9,7 @@ import com.topcoder.onlinereview.component.id.IDGenerator;
 import com.topcoder.onlinereview.component.project.management.Helper.DataType;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -552,10 +553,10 @@ public class ProjectPersistence {
   @Value("${project.persistence.prize-id-sequence-name:prize_id_seq}")
   private String prizeIdSeqName;
 
-  @Value("{$project.persistence.studio-spec-id-sequence-name:studio_spec_id_seq}")
+  @Value("${project.persistence.studio-spec-id-sequence-name:studio_spec_id_seq}")
   private String studioSpecIdSeqName;
 
-  @Autowired private Map<String, EntityManager> entityManagerMap;
+  @Autowired @Qualifier("entityManagerMap")private Map<String, EntityManager> entityManagerMap;
   @Autowired private DBHelper dbHelper;
 
   /**

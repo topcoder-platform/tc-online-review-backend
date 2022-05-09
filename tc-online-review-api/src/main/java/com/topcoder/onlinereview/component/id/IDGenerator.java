@@ -1,6 +1,8 @@
 /** Copyright (C) 2005 TopCoder Inc., All Rights Reserved. */
 package com.topcoder.onlinereview.component.id;
 
+import org.springframework.transaction.annotation.Transactional;
+
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.sql.SQLException;
@@ -128,6 +130,7 @@ public class IDGenerator {
    * @throws IDGenerationException if an error occurs while generating the ID (for example, error
    *     while connecting to the database)
    */
+  @Transactional
   public synchronized long getNextID() throws IDGenerationException {
     if (idsLeft <= 0) {
       // if no ids left,
@@ -164,14 +167,14 @@ public class IDGenerator {
    */
   private synchronized void getNextBlock() throws IDGenerationException {
     try {
-      Map[] result = (Map[]) helper.execute(DBHelper.SELECT_NEXT_BLOCK_KEY, new Object[] {idName});
+      var result = helper.execute(DBHelper.SELECT_NEXT_BLOCK_KEY, new Object[] {idName});
 
-      if (result.length == 0) {
+      if (result.size() == 0) {
         throw new NoSuchIDSequenceException("The specified IDName does not exist in the database.");
       }
 
       // if the ids are exausted yet, simply throw exception
-      Object exhaustedFieldObject = result[0].get(exhaustedField);
+      Object exhaustedFieldObject = result.get(0).get(exhaustedField);
       if (exhaustedFieldObject instanceof BigDecimal) {
         // For old version, before 3.0.1
         if (((BigDecimal) exhaustedFieldObject).intValue() != 0) {
@@ -184,7 +187,7 @@ public class IDGenerator {
       }
 
       // otherwise, read the new block and update this id
-      Object nextBlockObject = result[0].get(nextBlockStartField);
+      Object nextBlockObject = result.get(0).get(nextBlockStartField);
       long myNextID = 0;
       if (nextBlockObject instanceof BigDecimal) {
         myNextID = ((BigDecimal) nextBlockObject).longValue();
@@ -193,7 +196,7 @@ public class IDGenerator {
       }
 
       if (blockSize < 0) {
-        Object blockSizeObject = result[0].get(blockSizeField);
+        Object blockSizeObject = result.get(0).get(blockSizeField);
         if (blockSizeObject instanceof BigDecimal) {
           blockSize = ((BigDecimal) blockSizeObject).intValue();
         } else {
@@ -217,7 +220,7 @@ public class IDGenerator {
 
       // update the next block start
       helper.execute(
-          DBHelper.UPDATE_NEXT_BLOCK_START_KEY, new Object[] {new Long(myMaxBlockID + 1), idName});
+          DBHelper.UPDATE_NEXT_BLOCK_START_KEY, new Object[] {myMaxBlockID + 1, idName});
       helper.commit();
 
       // it is safe to assign all the value now
@@ -245,9 +248,9 @@ public class IDGenerator {
   private void checkIDName() throws IDGenerationException {
     // Check if the given id generator exist on the underlying persistence
     try {
-      Map[] result = (Map[]) helper.execute(DBHelper.SELECT_NEXT_BLOCK_KEY, new Object[] {idName});
+      var result = helper.execute(DBHelper.SELECT_NEXT_BLOCK_KEY, new Object[] {idName});
 
-      if (result.length == 0) {
+      if (result.size() == 0) {
         throw new NoSuchIDSequenceException(
             "The specified IDName does not exist in the underlying persistence.");
       }

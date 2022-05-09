@@ -7,6 +7,7 @@ import com.topcoder.onlinereview.component.deliverable.Deliverable;
 import com.topcoder.onlinereview.component.deliverable.DeliverableChecker;
 import com.topcoder.onlinereview.component.deliverable.DeliverableCheckingException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -51,10 +52,10 @@ public class AppealResponsesDeliverableChecker implements DeliverableChecker {
           + "AND appeal_response_comment_type.name = 'Appeal Response') "
           + "ON appeal_response_comment.review_item_id = appeal_comment.review_item_id";
 
-  @Value("{deliverable.persistence.entity-manager-name}")
+  @Value("${deliverable.persistence.entity-manager-name}")
   private String entityManagerName;
 
-  @Autowired private Map<String, EntityManager> entityManagerMap;
+  @Autowired @Qualifier("entityManagerMap")private Map<String, EntityManager> entityManagerMap;
   private EntityManager entityManager;
 
   @PostConstruct

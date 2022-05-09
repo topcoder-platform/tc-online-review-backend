@@ -8,10 +8,12 @@ import com.topcoder.onlinereview.component.datavalidator.LongValidator;
 import com.topcoder.onlinereview.component.datavalidator.StringValidator;
 import com.topcoder.onlinereview.component.search.SearchBuilderException;
 import com.topcoder.onlinereview.component.search.SearchBundle;
+import com.topcoder.onlinereview.component.search.SearchBundleManager;
 import com.topcoder.onlinereview.component.search.filter.Filter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -38,29 +40,7 @@ import java.util.Map;
  */
 @Component
 public class ScorecardManager {
-  /** The default namespace of this component. It will be used in the default constructor. */
-  public static final String NAMESPACE = "com.topcoder.management.scorecard";
-
-  /**
-   * Represents the property name for the class name of the implementation of ScorecardPersistence.
-   */
-  private static final String PERSISTENCE_CLASS = "PersistenceClass";
-
-  /**
-   * Represents the property name for the namespace of the implementation of ScorecardPersistence.
-   */
-  private static final String PERSISTENCE_NAMESPACE = "PersistenceNamespace";
-
-  /**
-   * Represents the property name for the class name of the implementation of ScorecardValidator.
-   */
-  private static final String VALIDATOR_CLASS = "ValidatorClass";
-
-  /** Represents the property name for the namespace of the implementation of ScorecardValidator. */
-  private static final String VALIDATOR_NAMESPACE = "ValidatorNamespace";
-
-  /** Represents the property name for the namespace of the implementation of SearchBuilder. */
-  private static final String SEARCHBUILDER_NAMESPACE = "SearchBuilderNamespace";
+  public static final String SCORECARD_SEARCH_BUNDLE_NAME = "ScorecardSearchBundle";
 
   /** The maximal length for ScorecardStatusName. */
   private static final int SCORECARD_STATUS_NAME_MAXLENGTH = 64;
@@ -79,6 +59,8 @@ public class ScorecardManager {
    * is used in the create/update/retrieve/search scorecard methods. It can never be null.
    */
   @Autowired private ScorecardPersistence persistence;
+
+  @Autowired private SearchBundleManager searchBundleManager;
 
   /**
    * The search bundle instance. It is initialized in the constructor and never changed after that.
@@ -99,7 +81,9 @@ public class ScorecardManager {
    * value of 'PersistenceClass' property will be used. Then it load the 'SearchBuilderNamespace'
    * property to initialize SearchBuilder component.
    */
-  public ScorecardManager() {
+  @PostConstruct
+  public void postRun() {
+    searchBundle = searchBundleManager.getSearchBundle(SCORECARD_SEARCH_BUNDLE_NAME);
     // Create a validationMap, and map the items to be checked with desired validator.
     // Please refer to Component Specification 1.3.8 for the details.
     Map validationMap = new HashMap();

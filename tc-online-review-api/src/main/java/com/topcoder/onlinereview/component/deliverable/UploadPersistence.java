@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.util.MimeType;
@@ -38,10 +39,10 @@ import static com.topcoder.onlinereview.util.CommonUtils.getString;
 public class UploadPersistence {
   private static final Logger logger = LoggerFactory.getLogger(UploadPersistence.class.getName());
 
-  @Value("{upload.persistence.entity-manager-name}")
+  @Value("${upload.persistence.entity-manager-name}")
   private String entityManagerName;
 
-  @Autowired private Map<String, EntityManager> entityManagerMap;
+  @Autowired @Qualifier("entityManagerMap")private Map<String, EntityManager> entityManagerMap;
   private EntityManager entityManager;
 
   @PostConstruct

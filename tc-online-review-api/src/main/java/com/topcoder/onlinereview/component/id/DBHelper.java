@@ -2,6 +2,7 @@
 package com.topcoder.onlinereview.component.id;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -9,6 +10,7 @@ import javax.annotation.PostConstruct;
 import javax.persistence.EntityManager;
 import java.sql.SQLException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static com.google.common.collect.Lists.newArrayList;
@@ -20,7 +22,7 @@ public class DBHelper {
   /** The default select sql sentence used for retrieving data from table. */
   private static final String DEFAULT_SELECT_NEXT_BLOCK =
       "SELECT next_block_start, block_size, exhausted FROM "
-          + "id_sequences WHERE name = ? FOR UPDATE";
+          + "id_sequences WHERE name = ?";
 
   /** The default sql sentence to update the next_block_start of the table. */
   private static final String DEFAULT_UPDATE_NEXT_BLOCK_START =
@@ -48,10 +50,13 @@ public class DBHelper {
   /** the sql sentences support for generating ids */
   private Map<String, String> sqlSentences = new HashMap();
 
-  @Value("{id.persistence.entity-manager-name}")
+  @Value("${id.persistence.entity-manager-name}")
   private String entityManagerName;
 
-  @Autowired private Map<String, EntityManager> entityManagerMap;
+  @Autowired
+  @Qualifier("entityManagerMap")
+  private Map<String, EntityManager> entityManagerMap;
+
   private EntityManager entityManager;
 
   @PostConstruct
@@ -75,7 +80,7 @@ public class DBHelper {
    * @throws SQLException if any error occurs while accessing database.
    * @throws IDGenerationException if the connection to the database cannot be created.
    */
-  public Object execute(String key, Object[] parameters)
+  public List<Map<String, Object>> execute(String key, Object[] parameters)
       throws SQLException, IDGenerationException {
     return tryExecute(key, parameters);
   }
@@ -105,7 +110,7 @@ public class DBHelper {
    * @throws IllegalArgumentException if the key is null or empty or not a key to a desired sql
    *     statement.
    */
-  private Object tryExecute(String key, Object[] parameters) {
+  private List<Map<String, Object>> tryExecute(String key, Object[] parameters) {
     if ((key == null) || (key.trim().length() == 0)) {
       throw new IllegalArgumentException("The key should not be null or empty!");
     }

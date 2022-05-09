@@ -9,6 +9,7 @@ import com.topcoder.onlinereview.component.id.IDGenerator;
 import com.topcoder.onlinereview.component.workday.Workdays;
 import com.topcoder.onlinereview.component.workday.WorkdaysFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -240,13 +241,13 @@ public class PhasePersistence {
 
   @Autowired private WorkdaysFactory workdaysFactory;
 
-  @Value("{phase.persistence.entity-manager-name}")
+  @Value("${phase.persistence.entity-manager-name}")
   private String entityManagerName;
 
-  @Value("{phase.persistence.id-sequence-name}")
+  @Value("${phase.persistence.id-sequence-name:project_phase_id_seq}")
   private String idSeqName;
 
-  @Autowired private Map<String, EntityManager> entityManagerMap;
+  @Autowired @Qualifier("entityManagerMap")private Map<String, EntityManager> entityManagerMap;
   @Autowired private DBHelper dbHelper;
   private IDGenerator idGenerator;
   private EntityManager entityManager;
@@ -533,7 +534,7 @@ public class PhasePersistence {
    * @return the unique ID.
    * @throws PhasePersistenceException if error occurs while generating the id.
    */
-  private long nextId() throws PhasePersistenceException {
+  public long nextId() throws PhasePersistenceException {
     try {
       return idGenerator.getNextID();
     } catch (IDGenerationException ex) {

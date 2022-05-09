@@ -8,6 +8,7 @@ import com.topcoder.onlinereview.component.project.management.LogMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -272,9 +273,9 @@ public class ResourcePersistence {
    */
   private static Map<Long, ResourceRole> cachedResourceRoles = null;
 
-  @Autowired private Map<String, EntityManager> entityManagerMap;
+  @Autowired @Qualifier("entityManagerMap")private Map<String, EntityManager> entityManagerMap;
 
-  @Value("{resource.persistence.entity-manager-name}")
+  @Value("${resource.persistence.entity-manager-name}")
   private String entityManagerName;
 
   private EntityManager entityManager;

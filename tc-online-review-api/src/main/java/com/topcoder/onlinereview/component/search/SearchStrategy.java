@@ -7,6 +7,7 @@ import com.topcoder.onlinereview.component.search.builder.SearchBuilderHelper;
 import com.topcoder.onlinereview.component.search.builder.SearchFragmentBuilder;
 import com.topcoder.onlinereview.component.search.filter.Filter;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -41,7 +42,7 @@ public class SearchStrategy {
   @Value("${search.persistence.entity-manager-name}")
   private String entityManagerName;
 
-  @Autowired private Map<String, EntityManager> entityManagerMap;
+  @Autowired @Qualifier("entityManagerMap")private Map<String, EntityManager> entityManagerMap;
   private EntityManager entityManager;
 
   @PostConstruct

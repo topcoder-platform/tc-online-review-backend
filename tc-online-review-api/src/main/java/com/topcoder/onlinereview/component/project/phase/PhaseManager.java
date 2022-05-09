@@ -191,12 +191,6 @@ public class PhaseManager {
    */
   @Autowired private PhasePersistence persistence;
 
-  /**
-   * The ID generator. This member is initialized by the constructor and does not change over the
-   * life of the object.
-   */
-  @Autowired private IDGenerator idGenerator;
-
   /** The phase validator. */
   @Autowired private PhaseValidator phaseValidator;
 
@@ -230,7 +224,7 @@ public class PhaseManager {
       // next, set the ID for any phases that need it
       for (int i = 0; i < phases.length; ++i) {
         if (persistence.isNewPhase(phases[i])) {
-          phases[i].setId(this.idGenerator.getNextID());
+          phases[i].setId(persistence.nextId());
         }
       }
       // separate the phases into three batches: additions, deletions, and updates
@@ -268,8 +262,6 @@ public class PhaseManager {
       if (delete.size() > 0) {
         persistence.deletePhases(delete.toArray(new Phase[0]));
       }
-    } catch (IDGenerationException ex) {
-      throw new PhaseManagementException("cannot generate phase IDs", ex);
     } catch (PhasePersistenceException ex) {
       throw new PhaseManagementException("phase persistence error", ex);
     }

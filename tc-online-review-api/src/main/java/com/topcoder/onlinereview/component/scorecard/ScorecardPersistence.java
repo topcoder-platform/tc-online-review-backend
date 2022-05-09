@@ -9,6 +9,7 @@ import com.topcoder.onlinereview.component.id.IDGenerator;
 import com.topcoder.onlinereview.component.project.management.LogMessage;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -105,9 +106,9 @@ public class ScorecardPersistence {
   /** The IDGenerator instance used for scorecards ids. */
   private IDGenerator scorecardIdGenerator;
 
-  @Autowired private Map<String, EntityManager> entityManagerMap;
+  @Autowired @Qualifier("entityManagerMap")private Map<String, EntityManager> entityManagerMap;
 
-  @Value("{scorecard.persistence.entity-manager-name}")
+  @Value("${scorecard.persistence.entity-manager-name}")
   private String entityManagerName;
 
   private EntityManager entityManager;

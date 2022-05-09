@@ -14,6 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.util.MimeType;
@@ -357,10 +358,10 @@ public class UploadManager {
    */
   private IDGenerator submissionTypeIdGenerator;
 
-  @Autowired private Map<String, EntityManager> entityManagerMap;
+  @Autowired @Qualifier("entityManagerMap")private Map<String, EntityManager> entityManagerMap;
   @Autowired private DBHelper dbHelper;
 
-  @Value("{review.persistence.entity-manager-name}")
+  @Value("${review.persistence.entity-manager-name}")
   private String entityManagerName;
 
   private EntityManager entityManager;
@@ -368,6 +369,7 @@ public class UploadManager {
   @PostConstruct
   public void postRun() throws IDGenerationException {
     entityManager = entityManagerMap.get(entityManagerName);
+    // TODO
     //        uploadSearchBundle = uploadSearchBundle;
     //        submissionSearchBundle = submissionSearchBundle;
     uploadIdGenerator = new IDGenerator(UPLOAD_ID_GENERATOR_NAME, dbHelper);
