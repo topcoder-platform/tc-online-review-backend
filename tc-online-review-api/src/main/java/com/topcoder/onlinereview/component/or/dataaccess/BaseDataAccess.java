@@ -37,10 +37,13 @@ public class BaseDataAccess {
   /** A <code>long</code> providing the ID of project status <code>Draft</code>. */
   protected static final long PROJECT_STATUS_DRAFT_ID = 2;
 
-  @Value("{data-access.entity-manager-name}")
+  @Value("${data-access.entity-manager-name}")
   private String entityManagerName;
 
-  @Autowired @Qualifier("entityManagerMap")private Map<String, EntityManager> entityManagerMap;
+  @Autowired
+  @Qualifier("entityManagerMap")
+  private Map<String, EntityManager> entityManagerMap;
+
   private EntityManager entityManager;
 
   @PostConstruct

@@ -1,8 +1,5 @@
 package com.topcoder.onlinereview.component.shared.dataaccess;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import javax.persistence.EntityManager;
 import java.util.List;
 import java.util.Map;
@@ -15,7 +12,6 @@ import java.util.Map;
  * @see RequestInt
  */
 public class DataAccess {
-  private static Logger log = LoggerFactory.getLogger(DataAccess.class);
   private EntityManager entityManager;
 
   /**

@@ -1,21 +1,20 @@
 package com.topcoder.onlinereview.controller;
 
-import com.topcoder.onlinereview.dto.ProjectDto;
-import com.topcoder.onlinereview.service.ProjectService;
+import com.topcoder.onlinereview.component.exception.BaseException;
+import com.topcoder.onlinereview.dto.ListProjectResponse;
+import com.topcoder.onlinereview.service.ListProjectService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
-
 @RestController
 public class ProjectController {
-  @Autowired private ProjectService projectService;
+  @Autowired private ListProjectService listProjectService;
 
   @GetMapping("projects")
-  public List<ProjectDto> listProjects(
-      @RequestParam(required = false, defaultValue = "1") String stid) {
-    return projectService.getProjects(stid);
+  public ListProjectResponse listProjects(
+      @RequestParam(required = false, defaultValue = "1") String stid) throws BaseException {
+    return listProjectService.listProjects(1, "my", 132456L, "Global Manager");
   }
 }

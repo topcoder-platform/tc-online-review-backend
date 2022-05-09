@@ -47,6 +47,9 @@ public class ListProjectService {
   @Autowired private PhaseManager phaseManager;
   @Autowired private ContestEligibilityService contestEligibilityService;
   @Autowired private LookupHelper lookupHelper;
+  @Autowired private ProjectDataAccess projectDataAccess;
+  @Autowired private ProjectPhaseDataAccess phasesDataAccess;
+  @Autowired private DeliverableDataAccess deliverableDataAccess;
 
   public ListProjectResponse listProjects(Integer activeTab, String scope, long userId, String role)
       throws BaseException {
@@ -86,7 +89,6 @@ public class ListProjectService {
     ProjectStatus draftStatus = lookupHelper.getProjectStatus("Draft");
     ProjectStatus activeStatus = lookupHelper.getProjectStatus("Active");
     Project[] ungroupedProjects;
-    ProjectDataAccess projectDataAccess = new ProjectDataAccess();
     ProjectStatus[] projectStatuses = projectManager.getAllProjectStatuses();
 
     if (activeTab != 1) {
@@ -142,7 +144,6 @@ public class ListProjectService {
 
     PhaseType[] phaseTypes = phaseManager.getAllPhaseTypes();
 
-    ProjectPhaseDataAccess phasesDataAccess = new ProjectPhaseDataAccess();
     Map<Long, com.topcoder.onlinereview.component.project.phase.Project> phProjects;
 
     if (activeTab != 1) {
@@ -338,7 +339,7 @@ public class ListProjectService {
   private Deliverable[] getDeliverables(
       Project[][] projects, Phase[][][] phases, Resource[][][] resources)
       throws DeliverablePersistenceException, DeliverableCheckingException, SearchBuilderException {
-    DeliverableDataAccess deliverableDataAccess = new DeliverableDataAccess();
+
     Map<Long, Map<Long, Long>> deliverableTypes = deliverableDataAccess.getDeliverablesList();
 
     // Validate parameters

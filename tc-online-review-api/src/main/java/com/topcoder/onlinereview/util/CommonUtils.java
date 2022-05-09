@@ -8,6 +8,7 @@ import javax.persistence.EntityManager;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 public class CommonUtils {
   public static <T, R> R copyProperties(T t, R r) {
@@ -15,32 +16,39 @@ public class CommonUtils {
     return r;
   }
 
+  private static <T> T getT(Map<String, Object> map, String key, Function<Object, T> function) {
+    if (map.get(key) == null) {
+      return null;
+    }
+    return function.apply(map.get(key));
+  }
+
   public static Long getLong(Map<String, Object> map, String key) {
-    return Long.parseLong(map.get(key).toString());
+    return getT(map, key, v -> Long.parseLong(v.toString()));
   }
 
   public static Integer getInt(Map<String, Object> map, String key) {
-    return Integer.parseInt(map.get(key).toString());
+    return getT(map, key, v -> Integer.parseInt(v.toString()));
   }
 
   public static Double getDouble(Map<String, Object> map, String key) {
-    return Double.parseDouble(map.get(key).toString());
+    return getT(map, key, v -> Double.parseDouble(v.toString()));
   }
 
   public static Float getFloat(Map<String, Object> map, String key) {
-    return Float.parseFloat(map.get(key).toString());
+    return getT(map, key, v -> Float.parseFloat(v.toString()));
   }
 
   public static Boolean getBoolean(Map<String, Object> map, String key) {
-    return (Boolean) map.get(key);
+    return getT(map, key, v -> (Boolean) v);
   }
 
   public static String getString(Map<String, Object> map, String key) {
-    return map.get(key).toString();
+    return getT(map, key, v -> v.toString());
   }
 
   public static Date getDate(Map<String, Object> map, String key) {
-    return (Date) map.get(key);
+    return getT(map, key, v -> (Date) v);
   }
 
   public static List<Map<String, Object>> executeSql(EntityManager entityManager, String sql) {

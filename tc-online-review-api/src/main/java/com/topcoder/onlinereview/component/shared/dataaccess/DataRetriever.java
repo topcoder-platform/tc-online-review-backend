@@ -381,7 +381,7 @@ public class DataRetriever {
         String input = (String) inputs.get(inputCode);
 
         if (input == null) {
-          if (!optional.equals("Y")) {
+          if (!"Y".equals(optional)) {
             throw new Exception("Missing required query input: " + inputCode);
           }
 
