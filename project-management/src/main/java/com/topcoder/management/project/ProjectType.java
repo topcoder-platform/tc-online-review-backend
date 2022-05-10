@@ -29,6 +29,8 @@ import java.io.Serializable;
  */
 @SuppressWarnings("serial")
 public class ProjectType implements Serializable {
+    public ProjectType() {
+    }
     /**
      * Represents Studio project type.
      *

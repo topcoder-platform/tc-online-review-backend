@@ -62,7 +62,7 @@ public class Phase extends AttributableObject {
      * Represents the project instance this phase belong to, it is initialized in the constructor and never changed
      * afterward.
      */
-    private final Project project;
+    private Project project;
 
     /**
      * Represents the length of the phase in milliseconds, it will be initialized in the constructor, and set in the
@@ -138,6 +138,8 @@ public class Phase extends AttributableObject {
      */
     private Date modifyDate;
 
+    public Phase() {
+    }
     /**
      * Create a new instance of Phase with the project this phase belong to, and length in milliseconds of this phase.
      * Phase will be add to the project automatically.

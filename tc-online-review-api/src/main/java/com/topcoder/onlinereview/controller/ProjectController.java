@@ -14,7 +14,11 @@ public class ProjectController {
 
   @GetMapping("projects")
   public ListProjectResponse listProjects(
-      @RequestParam(required = false, defaultValue = "1") String stid) throws BaseException {
-    return listProjectService.listProjects(1, "my", 132456L, "Global Manager");
+      @RequestParam Integer activeTab,
+      @RequestParam String scope,
+      @RequestParam Long userId,
+      @RequestParam String role)
+      throws BaseException {
+    return listProjectService.listProjects(activeTab, scope, userId, role);
   }
 }

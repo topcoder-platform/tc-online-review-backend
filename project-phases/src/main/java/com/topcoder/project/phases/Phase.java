@@ -48,6 +48,8 @@ import java.util.Iterator;
  * @version 2.0.3
  */
 public class Phase extends AttributableObject {
+    public Phase() {
+    }
     /**
      * Represents the milliseconds value of one minute.
      */
@@ -62,7 +64,7 @@ public class Phase extends AttributableObject {
      * Represents the project instance this phase belong to, it is initialized in the constructor and never changed
      * afterward.
      */
-    private final Project project;
+    private Project project;
 
     /**
      * Represents the length of the phase in milliseconds, it will be initialized in the constructor, and set in the

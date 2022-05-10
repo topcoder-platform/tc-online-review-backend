@@ -193,7 +193,6 @@ public class ListProjectService {
 
           // Get this project's Root Catalog ID
           String rootCatalogId = (String) ungroupedProject.getProperty("Root Catalog ID");
-
           Phase[] activePhases = null;
 
           // Calculate end date of the project and get all active phases (if any)

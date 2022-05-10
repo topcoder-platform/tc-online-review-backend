@@ -97,6 +97,9 @@ public class Project extends AuditableObject implements Serializable {
      */
     private String tcDirectProjectName;
 
+    public Project() {
+    }
+
     /**
      * <p>
      * Create a new Project instance with the given project type and project status. These fields are required for a
@@ -405,5 +408,9 @@ public class Project extends AuditableObject implements Serializable {
      */
     public void setTcDirectProjectName(String tcDirectProjectName) {
         this.tcDirectProjectName = tcDirectProjectName;
+    }
+
+    public void setAllProperties(Map properties) {
+        this.properties = properties;
     }
 }

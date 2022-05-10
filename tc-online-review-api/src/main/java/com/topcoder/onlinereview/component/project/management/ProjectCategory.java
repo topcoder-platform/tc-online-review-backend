@@ -133,6 +133,9 @@ public class ProjectCategory implements Serializable {
      */
     private ProjectType projectType = null;
 
+    public ProjectCategory() {
+    }
+
     /**
      * Create a new ProjectCategory instance with the given id and name. The two fields are required for a this instance
      * to be persisted.

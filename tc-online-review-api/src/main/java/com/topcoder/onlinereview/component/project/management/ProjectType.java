@@ -70,6 +70,8 @@ public class ProjectType implements Serializable {
      */
     private boolean generic = false;
 
+    public ProjectType() {
+    }
     /**
      * Create a new ProjectType instance with the given id and name. The two fields are required for a this instance to
      * be persisted.

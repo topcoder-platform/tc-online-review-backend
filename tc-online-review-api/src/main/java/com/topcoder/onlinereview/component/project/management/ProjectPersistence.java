@@ -2073,7 +2073,7 @@ public class ProjectPersistence {
     // create the ProjectType array.
     ProjectType[] projectTypes = new ProjectType[result.size()];
     for (int i = 0; i < result.size(); ++i) {
-      var row = result.get(0);
+      var row = result.get(i);
       // create a new instance of ProjectType class
       projectTypes[i] =
           new ProjectType(
