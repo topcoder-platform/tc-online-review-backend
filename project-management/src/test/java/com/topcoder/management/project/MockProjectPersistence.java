@@ -105,6 +105,29 @@ public class MockProjectPersistence implements ProjectPersistence {
     }
 
     /**
+     * <p>
+     * Retrieves an array of project instance from the persistence. The project instances are
+     * retrieved with their properties.
+     * </p>
+     *
+     * @param userId the user id.
+     * @param status the project status.
+     * @param my the my projects flag.
+     * @param hasManagerRole the manager role flag.
+     * @return An array of project instances.
+     * @throws PersistenceException if error occurred while accessing the database.
+     */
+    public Project[] getAllProjects(Long userId, ProjectStatus status, ProjectCategory[] categories, boolean my, boolean hasManagerRole) throws PersistenceException {
+        if (status == null) {
+            throw new IllegalArgumentException("status should not be null.");
+        }
+        if (categories == null) {
+            throw new IllegalArgumentException("categories should not be null.");
+        }
+        return null;
+    }
+
+    /**
      * return a ProjectType array, it is used in the test.
      *
      * @return An array of all project types in the persistence.

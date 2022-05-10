@@ -156,6 +156,10 @@ public class MockProjectManager implements ProjectManager {
         return null;
     }
 
+    public Project[] getAllProjects(Long userId, ProjectStatus status, ProjectCategory[] categories, boolean my, boolean hasManagerRole) throws PersistenceException {
+        return null;
+    }
+
     public void updateProject(Project arg0, String arg1, String arg2) throws PersistenceException, ValidationException {
         // TODO Auto-generated method stub
         

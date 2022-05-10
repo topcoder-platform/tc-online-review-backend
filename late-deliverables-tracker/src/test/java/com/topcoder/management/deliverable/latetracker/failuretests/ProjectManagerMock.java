@@ -135,6 +135,10 @@ public class ProjectManagerMock implements ProjectManager {
         return null;
     }
 
+    public Project[] getAllProjects(Long userId, ProjectStatus status, ProjectCategory[] categories, boolean my, boolean hasManagerRole) throws PersistenceException {
+        return null;
+    }
+
     public Project[] getProjectsByCreateDate(int arg0)
         throws PersistenceException {
         return null;

@@ -209,6 +209,10 @@ public class MockProjectManager implements ProjectManager {
 
     }
 
+    public Project[] getAllProjects(Long userId, ProjectStatus status, ProjectCategory[] categories, boolean my, boolean hasManagerRole) throws PersistenceException {
+        return null;
+    }
+
     /**
      * <p>A mock implementation of the method. The method either throws an exception which might have been specified
      * through {@link #throwException(String, Throwable)} method or return a result specified through {@link
