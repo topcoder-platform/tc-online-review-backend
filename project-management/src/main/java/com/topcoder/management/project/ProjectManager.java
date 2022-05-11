@@ -113,6 +113,21 @@ public interface ProjectManager {
 
     /**
      * <p>
+     * Retrieves an array of project instance from the persistence. The project instances are
+     * retrieved with their properties.
+     * </p>
+     *
+     * @param userId the user id.
+     * @param status the project status.
+     * @param my the my projects flag.
+     * @param hasManagerRole the manager role flag.
+     * @return An array of project instances.
+     * @throws PersistenceException if error occurred while accessing the database.
+     */
+    public Project[] getAllProjects(Long userId, ProjectStatus status, ProjectCategory[] categories, boolean my, boolean hasManagerRole) throws PersistenceException;
+
+    /**
+     * <p>
      * Searches project instances using the given filter parameter. The filter parameter decides the condition of
      * searching. This method use the Search Builder component to perform searching. The search condition can be the
      * combination of any of the followings:
