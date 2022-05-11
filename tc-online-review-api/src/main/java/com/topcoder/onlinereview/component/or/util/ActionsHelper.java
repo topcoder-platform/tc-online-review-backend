@@ -13,11 +13,17 @@ import com.topcoder.onlinereview.component.deliverable.DeliverableCheckingExcept
 import com.topcoder.onlinereview.component.deliverable.DeliverableManager;
 import com.topcoder.onlinereview.component.deliverable.DeliverablePersistenceException;
 import com.topcoder.onlinereview.component.deliverable.Submission;
+import com.topcoder.onlinereview.component.deliverable.SubmissionFilterBuilder;
 import com.topcoder.onlinereview.component.deliverable.Upload;
+import com.topcoder.onlinereview.component.deliverable.UploadFilterBuilder;
 import com.topcoder.onlinereview.component.deliverable.UploadManager;
 import com.topcoder.onlinereview.component.deliverable.late.LateDeliverable;
 import com.topcoder.onlinereview.component.exception.BaseException;
+import com.topcoder.onlinereview.component.external.ExternalUser;
+import com.topcoder.onlinereview.component.external.RetrievalException;
+import com.topcoder.onlinereview.component.external.UserRetrieval;
 import com.topcoder.onlinereview.component.or.dataaccess.ProjectDataAccess;
+import com.topcoder.onlinereview.component.or.dataaccess.ResourceDataAccess;
 import com.topcoder.onlinereview.component.or.model.ClientProject;
 import com.topcoder.onlinereview.component.or.model.CockpitProject;
 import com.topcoder.onlinereview.component.project.management.Project;
@@ -51,6 +57,7 @@ import com.topcoder.onlinereview.component.search.filter.NotFilter;
 import com.topcoder.onlinereview.component.search.filter.OrFilter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tomcat.util.http.fileupload.FileUpload;
+import org.springframework.context.MessageSource;
 
 import javax.naming.Context;
 import javax.naming.NamingException;
@@ -82,6 +89,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import static com.topcoder.onlinereview.util.CommonUtils.getMessageText;
 
 /**
  * <p>
@@ -466,7 +475,7 @@ public class ActionsHelper {
      * forward to the error page.
      *
      * @return an action forward to the appropriate error page.
-     * @param textProvider              the text provider used
+     * @param message                   the text provider used
      * @param request                   the http request.
      * @param permission                permission to check against, or
      *                                  <code>null</code> if no check is required.
@@ -479,21 +488,21 @@ public class ActionsHelper {
      *                                  happened, not denial of access).
      * @throws BaseException if any error occurs.
      */
-    public static String produceErrorReport(Map<String, String> textProvider, HttpServletRequest request, String permission,
+    public static String produceErrorReport(MessageSource message, HttpServletRequest request, String permission,
             String reasonKey, Boolean getRedirectUrlFromReferer) throws BaseException {
 
         // Place error title into request
         if (permission == null) {
-            request.setAttribute("errorTitle", textProvider.get("Error.Title.General"));
+            request.setAttribute("errorTitle", getMessageText(message, "Error.Title.General"));
         } else {
             if ("Error.NoPermission".equalsIgnoreCase(reasonKey)) {
                 log.warn("Authorization failures. User tried to perform " + permission
                         + " which he/she doesn't have permission.");
             }
-            request.setAttribute("errorTitle", textProvider.get("Error.Title." + permission.replaceAll(" ", "")));
+            request.setAttribute("errorTitle", getMessageText(message,"Error.Title." + permission.replaceAll(" ", "")));
         }
         // Place error message (reason) into request
-        request.setAttribute("errorMessage", textProvider.get(reasonKey));
+        request.setAttribute("errorMessage", getMessageText(message,reasonKey));
         // Find appropriate forward and return it
         return ORConstants.USER_ERROR_FORWARD_NAME;
     }
@@ -1315,12 +1324,11 @@ public class ActionsHelper {
      *                                  <code>null</code>.
      *
      */
-    public static Resource getMyResourceForRole(HttpServletRequest request, String resourceRole) {
+    public static Resource getMyResourceForRole(Resource[] myResources, String resourceRole) {
         // Validate parameters
-        validateParameterNotNull(request, "request");
+        validateParameterNotNull(myResources, "myResources");
         validateParameterNotNull(resourceRole, "resourceRole");
         // Retrieve the list of "my" resources from the request's attribute
-        Resource[] myResources = (Resource[]) validateAttributeNotNull(request, "myResources");
         for (Resource resource : myResources) {
             if (resource.getResourceRole().getName().equalsIgnoreCase(resourceRole)) {
                 return resource;
@@ -1515,45 +1523,45 @@ public class ActionsHelper {
      * @throws RetrievalException       if some error happened during external user
      *                                  retrieval.
      */
-//    public static ExternalUser[] getExternalUsersForResources(UserRetrieval retrieval, Resource[] resources)
-//            throws RetrievalException {
-//        // Validate parameters
-//        ActionsHelper.validateParameterNotNull(retrieval, "retrieval");
-//        ActionsHelper.validateParameterNotNull(resources, "resources");
-//
-//        // If there are no resource for this project defined, there will be no external
-//        // users
-//        if (resources.length == 0) {
-//            return new ExternalUser[0];
-//        }
-//
-//        // Prepare an array to store External User IDs
-//        long[] extUserIds = new long[resources.length];
-//        // Fill the array with user IDs retrieved from resource properties
-//        for (int i = 0; i < resources.length; ++i) {
-//            extUserIds[i] = resources[i].getUserId();
-//        }
-//
-//        // Retrieve external users to the temporary array
-//        ExternalUser[] extUsers = retrieval.retrieveUsers(extUserIds);
-//
-//        // This is final array for External User objects. It is needed because the
-//        // previous
-//        // operation may return shorter array than there are resources for the project
-//        // (sometimes several resources can be associated with one external user)
-//        ExternalUser[] allExtUsers = new ExternalUser[resources.length];
-//
-//        for (int i = 0; i < extUserIds.length; ++i) {
-//            for (ExternalUser extUser : extUsers) {
-//                if (extUser.getId() == extUserIds[i]) {
-//                    allExtUsers[i] = extUser;
-//                    break;
-//                }
-//            }
-//        }
-//
-//        return allExtUsers;
-//    }
+    public static ExternalUser[] getExternalUsersForResources(UserRetrieval retrieval, Resource[] resources)
+            throws RetrievalException {
+        // Validate parameters
+        ActionsHelper.validateParameterNotNull(retrieval, "retrieval");
+        ActionsHelper.validateParameterNotNull(resources, "resources");
+
+        // If there are no resource for this project defined, there will be no external
+        // users
+        if (resources.length == 0) {
+            return new ExternalUser[0];
+        }
+
+        // Prepare an array to store External User IDs
+        long[] extUserIds = new long[resources.length];
+        // Fill the array with user IDs retrieved from resource properties
+        for (int i = 0; i < resources.length; ++i) {
+            extUserIds[i] = resources[i].getUserId();
+        }
+
+        // Retrieve external users to the temporary array
+        ExternalUser[] extUsers = retrieval.retrieveUsers(extUserIds);
+
+        // This is final array for External User objects. It is needed because the
+        // previous
+        // operation may return shorter array than there are resources for the project
+        // (sometimes several resources can be associated with one external user)
+        ExternalUser[] allExtUsers = new ExternalUser[resources.length];
+
+        for (int i = 0; i < extUserIds.length; ++i) {
+            for (ExternalUser extUser : extUsers) {
+                if (extUser.getId() == extUserIds[i]) {
+                    allExtUsers[i] = extUser;
+                    break;
+                }
+            }
+        }
+
+        return allExtUsers;
+    }
 
     /**
      * <p>
@@ -1574,30 +1582,29 @@ public class ActionsHelper {
      *         type for project.
      * @throws BaseException if an unexpected error occurs.
      */
-    public static Submission[] getProjectSubmissions(long projectId, String submissionTypeName,
+    public static Submission[] getProjectSubmissions(LookupHelper lookupHelper, UploadManager uploadManager,
+                                                     long projectId, String submissionTypeName,
                                                      String submissionStatusName, boolean includeDeleted) throws BaseException {
+        List<Filter> filters = new ArrayList<>();
+        filters.add(SubmissionFilterBuilder.createProjectIdFilter(projectId));
 
-//        List<Filter> filters = new ArrayList<Filter>();
-//        filters.add(SubmissionFilterBuilder.createProjectIdFilter(projectId));
-//
-//        if (submissionTypeName != null) {
-//            long submissionTypeId = LookupHelper.getSubmissionType(submissionTypeName).getId();
-//            filters.add(SubmissionFilterBuilder.createSubmissionTypeIdFilter(submissionTypeId));
-//        }
-//
-//        if (submissionStatusName != null) {
-//            long submissionStatusId = LookupHelper.getSubmissionStatus(submissionStatusName).getId();
-//            filters.add(SubmissionFilterBuilder.createSubmissionStatusIdFilter(submissionStatusId));
-//        }
-//
-//        if (!includeDeleted) {
-//            // Exclude the Deleted status
-//            long deletedStatusId = LookupHelper.getSubmissionStatus("Deleted").getId();
-//            filters.add(new NotFilter(SubmissionFilterBuilder.createSubmissionStatusIdFilter(deletedStatusId)));
-//        }
-//
-//        return createUploadManager().searchSubmissions(new AndFilter(filters));
-        return null;
+        if (submissionTypeName != null) {
+            long submissionTypeId = lookupHelper.getSubmissionType(submissionTypeName).getId();
+            filters.add(SubmissionFilterBuilder.createSubmissionTypeIdFilter(submissionTypeId));
+        }
+
+        if (submissionStatusName != null) {
+            long submissionStatusId = lookupHelper.getSubmissionStatus(submissionStatusName).getId();
+            filters.add(SubmissionFilterBuilder.createSubmissionStatusIdFilter(submissionStatusId));
+        }
+
+        if (!includeDeleted) {
+            // Exclude the Deleted status
+            long deletedStatusId = lookupHelper.getSubmissionStatus("Deleted").getId();
+            filters.add(new NotFilter(SubmissionFilterBuilder.createSubmissionStatusIdFilter(deletedStatusId)));
+        }
+
+        return uploadManager.searchSubmissions(new AndFilter(filters));
     }
 
     /**
@@ -1619,30 +1626,30 @@ public class ActionsHelper {
      *         type for project.
      * @throws BaseException if an unexpected error occurs.
      */
-    public static Submission[] getResourceSubmissions(long resourceID, String submissionTypeName,
+    public static Submission[] getResourceSubmissions(UploadManager uploadManager, LookupHelper lookupHelper,
+                                                      long resourceID, String submissionTypeName,
             String submissionStatusName, boolean includeDeleted) throws BaseException {
 
-//        List<Filter> filters = new ArrayList<Filter>();
-//        filters.add(SubmissionFilterBuilder.createResourceIdFilter(resourceID));
-//
-//        if (submissionTypeName != null) {
-//            long submissionTypeId = LookupHelper.getSubmissionType(submissionTypeName).getId();
-//            filters.add(SubmissionFilterBuilder.createSubmissionTypeIdFilter(submissionTypeId));
-//        }
-//
-//        if (submissionStatusName != null) {
-//            long submissionStatusId = LookupHelper.getSubmissionStatus(submissionStatusName).getId();
-//            filters.add(SubmissionFilterBuilder.createSubmissionStatusIdFilter(submissionStatusId));
-//        }
-//
-//        if (!includeDeleted) {
-//            // Exclude the Deleted status
-//            long deletedStatusId = LookupHelper.getSubmissionStatus("Deleted").getId();
-//            filters.add(new NotFilter(SubmissionFilterBuilder.createSubmissionStatusIdFilter(deletedStatusId)));
-//        }
-//
-//        return createUploadManager().searchSubmissions(new AndFilter(filters));
-        return null;
+        List<Filter> filters = new ArrayList<Filter>();
+        filters.add(SubmissionFilterBuilder.createResourceIdFilter(resourceID));
+
+        if (submissionTypeName != null) {
+            long submissionTypeId = lookupHelper.getSubmissionType(submissionTypeName).getId();
+            filters.add(SubmissionFilterBuilder.createSubmissionTypeIdFilter(submissionTypeId));
+        }
+
+        if (submissionStatusName != null) {
+            long submissionStatusId = lookupHelper.getSubmissionStatus(submissionStatusName).getId();
+            filters.add(SubmissionFilterBuilder.createSubmissionStatusIdFilter(submissionStatusId));
+        }
+
+        if (!includeDeleted) {
+            // Exclude the Deleted status
+            long deletedStatusId = lookupHelper.getSubmissionStatus("Deleted").getId();
+            filters.add(new NotFilter(SubmissionFilterBuilder.createSubmissionStatusIdFilter(deletedStatusId)));
+        }
+
+        return uploadManager.searchSubmissions(new AndFilter(filters));
     }
 
     /**
@@ -1659,9 +1666,10 @@ public class ActionsHelper {
      *         earliest possible upload time.
      * @throws BaseException if an unexpected error occurs.
      */
-    public static Submission getEarliestActiveSubmission(long projectId, String submissionTypeName)
+    public static Submission getEarliestActiveSubmission(LookupHelper lookupHelper, UploadManager uploadManager,
+                                                         long projectId, String submissionTypeName)
             throws BaseException {
-        Submission[] submissions = getProjectSubmissions(projectId, submissionTypeName,
+        Submission[] submissions = getProjectSubmissions(lookupHelper, uploadManager, projectId, submissionTypeName,
                 ORConstants.ACTIVE_SUBMISSION_STATUS_NAME, false);
         Submission earliestSubmission = null;
         for (Submission submission : submissions) {
@@ -2019,46 +2027,6 @@ public class ActionsHelper {
 //    }
 
     /**
-     * This static method helps to create an object of the
-     * <code>UserRetrieval</code> class.
-     *
-     * @return a newly created instance of the class.
-     * @param request an <code>HttpServletRequest</code> object, where created
-     *                <code>UserRetrieval</code> object can be stored to let reusing
-     *                it later for the same request.
-     * @throws IllegalArgumentException                         if
-     *                                                          <code>request</code>
-     *                                                          parameter is
-     *                                                          <code>null</code>.
-     * @throws com.cronos.onlinereview.external.ConfigException if error occurs
-     *                                                          while loading
-     *                                                          configuration
-     *                                                          settings, or any of
-     *                                                          the required
-     *                                                          configuration
-     *                                                          parameters are
-     *                                                          missing.
-     */
-//    public static UserRetrieval createUserRetrieval(HttpServletRequest request)
-//            throws com.cronos.onlinereview.external.ConfigException {
-//        // Validate parameter
-//        validateParameterNotNull(request, "request");
-//
-//        // Try retrieving Upload Retrieval from the request's attribute first
-//        UserRetrieval manager = (UserRetrieval) request.getAttribute("userRetrieval");
-//        // If this is the first time this method is called for the request,
-//        // create a new instance of the object
-//        if (manager == null) {
-//            manager = new DBUserRetrieval(DB_CONNECTION_NAMESPACE);
-//            // Place newly-created object into the request as attribute
-//            request.setAttribute("userRetrieval", manager);
-//        }
-//
-//        // Return the Upload Retrieval object
-//        return manager;
-//    }
-
-    /**
      * This static method helps to create an object of the <code>FileUpload</code>
      * class.
      *
@@ -2273,118 +2241,113 @@ public class ActionsHelper {
      *         specifies whether the check was successful and, in the case it was,
      *         contains additional information retrieved during the check operation,
      *         which might be of some use for the calling method.
-     * @param textProvider              the text provider.
+     * @param message              the text provider.
      * @param request                   the http request.
      * @param permission                permission to check against, or
      *                                  <code>null</code> if no check is required.
      * @param getRedirectUrlFromReferer if it is a redirect url from referer
      * @throws BaseException if any error occurs.
      */
-//    public static CorrectnessCheckResult checkForCorrectProjectId(TextProvider textProvider, HttpServletRequest request,
-//            String permission, boolean getRedirectUrlFromReferer) throws BaseException {
-//        // Prepare bean that will be returned as the result
-//        CorrectnessCheckResult result = new CorrectnessCheckResult();
-//
-//        if (permission == null || permission.trim().length() == 0) {
-//            permission = null;
-//        }
-//
-//        // Verify that Project ID was specified and denotes correct project
-//        String pidParam = request.getParameter("pid");
-//        if (pidParam == null || pidParam.trim().length() == 0) {
-//            result.setResult(
-//                    produceErrorReport(textProvider, request, permission, "Error.ProjectIdNotSpecified", false));
-//            // Return the result of the check
-//            return result;
-//        }
-//
-//        long pid;
-//
-//        try {
-//            // Try to convert specified pid parameter to its integer representation
-//            pid = Long.parseLong(pidParam, 10);
-//        } catch (NumberFormatException nfe) {
-//            result.setResult(produceErrorReport(textProvider, request, permission, "Error.ProjectNotFound", false));
-//            // Return the result of the check
-//            return result;
-//        }
-//
-//        // Obtain an instance of Project Manager
-//        ProjectManager projMgr = createProjectManager();
-//        // Get Project by its id
-//        Project project = projMgr.getProject(pid);
-//        // Verify that project with given ID exists
-//        if (project == null) {
-//            result.setResult(produceErrorReport(textProvider, request, permission, "Error.ProjectNotFound", false));
-//            // Return the result of the check
-//            return result;
-//        }
-//
-//        // Store Project object in the result bean
-//        result.setProject(project);
-//        // Place project as attribute in the request
-//        request.setAttribute("project", project);
-//
-//        // Gather the roles the user has for current request
-//        AuthorizationHelper.gatherUserRoles(request, pid);
-//
-//        request.setAttribute("isAdmin",
-//                AuthorizationHelper.hasUserRole(request, Constants.MANAGER_ROLE_NAME)
-//                        || AuthorizationHelper.hasUserRole(request, Constants.GLOBAL_MANAGER_ROLE_NAME)
-//                        || AuthorizationHelper.hasUserRole(request, Constants.COCKPIT_PROJECT_USER_ROLE_NAME));
-//
-//        // If permission parameter was not null or empty string ...
-//        if (permission != null) {
-//            // ... verify that this permission is granted for currently logged in user
-//            if (!AuthorizationHelper.hasUserPermission(request, permission)) {
-//                // If it does not, and the user is logged in, display a message about the lack
-//                // of
-//                // permissions, otherwise redirect the request to the Login page
-//                result.setResult(produceErrorReport(textProvider, request, permission, "Error.NoPermission",
-//                        getRedirectUrlFromReferer));
-//                // Return the result of the check
-//                return result;
-//            }
-//        }
-//
-//        // new eligibility constraints checks
-//        try {
-//            if (AuthorizationHelper.isUserLoggedIn(request)) {
-//
-//                // if the user is logged in and is a resource of this project or a global
-//                // manager, continue
-//                Resource[] myResources = (Resource[]) request.getAttribute("myResources");
-//                if ((myResources == null || myResources.length == 0)
-//                        && !AuthorizationHelper.hasUserRole(request, Constants.GLOBAL_MANAGER_ROLE_NAME)
-//                        && !AuthorizationHelper.hasUserRole(request, Constants.COCKPIT_PROJECT_USER_ROLE_NAME)) {
-//                    // if he's not a resource, check if the project has eligibility constraints
-//                    if (EJBLibraryServicesLocator.getContestEligibilityService().hasEligibility(pid, false)) {
-//                        result.setResult(
-//                                produceErrorReport(textProvider, request, permission, "Error.ProjectNotFound", false));
-//                        // Return the result of the check
-//                        return result;
-//                    }
-//                }
-//            } else {
-//                // if the user is not logged in and the project has any eligibility constraint,
-//                // ask for login
-//                if (EJBLibraryServicesLocator.getContestEligibilityService().hasEligibility(pid, false)) {
-//                    result.setResult(produceErrorReport(textProvider, request, permission, "Error.NoPermission",
-//                            getRedirectUrlFromReferer));
-//                    // Return the result of the check
-//                    return result;
-//                }
-//            }
-//        } catch (Exception e) {
-//            throw new BaseException("It was not possible to verify eligibility for project id " + pid, e);
-//        }
-//
-//        // At this point, redirect-after-login attribute should be removed (if it
-//        // exists)
-//        AuthorizationHelper.removeLoginRedirect(request);
-//
-//        return result;
-//    }
+    public static CorrectnessCheckResult checkForCorrectProjectId(MessageSource message, HttpServletRequest request,
+                                                                  String permission, boolean getRedirectUrlFromReferer) throws BaseException {
+        // Prepare bean that will be returned as the result
+        CorrectnessCheckResult result = new CorrectnessCheckResult();
+
+        if (permission == null || permission.trim().length() == 0) {
+            permission = null;
+        }
+
+        // Verify that Project ID was specified and denotes correct project
+        String pidParam = request.getParameter("pid");
+        if (pidParam == null || pidParam.trim().length() == 0) {
+            result.setResult(
+                    produceErrorReport(message, request, permission, "Error.ProjectIdNotSpecified", false));
+            // Return the result of the check
+            return result;
+        }
+
+        long pid;
+
+        try {
+            // Try to convert specified pid parameter to its integer representation
+            pid = Long.parseLong(pidParam, 10);
+        } catch (NumberFormatException nfe) {
+            result.setResult(produceErrorReport(message, request, permission, "Error.ProjectNotFound", false));
+            // Return the result of the check
+            return result;
+        }
+
+        // Obtain an instance of Project Manager
+        ProjectManager projMgr = createProjectManager();
+        // Get Project by its id
+        Project project = projMgr.getProject(pid);
+        // Verify that project with given ID exists
+        if (project == null) {
+            result.setResult(produceErrorReport(message, request, permission, "Error.ProjectNotFound", false));
+            // Return the result of the check
+            return result;
+        }
+
+        // Store Project object in the result bean
+        result.setProject(project);
+        // Place project as attribute in the request
+        request.setAttribute("project", project);
+
+        // Gather the roles the user has for current request
+        AuthorizationHelper.gatherUserRoles(request, pid);
+
+        request.setAttribute("isAdmin",
+                AuthorizationHelper.hasUserRole(request, ORConstants.MANAGER_ROLE_NAME)
+                        || AuthorizationHelper.hasUserRole(request, ORConstants.GLOBAL_MANAGER_ROLE_NAME)
+                        || AuthorizationHelper.hasUserRole(request, ORConstants.COCKPIT_PROJECT_USER_ROLE_NAME));
+
+        // If permission parameter was not null or empty string ...
+        if (permission != null) {
+            // ... verify that this permission is granted for currently logged in user
+            if (!AuthorizationHelper.hasUserPermission(request, permission)) {
+                // If it does not, and the user is logged in, display a message about the lack
+                // of
+                // permissions, otherwise redirect the request to the Login page
+                result.setResult(produceErrorReport(message, request, permission, "Error.NoPermission",
+                        getRedirectUrlFromReferer));
+                // Return the result of the check
+                return result;
+            }
+        }
+
+        // new eligibility constraints checks
+        try {
+            if (AuthorizationHelper.isUserLoggedIn(request)) {
+
+                // if the user is logged in and is a resource of this project or a global
+                // manager, continue
+                Resource[] myResources = (Resource[]) request.getAttribute("myResources");
+                if ((myResources == null || myResources.length == 0)
+                        && !AuthorizationHelper.hasUserRole(request, ORConstants.GLOBAL_MANAGER_ROLE_NAME)
+                        && !AuthorizationHelper.hasUserRole(request, ORConstants.COCKPIT_PROJECT_USER_ROLE_NAME)) {
+                    // if he's not a resource, check if the project has eligibility constraints
+                    if (EJBLibraryServicesLocator.getContestEligibilityService().hasEligibility(pid, false)) {
+                        result.setResult(
+                                produceErrorReport(textProvider, request, permission, "Error.ProjectNotFound", false));
+                        // Return the result of the check
+                        return result;
+                    }
+                }
+            } else {
+                // if the user is not logged in and the project has any eligibility constraint,
+                // ask for login
+                if (EJBLibraryServicesLocator.getContestEligibilityService().hasEligibility(pid, false)) {
+                    result.setResult(produceErrorReport(textProvider, request, permission, "Error.NoPermission",
+                            getRedirectUrlFromReferer));
+                    // Return the result of the check
+                    return result;
+                }
+            }
+        } catch (Exception e) {
+            throw new BaseException("It was not possible to verify eligibility for project id " + pid, e);
+        }
+        return result;
+    }
 
     /**
      * Populate project_result and component_inquiry for new submitters.
@@ -3106,15 +3069,15 @@ public class ActionsHelper {
      *         phase.
      * @throws BaseException if an unexpected error occurs.
      */
-    public static Upload[] getPhaseUploads(long projectPhaseId, String uploadTypeName) throws BaseException {
+    public static Upload[] getPhaseUploads(UploadManager uploadManager, LookupHelper lookupHelper, long projectPhaseId, String uploadTypeName) throws BaseException {
         List<Filter> filters = new ArrayList<>();
-//        filters.add(UploadFilterBuilder.createProjectPhaseIdFilter(projectPhaseId));
-//        if (uploadTypeName != null) {
-//            long uploadTypeId = LookupHelper.getUploadType(uploadTypeName).getId();
-//            filters.add(UploadFilterBuilder.createUploadTypeIdFilter(uploadTypeId));
-//        }
+        filters.add(UploadFilterBuilder.createProjectPhaseIdFilter(projectPhaseId));
+        if (uploadTypeName != null) {
+            long uploadTypeId = lookupHelper.getUploadType(uploadTypeName).getId();
+            filters.add(UploadFilterBuilder.createUploadTypeIdFilter(uploadTypeId));
+        }
 
-        return createUploadManager().searchUploads(new AndFilter(filters));
+        return uploadManager.searchUploads(new AndFilter(filters));
     }
 
     /**
@@ -3188,7 +3151,7 @@ public class ActionsHelper {
      * @throws ReviewManagementException if any error occurs during review search or
      *                                   retrieval.
      */
-    public static Review[] searchReviews(long phaseId, Long resourceId, boolean complete)
+    public static Review[] searchReviews(ReviewManager reviewManager, long phaseId, Long resourceId, boolean complete)
             throws ReviewManagementException {
         Filter filter = new EqualToFilter("projectPhase", phaseId);
 
@@ -3196,7 +3159,7 @@ public class ActionsHelper {
             filter = new AndFilter(filter, new EqualToFilter("reviewer", resourceId));
         }
 
-        return createReviewManager().searchReviews(filter, complete);
+        return reviewManager.searchReviews(filter, complete);
     }
 
     /**
@@ -3229,12 +3192,11 @@ public class ActionsHelper {
      *                                                                resource
      *                                                                roles.
      */
-    public static Resource[] searchUserResources(long userId, ProjectStatus status)
-            throws ResourcePersistenceException {
+//    public static Resource[] searchUserResources(long userId, ProjectStatus status)
+//            throws ResourcePersistenceException {
 //        ResourceDataAccess resourceDataAccess = new ResourceDataAccess();
-//        return resourceDataAccess.searchUserResources(userId, status, createResourceManager());
-        return null;
-    }
+//        return resourceDataAccess.searchUserResources(userId, status);
+//    }
 
     /**
      * <p>

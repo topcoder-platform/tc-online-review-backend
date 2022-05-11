@@ -9,6 +9,7 @@ import com.topcoder.onlinereview.component.exception.BaseException;
 import com.topcoder.onlinereview.component.or.dataaccess.DeliverableDataAccess;
 import com.topcoder.onlinereview.component.or.dataaccess.ProjectDataAccess;
 import com.topcoder.onlinereview.component.or.dataaccess.ProjectPhaseDataAccess;
+import com.topcoder.onlinereview.component.or.dataaccess.ResourceDataAccess;
 import com.topcoder.onlinereview.component.or.util.ActionsHelper;
 import com.topcoder.onlinereview.component.or.util.Comparators;
 import com.topcoder.onlinereview.component.or.util.LookupHelper;
@@ -30,6 +31,7 @@ import com.topcoder.onlinereview.component.search.filter.Filter;
 import com.topcoder.onlinereview.component.search.filter.InFilter;
 import com.topcoder.onlinereview.dto.ListProjectResponse;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -39,6 +41,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import static com.topcoder.onlinereview.util.CommonUtils.getMessageText;
 
 @Service
 public class ListProjectService {
@@ -50,6 +54,8 @@ public class ListProjectService {
   @Autowired private ProjectDataAccess projectDataAccess;
   @Autowired private ProjectPhaseDataAccess phasesDataAccess;
   @Autowired private DeliverableDataAccess deliverableDataAccess;
+  @Autowired private ResourceDataAccess resourceDataAccess;
+  @Autowired private MessageSource messages;
 
   public ListProjectResponse listProjects(Integer activeTab, String scope, long userId, String role)
       throws BaseException {
@@ -120,11 +126,11 @@ public class ListProjectService {
     Resource[] allMyResources = null;
     if (ungroupedProjects.length != 0 && userId > 0) {
       if (activeTab == 1) { // My projects
-        allMyResources = ActionsHelper.searchUserResources(userId, activeStatus);
+        allMyResources = resourceDataAccess.searchUserResources(userId, activeStatus);
       } else if (activeTab == 2) { // Active projects
-        allMyResources = ActionsHelper.searchUserResources(userId, activeStatus);
+        allMyResources = resourceDataAccess.searchUserResources(userId, activeStatus);
       } else if (activeTab == 4) { // Draft projects
-        allMyResources = ActionsHelper.searchUserResources(userId, draftStatus);
+        allMyResources = resourceDataAccess.searchUserResources(userId, draftStatus);
       }
     }
 
@@ -208,6 +214,14 @@ public class ListProjectService {
           if (activePhases != null && activePhases.length != 0) {
             phass[counter] = activePhases;
             pheds[counter] = activePhases[0].getScheduledEndDate();
+          }
+
+          // Retrieve information about my roles, and my current unfinished deliverables
+          if (myProjects) {
+            Resource[] myResources2 =
+                ActionsHelper.getResourcesForProject(allMyResources, ungroupedProject);
+            myRss[counter] = myResources2;
+            rols[counter] = getRolesFromResources(myResources2);
           }
 
           // Store project in a group and increment counter
@@ -424,5 +438,36 @@ public class ListProjectService {
     // Get and return an array of my incomplete deliverables for all active phases.
     // These deliverables will require further grouping
     return deliverableManager.searchDeliverables(filter, Boolean.FALSE);
+  }
+
+  private String getRolesFromResources(Resource[] resources) {
+    // Validate parameters
+    ActionsHelper.validateParameterNotNull(resources, "resources");
+
+    if (resources == null || resources.length == 0) {
+      return getMessageText(messages, "ResourceRole.Public");
+    }
+
+    StringBuilder buffer = new StringBuilder();
+    Set<String> rolesSet = new HashSet<String>();
+
+    for (Resource resource : resources) {
+      // Get the name for a resource in the current iteration
+      String resourceRole = resource.getResourceRole().getName();
+
+      if (rolesSet.contains(resourceRole)) {
+        continue;
+      }
+
+      if (buffer.length() != 0) {
+        buffer.append("<br />");
+      }
+      buffer.append(getMessageText(messages, "ResourceRole." + resourceRole.replaceAll(" ", "")));
+      rolesSet.add(resourceRole);
+    }
+
+    return (buffer.length() != 0)
+        ? buffer.toString()
+        : getMessageText(messages, "ResourceRole.Public");
   }
 }

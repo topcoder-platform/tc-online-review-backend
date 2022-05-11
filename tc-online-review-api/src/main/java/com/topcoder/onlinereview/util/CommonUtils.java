@@ -3,10 +3,12 @@ package com.topcoder.onlinereview.util;
 import org.hibernate.query.Query;
 import org.hibernate.transform.AliasToEntityMapResultTransformer;
 import org.springframework.beans.BeanUtils;
+import org.springframework.context.MessageSource;
 
 import javax.persistence.EntityManager;
 import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.function.Function;
 
@@ -65,5 +67,13 @@ public class CommonUtils {
     }
     nativeQuery.setResultTransformer(AliasToEntityMapResultTransformer.INSTANCE);
     return nativeQuery.getResultList();
+  }
+
+  public static String getMessageText(MessageSource messages, String code) {
+    return messages.getMessage(code, null, Locale.ENGLISH);
+  }
+
+  public static String getMessageText(MessageSource messages, String code, Object[] args) {
+    return messages.getMessage(code, args, Locale.ENGLISH);
   }
 }
