@@ -3,11 +3,8 @@
  */
 package com.topcoder.onlinereview.component.or.util;
 
-import com.amazonaws.auth.PropertiesCredentials;
-import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.AmazonS3URI;
-import com.amazonaws.services.s3.model.GetObjectRequest;
-import com.amazonaws.services.s3.model.S3Object;
+import com.topcoder.onlinereview.component.contest.ContestEligibilityService;
 import com.topcoder.onlinereview.component.deliverable.Deliverable;
 import com.topcoder.onlinereview.component.deliverable.DeliverableCheckingException;
 import com.topcoder.onlinereview.component.deliverable.DeliverableManager;
@@ -23,9 +20,9 @@ import com.topcoder.onlinereview.component.external.ExternalUser;
 import com.topcoder.onlinereview.component.external.RetrievalException;
 import com.topcoder.onlinereview.component.external.UserRetrieval;
 import com.topcoder.onlinereview.component.or.dataaccess.ProjectDataAccess;
-import com.topcoder.onlinereview.component.or.dataaccess.ResourceDataAccess;
 import com.topcoder.onlinereview.component.or.model.ClientProject;
 import com.topcoder.onlinereview.component.or.model.CockpitProject;
+import com.topcoder.onlinereview.component.or.model.DefaultScorecard;
 import com.topcoder.onlinereview.component.project.management.Project;
 import com.topcoder.onlinereview.component.project.management.ProjectManager;
 import com.topcoder.onlinereview.component.project.management.ProjectStatus;
@@ -55,30 +52,24 @@ import com.topcoder.onlinereview.component.search.filter.EqualToFilter;
 import com.topcoder.onlinereview.component.search.filter.Filter;
 import com.topcoder.onlinereview.component.search.filter.NotFilter;
 import com.topcoder.onlinereview.component.search.filter.OrFilter;
+import com.topcoder.onlinereview.component.workday.Workdays;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.tomcat.util.http.fileupload.FileUpload;
 import org.springframework.context.MessageSource;
 
-import javax.naming.Context;
 import javax.naming.NamingException;
+import javax.persistence.EntityManager;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.math.BigDecimal;
 import java.math.MathContext;
-import java.net.URL;
 import java.rmi.RemoteException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.sql.Types;
 import java.text.Format;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -90,7 +81,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static com.topcoder.onlinereview.util.CommonUtils.executeSql;
+import static com.topcoder.onlinereview.util.CommonUtils.getInt;
+import static com.topcoder.onlinereview.util.CommonUtils.getLong;
 import static com.topcoder.onlinereview.util.CommonUtils.getMessageText;
+import static com.topcoder.onlinereview.util.CommonUtils.getString;
 
 /**
  * <p>
@@ -476,7 +471,6 @@ public class ActionsHelper {
      *
      * @return an action forward to the appropriate error page.
      * @param message                   the text provider used
-     * @param request                   the http request.
      * @param permission                permission to check against, or
      *                                  <code>null</code> if no check is required.
      * @param reasonKey                 a key in Message resources which the reason
@@ -488,21 +482,21 @@ public class ActionsHelper {
      *                                  happened, not denial of access).
      * @throws BaseException if any error occurs.
      */
-    public static String produceErrorReport(MessageSource message, HttpServletRequest request, String permission,
+    public static String produceErrorReport(MessageSource message, CorrectnessCheckResult result, String permission,
             String reasonKey, Boolean getRedirectUrlFromReferer) throws BaseException {
 
         // Place error title into request
         if (permission == null) {
-            request.setAttribute("errorTitle", getMessageText(message, "Error.Title.General"));
+            result.setAttribute("errorTitle", getMessageText(message, "Error.Title.General"));
         } else {
             if ("Error.NoPermission".equalsIgnoreCase(reasonKey)) {
                 log.warn("Authorization failures. User tried to perform " + permission
                         + " which he/she doesn't have permission.");
             }
-            request.setAttribute("errorTitle", getMessageText(message,"Error.Title." + permission.replaceAll(" ", "")));
+            result.setAttribute("errorTitle", getMessageText(message,"Error.Title." + permission.replaceAll(" ", "")));
         }
         // Place error message (reason) into request
-        request.setAttribute("errorMessage", getMessageText(message,reasonKey));
+        result.setAttribute("errorMessage", getMessageText(message,reasonKey));
         // Find appropriate forward and return it
         return ORConstants.USER_ERROR_FORWARD_NAME;
     }
@@ -1315,8 +1309,6 @@ public class ActionsHelper {
      *
      * @return the resource, or null if the current user doesn't have a resource
      *         with the role.
-     * @param request      an <code>HttpServletRequest</code> object containing
-     *                     additional information.
      * @param resourceRole the name of the resource role
      * @throws IllegalArgumentException if <code>request</code> parameter is
      *                                  <code>null</code>. if
@@ -1890,16 +1882,6 @@ public class ActionsHelper {
 //    }
 
     /**
-     * This static method helps to create an object of
-     * <code>ProjectPaymentManager</code> class.
-     *
-     * @return instance of the class ProjectPaymentManager
-     */
-//    public static ProjectPaymentManager createProjectPaymentManager() {
-//        return managerCreationHelper.getProjectPaymentManager();
-//    }
-
-    /**
      * This static method helps to create an object of the
      * <code>ProjectManager</code> class.
      *
@@ -2093,59 +2075,46 @@ public class ActionsHelper {
      * This static method helps to get a list of cockpit projects belonging to the
      * given user.
      *
-     * @param request the request
      * @return a list of cockpit projects
      */
-//    public static List<CockpitProject> getCockpitProjects(HttpServletRequest request) {
-//        validateParameterNotNull(request, "request");
-//
-//        long userId = AuthorizationHelper.getLoggedInUserId(request);
-//
-//        List<CockpitProject> cockpitProjects = new ArrayList<CockpitProject>();
-//
-//        CockpitProject project = new CockpitProject();
-//        project.setId(0);
-//        project.setName("-------------");
-//        cockpitProjects.add(project);
-//
-//        if (AuthorizationHelper.hasUserRole(request, ORConstants.GLOBAL_MANAGER_ROLE_NAME)) {
-//            cockpitProjects.addAll(new ProjectDataAccess().getAllCockpitProjects());
-//        } else {
-//            cockpitProjects.addAll(new ProjectDataAccess().getCockpitProjectsForUser(userId));
-//        }
-//        return cockpitProjects;
-//    }
+    public static List<CockpitProject> getCockpitProjects(Long userId, String roles, ProjectDataAccess projectDataAccess) {
+        List<CockpitProject> cockpitProjects = new ArrayList<>();
+
+        CockpitProject project = new CockpitProject();
+        project.setId(0);
+        project.setName("-------------");
+        cockpitProjects.add(project);
+
+        if (hasUserRole(roles, ORConstants.GLOBAL_MANAGER_ROLE_NAME)) {
+            cockpitProjects.addAll(projectDataAccess.getAllCockpitProjects());
+        } else {
+            cockpitProjects.addAll(projectDataAccess.getCockpitProjectsForUser(userId));
+        }
+        return cockpitProjects;
+    }
 
     /**
      * This static method helps to get a list of <code>ClientProject</code>.
      *
      * @return a list of <code>ClientProject</code>
-     * @param request an <code>HttpServletRequest</code> object, where created list
-     *                of <code>ClientProject</code> can be stored to let reusing it
-     *                later for the same request.
      * @throws IllegalArgumentException if <code>request</code> parameter is
      *                                  <code>null</code>.
      */
-//    public static List<ClientProject> getClientProjects(HttpServletRequest request) {
-//        validateParameterNotNull(request, "request");
-//
-//        long userId = AuthorizationHelper.getLoggedInUserId(request);
-//
-//        List<ClientProject> clientProjects = new ArrayList<ClientProject>();
-//
-//        // We first add an empty client project for a default selection.
-//        ClientProject project = new ClientProject();
-//        project.setId(0);
-//        project.setName("-------------");
-//        clientProjects.add(project);
-//
-//        if (AuthorizationHelper.hasUserRole(request, ORConstants.GLOBAL_MANAGER_ROLE_NAME)) {
-//            clientProjects.addAll(new ProjectDataAccess().getAllClientProjects());
-//        } else {
-//            clientProjects.addAll(new ProjectDataAccess().getClientProjectsForUser(userId));
-//        }
-//        return clientProjects;
-//    }
+    public static List<ClientProject> getClientProjects(Long userId, String roles, ProjectDataAccess projectDataAccess) {
+        List<ClientProject> clientProjects = new ArrayList<>();
+        // We first add an empty client project for a default selection.
+        ClientProject project = new ClientProject();
+        project.setId(0);
+        project.setName("-------------");
+        clientProjects.add(project);
+
+        if (hasUserRole(roles, ORConstants.GLOBAL_MANAGER_ROLE_NAME)) {
+            clientProjects.addAll(projectDataAccess.getAllClientProjects());
+        } else {
+            clientProjects.addAll(projectDataAccess.getClientProjectsForUser(userId));
+        }
+        return clientProjects;
+    }
 
     /**
      * This static method helps to create an object of the
@@ -2225,6 +2194,16 @@ public class ActionsHelper {
 //        project.setProperty("Rated Timestamp", format.format(endDate));
     }
 
+    // TODO
+    public static boolean hasUserPermission(String roles, String... permission) {
+        return true;
+    }
+
+    // TODO
+    public static boolean hasUserRole(String roles, String... role) {
+        return true;
+    }
+
     /**
      * This method verifies the request for certain conditions to be met. This
      * includes verifying if the user has specified an ID of the project he wants to
@@ -2242,13 +2221,13 @@ public class ActionsHelper {
      *         contains additional information retrieved during the check operation,
      *         which might be of some use for the calling method.
      * @param message              the text provider.
-     * @param request                   the http request.
      * @param permission                permission to check against, or
      *                                  <code>null</code> if no check is required.
      * @param getRedirectUrlFromReferer if it is a redirect url from referer
      * @throws BaseException if any error occurs.
      */
-    public static CorrectnessCheckResult checkForCorrectProjectId(MessageSource message, HttpServletRequest request,
+    public static CorrectnessCheckResult checkForCorrectProjectId(ContestEligibilityService contestEligibilityService, Long projectId,
+                                                                  MessageSource message, String roles, Resource[] myResources, boolean isUserLoggedIn,
                                                                   String permission, boolean getRedirectUrlFromReferer) throws BaseException {
         // Prepare bean that will be returned as the result
         CorrectnessCheckResult result = new CorrectnessCheckResult();
@@ -2257,58 +2236,27 @@ public class ActionsHelper {
             permission = null;
         }
 
-        // Verify that Project ID was specified and denotes correct project
-        String pidParam = request.getParameter("pid");
-        if (pidParam == null || pidParam.trim().length() == 0) {
-            result.setResult(
-                    produceErrorReport(message, request, permission, "Error.ProjectIdNotSpecified", false));
-            // Return the result of the check
-            return result;
-        }
-
-        long pid;
-
-        try {
-            // Try to convert specified pid parameter to its integer representation
-            pid = Long.parseLong(pidParam, 10);
-        } catch (NumberFormatException nfe) {
-            result.setResult(produceErrorReport(message, request, permission, "Error.ProjectNotFound", false));
-            // Return the result of the check
-            return result;
-        }
-
         // Obtain an instance of Project Manager
         ProjectManager projMgr = createProjectManager();
         // Get Project by its id
-        Project project = projMgr.getProject(pid);
+        Project project = projMgr.getProject(projectId);
         // Verify that project with given ID exists
         if (project == null) {
-            result.setResult(produceErrorReport(message, request, permission, "Error.ProjectNotFound", false));
+            result.setResult(produceErrorReport(message, result, permission, "Error.ProjectNotFound", false));
             // Return the result of the check
             return result;
         }
-
         // Store Project object in the result bean
         result.setProject(project);
-        // Place project as attribute in the request
-        request.setAttribute("project", project);
-
-        // Gather the roles the user has for current request
-        AuthorizationHelper.gatherUserRoles(request, pid);
-
-        request.setAttribute("isAdmin",
-                AuthorizationHelper.hasUserRole(request, ORConstants.MANAGER_ROLE_NAME)
-                        || AuthorizationHelper.hasUserRole(request, ORConstants.GLOBAL_MANAGER_ROLE_NAME)
-                        || AuthorizationHelper.hasUserRole(request, ORConstants.COCKPIT_PROJECT_USER_ROLE_NAME));
 
         // If permission parameter was not null or empty string ...
         if (permission != null) {
             // ... verify that this permission is granted for currently logged in user
-            if (!AuthorizationHelper.hasUserPermission(request, permission)) {
+            if (!hasUserPermission(roles, permission)) {
                 // If it does not, and the user is logged in, display a message about the lack
                 // of
                 // permissions, otherwise redirect the request to the Login page
-                result.setResult(produceErrorReport(message, request, permission, "Error.NoPermission",
+                result.setResult(produceErrorReport(message, result, permission, "Error.NoPermission",
                         getRedirectUrlFromReferer));
                 // Return the result of the check
                 return result;
@@ -2317,18 +2265,16 @@ public class ActionsHelper {
 
         // new eligibility constraints checks
         try {
-            if (AuthorizationHelper.isUserLoggedIn(request)) {
-
+            if (isUserLoggedIn) {
                 // if the user is logged in and is a resource of this project or a global
                 // manager, continue
-                Resource[] myResources = (Resource[]) request.getAttribute("myResources");
                 if ((myResources == null || myResources.length == 0)
-                        && !AuthorizationHelper.hasUserRole(request, ORConstants.GLOBAL_MANAGER_ROLE_NAME)
-                        && !AuthorizationHelper.hasUserRole(request, ORConstants.COCKPIT_PROJECT_USER_ROLE_NAME)) {
+                        && !hasUserRole(roles, ORConstants.GLOBAL_MANAGER_ROLE_NAME)
+                        && !hasUserRole(roles, ORConstants.COCKPIT_PROJECT_USER_ROLE_NAME)) {
                     // if he's not a resource, check if the project has eligibility constraints
-                    if (EJBLibraryServicesLocator.getContestEligibilityService().hasEligibility(pid, false)) {
+                    if (contestEligibilityService.hasEligibility(projectId, false)) {
                         result.setResult(
-                                produceErrorReport(textProvider, request, permission, "Error.ProjectNotFound", false));
+                                produceErrorReport(message, result, permission, "Error.ProjectNotFound", false));
                         // Return the result of the check
                         return result;
                     }
@@ -2336,15 +2282,15 @@ public class ActionsHelper {
             } else {
                 // if the user is not logged in and the project has any eligibility constraint,
                 // ask for login
-                if (EJBLibraryServicesLocator.getContestEligibilityService().hasEligibility(pid, false)) {
-                    result.setResult(produceErrorReport(textProvider, request, permission, "Error.NoPermission",
+                if (contestEligibilityService.hasEligibility(projectId, false)) {
+                    result.setResult(produceErrorReport(message, result, permission, "Error.NoPermission",
                             getRedirectUrlFromReferer));
                     // Return the result of the check
                     return result;
                 }
             }
         } catch (Exception e) {
-            throw new BaseException("It was not possible to verify eligibility for project id " + pid, e);
+            throw new BaseException("It was not possible to verify eligibility for project id " + projectId, e);
         }
         return result;
     }
@@ -2528,42 +2474,28 @@ public class ActionsHelper {
      * @return the default scorecards list
      * @throws BaseException if error occurs
      */
-//    public static List<DefaultScorecard> getDefaultScorecards() throws BaseException {
-//        Connection conn = null;
-//        Statement stmt = null;
-//        ResultSet rs = null;
-//        try {
-//            DBConnectionFactory dbconn = new DBConnectionFactoryImpl(DB_CONNECTION_NAMESPACE);
-//            conn = dbconn.createConnection();
-//            log.debug(
-//                    "create db connection with default connection name from DBConnectionFactoryImpl with namespace:"
-//                            + DB_CONNECTION_NAMESPACE);
-//            String sqlString = "select ds.*, st.name from default_scorecard ds, scorecard_type_lu st "
-//                    + "where ds.scorecard_type_id = st.scorecard_type_id";
-//
-//            stmt = conn.createStatement();
-//            rs = stmt.executeQuery(sqlString);
-//            List<DefaultScorecard> list = new ArrayList<DefaultScorecard>();
-//            while (rs.next()) {
-//                DefaultScorecard scorecard = new DefaultScorecard();
-//                scorecard.setCategory(rs.getInt("project_category_id"));
-//                scorecard.setScorecardType(rs.getInt("scorecard_type_id"));
-//                scorecard.setScorecardId(rs.getLong("scorecard_id"));
-//                scorecard.setName(rs.getString("name"));
-//                list.add(scorecard);
-//            }
-//            return list;
-//        } catch (DBConnectionException e) {
-//            throw new BaseException("Failed to return DBConnection", e);
-//        } catch (SQLException e) {
-//            throw new BaseException("Failed to retrieve default scorecard", e);
-//        } finally {
-//            close(rs);
-//            close(stmt);
-//            close(conn);
-//        }
-//        return null;
-//    }
+    public static List<DefaultScorecard> getDefaultScorecards(EntityManager entityManager) throws BaseException {
+        try {
+            log.debug(
+                    "create db connection with default connection name from DBConnectionFactoryImpl with namespace:"
+                            + DB_CONNECTION_NAMESPACE);
+            String sqlString = "select ds.*, st.name from default_scorecard ds, scorecard_type_lu st "
+                    + "where ds.scorecard_type_id = st.scorecard_type_id";
+            var result = executeSql(entityManager, sqlString);
+            List<DefaultScorecard> list = new ArrayList<>();
+            for (var map: result) {
+                DefaultScorecard scorecard = new DefaultScorecard();
+                scorecard.setCategory(getInt(map, "project_category_id"));
+                scorecard.setScorecardType(getInt(map, "scorecard_type_id"));
+                scorecard.setScorecardId(getLong(map, "scorecard_id"));
+                scorecard.setName(getString(map, "name"));
+                list.add(scorecard);
+            }
+            return list;
+        } catch (Exception e) {
+            throw new BaseException("Failed to retrieve default scorecard", e);
+        }
+    }
 
     /**
      * Delete project_result and component_inquiry for new submitters if oldRole is
@@ -3090,7 +3022,7 @@ public class ActionsHelper {
      *         not present.
      * @throws BaseException if an unexpected error occurs.
      */
-    public static Upload getFinalFixForApprovalPhase(Phase approvalPhase) throws BaseException {
+    public static Upload getFinalFixForApprovalPhase(UploadManager uploadManager, LookupHelper lookupHelper, Phase approvalPhase) throws BaseException {
 
         Phase finalReview = null;
         for (Dependency dep : approvalPhase.getAllDependencies()) {
@@ -3115,7 +3047,7 @@ public class ActionsHelper {
             return null;
         }
 
-        Upload[] uploads = getPhaseUploads(finalFix.getId(), "Final Fix");
+        Upload[] uploads = getPhaseUploads(uploadManager, lookupHelper, finalFix.getId(), "Final Fix");
         return uploads.length > 0 ? uploads[0] : null;
     }
 
@@ -3376,13 +3308,13 @@ public class ActionsHelper {
      * @return the user ids by role name
      * @throws BaseException if an unexpected error occurs.
      */
-    public static List<Long> getUserIDsByRoleNames(String[] roleNames, long projectID) throws BaseException {
+    public static List<Long> getUserIDsByRoleNames(LookupHelper lookupHelper,String[] roleNames, long projectID) throws BaseException {
         if ((roleNames != null) && (roleNames.length > 0)) {
             // Build filters
             List<Filter> roleFilters = new ArrayList<Filter>();
             for (String roleName : roleNames) {
-//                ResourceRole role = LookupHelper.getResourceRole(roleName);
-//                roleFilters.add(ResourceFilterBuilder.createResourceRoleIdFilter(role.getId()));
+                ResourceRole role = lookupHelper.getResourceRole(roleName);
+                roleFilters.add(ResourceFilterBuilder.createResourceRoleIdFilter(role.getId()));
             }
             Filter filterProject = ResourceFilterBuilder.createProjectIdFilter(projectID);
             Filter filterRole = new OrFilter(roleFilters);
@@ -3492,36 +3424,33 @@ public class ActionsHelper {
      * @param operator        the operator
      * @throws BaseException if any error occurs
      */
-    public static void deletePostMortem(Project project, Phase postMortemPhase, String operator) throws BaseException {
+    public static void deletePostMortem(ReviewManager reviewMgr, ResourceManager resMgr, PhaseManager phaseManager, LookupHelper lookupHelper,
+                                        Project project, Phase postMortemPhase, String operator) throws BaseException {
         validateParameterNotNull(project, "project");
         validateParameterNotNull(postMortemPhase, "postMortemPhase");
 
-        ReviewManager reviewMgr = createReviewManager();
-        ResourceManager resMgr = createResourceManager();
-        PhaseManager phaseManager = createPhaseManager(false);
-
         // Get and delete all the Post Mortem reviews
-        Review[] reviews = searchReviews(postMortemPhase.getId(), null, false);
+        Review[] reviews = searchReviews(reviewMgr, postMortemPhase.getId(), null, false);
         for (Review review : reviews) {
             reviewMgr.removeReview(review.getId(), operator);
         }
 
         // Get all the Post Mortem Reviewers
         Filter filterProject = ResourceFilterBuilder.createProjectIdFilter(project.getId());
-//        long postMortemRoleId = LookupHelper.getResourceRole(ORConstants.POST_MORTEM_REVIEWER_ROLE_NAME).getId();
-//        Filter filterResourceRole = ResourceFilterBuilder.createResourceRoleIdFilter(postMortemRoleId);
-//        Filter filter = new AndFilter(filterProject, filterResourceRole);
-//        Resource[] resources = resMgr.searchResources(filter);
-//
-//        // Delete the Post Mortem Reviewers
-//        for (Resource resource : resources) {
-//            resMgr.removeResource(resource, operator);
-//        }
-//
-//        // Delete the Post Mortem Phase
-//        var phProject = postMortemPhase.getProject();
-//        phProject.removePhase(postMortemPhase);
-//        phaseManager.updatePhases(phProject, operator);
+        long postMortemRoleId = lookupHelper.getResourceRole(ORConstants.POST_MORTEM_REVIEWER_ROLE_NAME).getId();
+        Filter filterResourceRole = ResourceFilterBuilder.createResourceRoleIdFilter(postMortemRoleId);
+        Filter filter = new AndFilter(filterProject, filterResourceRole);
+        Resource[] resources = resMgr.searchResources(filter);
+
+        // Delete the Post Mortem Reviewers
+        for (Resource resource : resources) {
+            resMgr.removeResource(resource, operator);
+        }
+
+        // Delete the Post Mortem Phase
+        var phProject = postMortemPhase.getProject();
+        phProject.removePhase(postMortemPhase);
+        phaseManager.updatePhases(phProject, operator);
     }
 
     /**

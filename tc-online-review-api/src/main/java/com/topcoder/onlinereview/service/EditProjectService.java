@@ -1,11 +1,15 @@
 package com.topcoder.onlinereview.service;
 
+import com.topcoder.onlinereview.component.contest.ContestEligibilityService;
 import com.topcoder.onlinereview.component.deliverable.Submission;
+import com.topcoder.onlinereview.component.deliverable.UploadManager;
 import com.topcoder.onlinereview.component.exception.BaseException;
 import com.topcoder.onlinereview.component.external.ExternalUser;
 import com.topcoder.onlinereview.component.external.UserRetrieval;
+import com.topcoder.onlinereview.component.or.dataaccess.ProjectDataAccess;
 import com.topcoder.onlinereview.component.or.model.ClientProject;
 import com.topcoder.onlinereview.component.or.model.CockpitProject;
+import com.topcoder.onlinereview.component.or.model.PhasesDetails;
 import com.topcoder.onlinereview.component.or.util.ActionsHelper;
 import com.topcoder.onlinereview.component.or.util.Comparators;
 import com.topcoder.onlinereview.component.or.util.ConfigHelper;
@@ -20,25 +24,30 @@ import com.topcoder.onlinereview.component.project.management.ProjectCategory;
 import com.topcoder.onlinereview.component.project.management.ProjectManager;
 import com.topcoder.onlinereview.component.project.management.ProjectType;
 import com.topcoder.onlinereview.component.project.payment.ProjectPayment;
+import com.topcoder.onlinereview.component.project.payment.ProjectPaymentFilterBuilder;
+import com.topcoder.onlinereview.component.project.payment.ProjectPaymentManager;
 import com.topcoder.onlinereview.component.project.phase.Dependency;
 import com.topcoder.onlinereview.component.project.phase.Phase;
 import com.topcoder.onlinereview.component.project.phase.PhaseManager;
 import com.topcoder.onlinereview.component.project.phase.PhaseStatus;
-import com.topcoder.onlinereview.component.project.phase.PhaseType;
 import com.topcoder.onlinereview.component.resource.Resource;
 import com.topcoder.onlinereview.component.resource.ResourceFilterBuilder;
 import com.topcoder.onlinereview.component.resource.ResourceManager;
 import com.topcoder.onlinereview.component.resource.ResourceRole;
+import com.topcoder.onlinereview.component.review.Review;
+import com.topcoder.onlinereview.component.review.ReviewManagementException;
+import com.topcoder.onlinereview.component.review.ReviewManager;
 import com.topcoder.onlinereview.component.scorecard.Scorecard;
 import com.topcoder.onlinereview.component.scorecard.ScorecardManager;
 import com.topcoder.onlinereview.component.scorecard.ScorecardSearchBundle;
+import com.topcoder.onlinereview.component.search.filter.EqualToFilter;
 import com.topcoder.onlinereview.component.search.filter.Filter;
 import com.topcoder.onlinereview.dto.EditProjectResponse;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Service;
 
-import javax.servlet.http.HttpServletRequest;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -51,33 +60,71 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
+import static com.topcoder.onlinereview.component.or.util.ActionsHelper.hasUserRole;
+
 @Service
 public class EditProjectService {
+  protected static final Set<String> REVIEWER_ROLE_NAMES =
+      new HashSet<>(
+          Arrays.asList(
+              "Reviewer",
+              "Accuracy Reviewer",
+              "Failure Reviewer",
+              "Stress Reviewer",
+              "Screener",
+              "Primary Screener",
+              "Aggregator",
+              "Final Reviewer",
+              "Approver",
+              "Post-Mortem Reviewer",
+              "Specification Reviewer",
+              "Checkpoint Screener",
+              "Checkpoint Reviewer",
+              "Iterative Reviewer"));
   @Autowired private ProjectManager projectManager;
   @Autowired private ResourceManager resourceManager;
   @Autowired private PhaseManager phaseManager;
   @Autowired private LookupHelper lookupHelper;
   @Autowired private ScorecardManager scorecardManager;
+  @Autowired private ProjectPaymentManager projectPaymentManager;
+  @Autowired private ReviewManager reviewManager;
+  @Autowired private UploadManager uploadManager;
   @Autowired private MessageSource messageSource;
   @Autowired private UserRetrieval userRetrieval;
+  @Autowired private ContestEligibilityService contestEligibilityService;
+  @Autowired private ProjectDataAccess projectDataAccess;
+
+  @Value("${phase.template.file}")
+  private List<String> templateFiles;
 
   public EditProjectResponse editProject() throws BaseException {
-
+    Resource[] myResources = new Resource[0];
+    Long projectId = 0L;
+    String roles = "";
+    Long userId = 0L;
     EditProjectResponse response = new EditProjectResponse();
     // Verify that certain requirements are met before processing with the Action
     CorrectnessCheckResult verification =
         ActionsHelper.checkForCorrectProjectId(
-            messageSource, request, ORConstants.EDIT_PROJECT_DETAILS_PERM_NAME, false);
+            contestEligibilityService,
+            projectId,
+            messageSource,
+            roles,
+            myResources,
+            true,
+            ORConstants.EDIT_PROJECT_DETAILS_PERM_NAME,
+            false);
 
     // If any error has occurred, return action forward contained in the result bean
     if (!verification.isSuccessful()) {
+      // TODO
       //      return verification.getResult();
     }
 
-    setEditProjectFormData(response, verification);
+    setEditProjectFormData(response, verification, userId, roles);
 
     // Populate the form with project properties
-    populateProjectForm(response, verification.getProject());
+    populateProjectForm(response, verification.getProject(), userId, roles, myResources);
 
     return response;
   }
@@ -91,9 +138,10 @@ public class EditProjectService {
    * @throws BaseException if an unexpected error occurs.
    */
   private void setEditProjectFormData(
-      EditProjectResponse response, CorrectnessCheckResult verification) throws BaseException {
+      EditProjectResponse response, CorrectnessCheckResult verification, Long userId, String roles)
+      throws BaseException {
     // Load the lookup data
-    loadProjectEditLookups(response);
+    loadProjectEditLookups(response, userId, roles);
     String phaseDependenciesEditable = null;
     if (verification != null) {
       phaseDependenciesEditable =
@@ -138,7 +186,12 @@ public class EditProjectService {
    * @throws BaseException if any error
    */
   @SuppressWarnings("unchecked")
-  private void populateProjectForm(EditProjectResponse response, Project project)
+  private void populateProjectForm(
+      EditProjectResponse response,
+      Project project,
+      Long userId,
+      String roles,
+      Resource[] myResources)
       throws BaseException {
     // Populate project id
     response.set("pid", project.getId());
@@ -239,22 +292,24 @@ public class EditProjectService {
     Arrays.sort(phases, new Comparators.ProjectPhaseComparer());
 
     setEditProjectPhasesData(response, phases, false);
-    setEditProjectRequestAttributes(request, project, resources, externalUsers, phases);
+    setEditProjectRequestAttributes(
+        response, roles, project, resources, myResources, externalUsers, phases);
 
     // Populate last modification timestamp
     response.set(
         "last_modification_time", ActionsHelper.getLastModificationTime(project, phases).getTime());
 
     boolean isAdmin =
-        AuthorizationHelper.hasUserRole(request, ORConstants.MANAGER_ROLE_NAME)
-            || AuthorizationHelper.hasUserRole(request, ORConstants.COCKPIT_PROJECT_USER_ROLE_NAME)
-            || AuthorizationHelper.hasUserRole(request, ORConstants.GLOBAL_MANAGER_ROLE_NAME);
-    request.setAttribute("isAdmin", isAdmin);
+        hasUserRole(roles, ORConstants.MANAGER_ROLE_NAME)
+            || hasUserRole(roles, ORConstants.COCKPIT_PROJECT_USER_ROLE_NAME)
+            || hasUserRole(roles, ORConstants.GLOBAL_MANAGER_ROLE_NAME);
+    response.setIsAdmin(isAdmin);
 
     // start BUGR 4039 - Check whether the billing project id is in the user's allowed billing
     // projects list
-    List<ClientProject> availableClientProjects = ActionsHelper.getClientProjects(request);
-    Long currentClientProjectId = (Long) getModel().get("billing_project");
+    List<ClientProject> availableClientProjects =
+        ActionsHelper.getClientProjects(userId, roles, projectDataAccess);
+    Long currentClientProjectId = Long.parseLong(project.getProperty("Billing Project").toString());
     boolean inList = false;
 
     if (currentClientProjectId == null) {
@@ -270,11 +325,12 @@ public class EditProjectService {
       }
     }
 
-    request.setAttribute("allowBillingEdit", isAdmin && inList);
+    response.set("allowBillingEdit", isAdmin && inList);
 
     // end BUG-4039
-    List<CockpitProject> availableCockpitProjects = ActionsHelper.getCockpitProjects(request);
-    Long currentCockpitProjectId = (Long) getModel().get("cockpit_project");
+    List<CockpitProject> availableCockpitProjects =
+        ActionsHelper.getCockpitProjects(userId, roles, projectDataAccess);
+    Long currentCockpitProjectId = project.getTcDirectProjectId();
     inList = false;
 
     if (currentCockpitProjectId == null) {
@@ -289,7 +345,7 @@ public class EditProjectService {
       }
     }
 
-    request.setAttribute("allowCockpitProjectEdit", isAdmin && inList);
+    response.set("allowCockpitProjectEdit", isAdmin && inList);
   }
 
   /**
@@ -443,16 +499,15 @@ public class EditProjectService {
     response.set(timeProperty, index, parts[1]);
   }
 
-  protected void loadProjectEditLookups(EditProjectResponse response) throws BaseException {
+  protected void loadProjectEditLookups(EditProjectResponse response, Long userId, String roles)
+      throws BaseException {
     // Retrieve project types and categories
     ProjectType[] projectTypes = projectManager.getAllProjectTypes();
     ProjectCategory[] projectCategories = projectManager.getAllProjectCategories();
 
     // Store the retrieved types and categories in request
-    request.setAttribute("projectTypes", projectTypes);
-    request.setAttribute("projectCategories", projectCategories);
-    request.setAttribute(
-        "projectCategoriesMap", buildProjectCategoriesLookupMap(projectCategories));
+    response.setProjectTypes(projectTypes);
+    response.setProjectCategories(projectCategories);
 
     // Obtain an instance of Resource Manager
     ResourceManager resourceManager = ActionsHelper.createResourceManager();
@@ -460,24 +515,18 @@ public class EditProjectService {
     // Place resource roles into the request as attribute
     ResourceRole[] resourceRoles = resourceManager.getAllResourceRoles();
     Set<String> disabledResourceRoles =
-        new HashSet<String>(Arrays.asList(ConfigHelper.getDisabledResourceRoles()));
-    List<ResourceRole> allowedResourceRoles = new ArrayList<ResourceRole>();
+        new HashSet<>(Arrays.asList(ConfigHelper.getDisabledResourceRoles()));
+    List<ResourceRole> allowedResourceRoles = new ArrayList<>();
     for (ResourceRole resourceRole : resourceRoles) {
       if (!disabledResourceRoles.contains(String.valueOf(resourceRole.getId()))) {
         allowedResourceRoles.add(resourceRole);
       }
     }
-    request.setAttribute("allowedResourceRoles", allowedResourceRoles);
-    request.setAttribute("resourceRoles", resourceRoles);
-    request.setAttribute("disabledResourceRoles", disabledResourceRoles);
+    response.setAllowedResourceRoles(allowedResourceRoles);
+    response.setResourceRoles(resourceRoles);
+    response.setDisabledResourceRoles(disabledResourceRoles);
 
-    // Obtain an instance of Phase Manager
-    PhaseManager phaseManager = ActionsHelper.createPhaseManager(false);
-    // Get all phase types
-    PhaseType[] phaseTypes = phaseManager.getAllPhaseTypes();
-    // Place them into request as an attribute
-    request.setAttribute("phaseTypes", phaseTypes);
-    request.setAttribute("arePhaseDependenciesEditable", true);
+    response.setPhaseTypes(phaseManager.getAllPhaseTypes());
 
     // Retrieve the scorecard lists
     Scorecard[] screeningScorecards = searchActiveScorecards(scorecardManager, "Screening");
@@ -494,28 +543,30 @@ public class EditProjectService {
         searchActiveScorecards(scorecardManager, "Iterative Review");
 
     // Store them in the request
-    request.setAttribute("screeningScorecards", screeningScorecards);
-    request.setAttribute("reviewScorecards", reviewScorecards);
-    request.setAttribute("approvalScorecards", approvalScorecards);
-    request.setAttribute("postMortemScorecards", postMortemScorecards);
-    request.setAttribute("specificationReviewScorecards", specificationReviewScorecards);
-    request.setAttribute("checkpointScreeningScorecards", checkpointScreeningScorecards);
-    request.setAttribute("checkpointReviewScorecards", checkpointReviewScorecards);
-    request.setAttribute("iterativeReviewScorecards", iterativeReviewScorecards);
-    request.setAttribute("defaultScorecards", ActionsHelper.getDefaultScorecards());
+    response.setScreeningScorecards(screeningScorecards);
+    response.setReviewScorecards(reviewScorecards);
+    response.setApprovalScorecards(approvalScorecards);
+    response.setPostMortemScorecards(postMortemScorecards);
+    response.setSpecificationReviewScorecards(specificationReviewScorecards);
+    response.setCheckpointScreeningScorecards(checkpointScreeningScorecards);
+    response.setCheckpointReviewScorecards(checkpointReviewScorecards);
+    response.setIterativeReviewScorecards(iterativeReviewScorecards);
+    // TODO entityManager
+    response.setDefaultScorecards(ActionsHelper.getDefaultScorecards(null));
 
     // Load phase template names
-    String[] phaseTemplateNames = ActionsHelper.createPhaseTemplate().getAllTemplateNames();
-    request.setAttribute("phaseTemplateNames", phaseTemplateNames);
+    response.setPhaseTemplateNames(templateFiles);
 
     // since Online Review Update - Add Project Dropdown v1.0
     // Retrieve the list of all client projects and store it in the request
     // this need to be retrieved only for admin user.
-    if (AuthorizationHelper.hasUserRole(request, ORConstants.MANAGER_ROLE_NAME)
-        || AuthorizationHelper.hasUserRole(request, ORConstants.GLOBAL_MANAGER_ROLE_NAME)
-        || AuthorizationHelper.hasUserRole(request, ORConstants.COCKPIT_PROJECT_USER_ROLE_NAME)) {
-      request.setAttribute("billingProjects", ActionsHelper.getClientProjects(request));
-      request.setAttribute("cockpitProjects", ActionsHelper.getCockpitProjects(request));
+    if (hasUserRole(roles, ORConstants.MANAGER_ROLE_NAME)
+        || hasUserRole(roles, ORConstants.GLOBAL_MANAGER_ROLE_NAME)
+        || hasUserRole(roles, ORConstants.COCKPIT_PROJECT_USER_ROLE_NAME)) {
+      response.set(
+          "billingProjects", ActionsHelper.getClientProjects(userId, roles, projectDataAccess));
+      response.set(
+          "cockpitProjects", ActionsHelper.getCockpitProjects(userId, roles, projectDataAccess));
     }
   }
 
@@ -539,60 +590,93 @@ public class EditProjectService {
     return map;
   }
 
-  protected void setEditProjectRequestAttributes(HttpServletRequest request,
-                                                 Project project, Resource[] resources, ExternalUser[] externalUsers,
-                                                 Phase[] phases) throws BaseException {
-    PhasesDetails phasesDetails = PhasesDetailsServices.getPhasesDetails(request,
-            this, project, phases, resources, externalUsers);
+  protected void setEditProjectRequestAttributes(
+      EditProjectResponse response,
+      String roles,
+      Project project,
+      Resource[] resources,
+      Resource[] myResources,
+      ExternalUser[] externalUsers,
+      Phase[] phases)
+      throws BaseException {
+    PhasesDetails phasesDetails =
+        PhasesDetailsServices.getPhasesDetails(
+            userRetrieval,
+            lookupHelper,
+            resourceManager,
+            reviewManager,
+            uploadManager,
+            roles,
+            messageSource,
+            project,
+            phases,
+            resources,
+            myResources,
+            externalUsers);
 
-    request.setAttribute("phaseGroupIndexes", phasesDetails.getPhaseGroupIndexes());
-    request.setAttribute("phaseGroups", phasesDetails.getPhaseGroups());
-    request.setAttribute("activeTabIdx", phasesDetails.getActiveTabIndex());
+    response.set("phaseGroupIndexes", phasesDetails.getPhaseGroupIndexes());
+    response.set("phaseGroups", phasesDetails.getPhaseGroups());
+    response.set("activeTabIdx", phasesDetails.getActiveTabIndex());
 
-    request.setAttribute("isManager",
-            AuthorizationHelper.hasUserRole(request, ORConstants.MANAGER_ROLE_NAMES));
-    request.setAttribute("isAllowedToPerformScreening",
-            AuthorizationHelper.hasUserPermission(request, ORConstants.PERFORM_SCREENING_PERM_NAME) &&
-                    ActionsHelper.getPhase(phases, true, ORConstants.SCREENING_PHASE_NAME) != null);
-    request.setAttribute("isAllowedToPerformCheckpointScreening",
-            AuthorizationHelper.hasUserPermission(request, ORConstants.PERFORM_CHECKPOINT_SCREENING_PERM_NAME) &&
-                    ActionsHelper.getPhase(phases, true, ORConstants.CHECKPOINT_SCREENING_PHASE_NAME) != null);
-    request.setAttribute("isAllowedToPerformCheckpointReview",
-            AuthorizationHelper.hasUserPermission(request, ORConstants.PERFORM_CHECKPOINT_REVIEW_PERM_NAME) &&
-                    ActionsHelper.getPhase(phases, true, ORConstants.CHECKPOINT_REVIEW_PHASE_NAME) != null);
-    request.setAttribute("isAllowedToViewScreening",
-            AuthorizationHelper.hasUserPermission(request, ORConstants.VIEW_SCREENING_PERM_NAME));
-    request.setAttribute("isAllowedToViewCheckpointScreening",
-            AuthorizationHelper.hasUserPermission(request, ORConstants.VIEW_CHECKPOINT_SCREENING_PERM_NAME));
-    request.setAttribute("isAllowedToViewCheckpointReview",
-            AuthorizationHelper.hasUserPermission(request, ORConstants.VIEW_CHECKPOINT_REVIEW_PERM_NAME));
-    request.setAttribute("isAllowedToUploadTC",
-            AuthorizationHelper.hasUserPermission(request, ORConstants.UPLOAD_TEST_CASES_PERM_NAME));
-    request.setAttribute("isAllowedToPerformAggregation",
-            AuthorizationHelper.hasUserPermission(request, ORConstants.PERFORM_AGGREGATION_PERM_NAME));
-    request.setAttribute("isAllowedToPerformAggregationReview",
-            AuthorizationHelper.hasUserPermission(request, ORConstants.PERFORM_AGGREG_REVIEW_PERM_NAME) &&
-                    !AuthorizationHelper.hasUserPermission(request, ORConstants.PERFORM_AGGREGATION_PERM_NAME));
-    request.setAttribute("isAllowedToUploadFF",
-            AuthorizationHelper.hasUserPermission(request, ORConstants.PERFORM_FINAL_FIX_PERM_NAME));
-    request.setAttribute("isAllowedToPerformFinalReview",
-            ActionsHelper.getPhase(phases, true, ORConstants.FINAL_REVIEW_PHASE_NAME) != null &&
-                    AuthorizationHelper.hasUserPermission(request, ORConstants.PERFORM_FINAL_REVIEW_PERM_NAME));
-    request.setAttribute("isAllowedToPerformApproval",
-            ActionsHelper.getPhase(phases, true, ORConstants.APPROVAL_PHASE_NAME) != null &&
-                    AuthorizationHelper.hasUserPermission(request, ORConstants.PERFORM_APPROVAL_PERM_NAME));
-    request.setAttribute("isAllowedToPerformPortMortemReview",
-            ActionsHelper.getPhase(phases, true, ORConstants.POST_MORTEM_PHASE_NAME) != null &&
-                    AuthorizationHelper.hasUserPermission(request, ORConstants.PERFORM_POST_MORTEM_REVIEW_PERM_NAME));
+    response.set("isManager", hasUserRole(roles, ORConstants.MANAGER_ROLE_NAMES));
+    response.set(
+        "isAllowedToPerformScreening",
+        ActionsHelper.hasUserPermission(roles, ORConstants.PERFORM_SCREENING_PERM_NAME)
+            && ActionsHelper.getPhase(phases, true, ORConstants.SCREENING_PHASE_NAME) != null);
+    response.set(
+        "isAllowedToPerformCheckpointScreening",
+        ActionsHelper.hasUserPermission(roles, ORConstants.PERFORM_CHECKPOINT_SCREENING_PERM_NAME)
+            && ActionsHelper.getPhase(phases, true, ORConstants.CHECKPOINT_SCREENING_PHASE_NAME)
+                != null);
+    response.set(
+        "isAllowedToPerformCheckpointReview",
+        ActionsHelper.hasUserPermission(roles, ORConstants.PERFORM_CHECKPOINT_REVIEW_PERM_NAME)
+            && ActionsHelper.getPhase(phases, true, ORConstants.CHECKPOINT_REVIEW_PHASE_NAME)
+                != null);
+    response.set(
+        "isAllowedToViewScreening",
+        ActionsHelper.hasUserPermission(roles, ORConstants.VIEW_SCREENING_PERM_NAME));
+    response.set(
+        "isAllowedToViewCheckpointScreening",
+        ActionsHelper.hasUserPermission(roles, ORConstants.VIEW_CHECKPOINT_SCREENING_PERM_NAME));
+    response.set(
+        "isAllowedToViewCheckpointReview",
+        ActionsHelper.hasUserPermission(roles, ORConstants.VIEW_CHECKPOINT_REVIEW_PERM_NAME));
+    response.set(
+        "isAllowedToUploadTC",
+        ActionsHelper.hasUserPermission(roles, ORConstants.UPLOAD_TEST_CASES_PERM_NAME));
+    response.set(
+        "isAllowedToPerformAggregation",
+        ActionsHelper.hasUserPermission(roles, ORConstants.PERFORM_AGGREGATION_PERM_NAME));
+    response.set(
+        "isAllowedToPerformAggregationReview",
+        ActionsHelper.hasUserPermission(roles, ORConstants.PERFORM_AGGREG_REVIEW_PERM_NAME)
+            && !ActionsHelper.hasUserPermission(roles, ORConstants.PERFORM_AGGREGATION_PERM_NAME));
+    response.set(
+        "isAllowedToUploadFF",
+        ActionsHelper.hasUserPermission(roles, ORConstants.PERFORM_FINAL_FIX_PERM_NAME));
+    response.set(
+        "isAllowedToPerformFinalReview",
+        ActionsHelper.getPhase(phases, true, ORConstants.FINAL_REVIEW_PHASE_NAME) != null
+            && ActionsHelper.hasUserPermission(roles, ORConstants.PERFORM_FINAL_REVIEW_PERM_NAME));
+    response.set(
+        "isAllowedToPerformApproval",
+        ActionsHelper.getPhase(phases, true, ORConstants.APPROVAL_PHASE_NAME) != null
+            && ActionsHelper.hasUserPermission(roles, ORConstants.PERFORM_APPROVAL_PERM_NAME));
+    response.set(
+        "isAllowedToPerformPortMortemReview",
+        ActionsHelper.getPhase(phases, true, ORConstants.POST_MORTEM_PHASE_NAME) != null
+            && ActionsHelper.hasUserPermission(
+                roles, ORConstants.PERFORM_POST_MORTEM_REVIEW_PERM_NAME));
 
-    collectTrueSubmittersAndReviewers(project, resources, ActionsHelper.createReviewManager(), request);
+    collectTrueSubmittersAndReviewers(project, resources, response);
 
     boolean[] canEditPrizes = canEditPrize(project.getId());
 
-    request.setAttribute("canEditContestPrize", canEditPrizes[0]);
-    request.setAttribute("canEditCheckpointPrize", canEditPrizes[1]);
+    response.set("canEditContestPrize", canEditPrizes[0]);
+    response.set("canEditCheckpointPrize", canEditPrizes[1]);
 
-    setResourcePaidRequestAttribute(project, request);
+    setResourcePaidRequestAttribute(project, response);
   }
 
   protected boolean[] canEditPrize(long projectId) throws BaseException {
@@ -601,10 +685,22 @@ public class EditProjectService {
       // new project
       return ret;
     }
-    Submission[] contestSubmissions = ActionsHelper.getProjectSubmissions(projectId,
-            ORConstants.CONTEST_SUBMISSION_TYPE_NAME, null, false);
-    Submission[] checkpointSubmissions = ActionsHelper.getProjectSubmissions(projectId,
-            ORConstants.CHECKPOINT_SUBMISSION_TYPE_NAME, null, false);
+    Submission[] contestSubmissions =
+        ActionsHelper.getProjectSubmissions(
+            lookupHelper,
+            uploadManager,
+            projectId,
+            ORConstants.CONTEST_SUBMISSION_TYPE_NAME,
+            null,
+            false);
+    Submission[] checkpointSubmissions =
+        ActionsHelper.getProjectSubmissions(
+            lookupHelper,
+            uploadManager,
+            projectId,
+            ORConstants.CHECKPOINT_SUBMISSION_TYPE_NAME,
+            null,
+            false);
     for (Submission sub : contestSubmissions) {
       if (sub.getPrize() != null) {
         ret[0] = false;
@@ -620,18 +716,19 @@ public class EditProjectService {
     return ret;
   }
 
-  protected void setResourcePaidRequestAttribute(Project project, HttpServletRequest request)
-          throws BaseException {
-    if (request.getAttribute("resourcePaid") != null) {
+  protected void setResourcePaidRequestAttribute(Project project, EditProjectResponse response)
+      throws BaseException {
+    if (response.getResourcePaid() != null) {
       return;
     }
 
-    Map<Long, Boolean> resourcePaid = new HashMap<Long, Boolean>();
+    Map<Long, Boolean> resourcePaid = new HashMap<>();
 
     if (project.getId() > 0) {
-      List<ProjectPayment> allPayments = ActionsHelper.createProjectPaymentManager().search(
+      List<ProjectPayment> allPayments =
+          projectPaymentManager.search(
               ProjectPaymentFilterBuilder.createProjectIdFilter(project.getId()));
-      request.setAttribute("allPayments", allPayments);
+      response.set("allPayments", allPayments);
 
       for (ProjectPayment payment : allPayments) {
         if (payment.getPactsPaymentId() != null) {
@@ -640,6 +737,66 @@ public class EditProjectService {
       }
     }
 
-    request.setAttribute("resourcePaid", resourcePaid);
+    response.setResourcePaid(resourcePaid);
+  }
+
+  private void collectTrueSubmittersAndReviewers(
+      Project project, Resource[] resources, EditProjectResponse response)
+      throws ReviewManagementException {
+    Map<Integer, Boolean> trueSubmitters = new HashMap<>();
+    Map<Integer, Boolean> trueReviewers = new HashMap<>();
+    response.setTrueSubmitters(trueSubmitters);
+    response.setTrueReviewers(trueReviewers);
+    Set<Long> reviewersWithScorecards = findResourcesWithReviewsForProject(project.getId());
+    for (int i = 0; i < resources.length; ++i) {
+      collectSingleTrueSubmitterOrReviewer(
+          resources[i],
+          reviewersWithScorecards.contains(resources[i].getId()),
+          i,
+          trueSubmitters,
+          trueReviewers);
+    }
+  }
+
+  /**
+   * Checks if specified resource is either submitter with submissions or reviewer with reviews and
+   * adds it to respective map in either case.
+   *
+   * @param resource a <code>Resource</code> to be verified.
+   * @param hasReviewScorecardFilled <code>true</code> if resource has review filled; <code>false
+   *     </code> otherwise.
+   * @param index an <code>int</code> providing the index in the form for specified resource.
+   * @param trueSubmitters a <code>Map</code> collecting the submitters.
+   * @param trueReviewers a <code>Map</code> collecting the reviewers.
+   */
+  private void collectSingleTrueSubmitterOrReviewer(
+      Resource resource,
+      boolean hasReviewScorecardFilled,
+      int index,
+      Map<Integer, Boolean> trueSubmitters,
+      Map<Integer, Boolean> trueReviewers) {
+    String resourceRoleName = resource.getResourceRole().getName();
+    if ("Submitter".equalsIgnoreCase(resourceRoleName)
+        || "Specification Submitter".equalsIgnoreCase(resourceRoleName)) {
+      Long[] submissionIds = resource.getSubmissions();
+      if ((submissionIds != null) && (submissionIds.length > 0)) {
+        trueSubmitters.put(index + 1, Boolean.TRUE);
+      }
+    } else if (REVIEWER_ROLE_NAMES.contains(resourceRoleName)) {
+      if (hasReviewScorecardFilled) {
+        trueReviewers.put(index + 1, Boolean.TRUE);
+      }
+    }
+  }
+
+  protected Set<Long> findResourcesWithReviewsForProject(Long projectId)
+      throws ReviewManagementException {
+    Filter filterProject = new EqualToFilter("project", projectId);
+    Set<Long> result = new HashSet<>();
+    Review[] reviews = reviewManager.searchReviews(filterProject, false);
+    for (Review review : reviews) {
+      result.add(review.getAuthor());
+    }
+    return result;
   }
 }

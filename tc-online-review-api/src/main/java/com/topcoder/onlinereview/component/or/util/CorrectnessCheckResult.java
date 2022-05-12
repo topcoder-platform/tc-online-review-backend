@@ -8,6 +8,9 @@ import com.topcoder.onlinereview.component.deliverable.Upload;
 import com.topcoder.onlinereview.component.project.management.Project;
 import com.topcoder.onlinereview.component.review.Review;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * This class is bean that provides a convenient way to return several values from some <code>
  * checkForXXX</code> methods and indicate success/failure of the check performed by those methods.
@@ -61,6 +64,8 @@ public final class CorrectnessCheckResult {
    * appropriate get/set methods. The default value for this variable is <code>null</code>.
    */
   private Review review = null;
+
+  private Map<String, String> requestAttributes = new HashMap<>();
 
   /**
    * Creates a new instance of the <code>CorrectnessCheckResult</code> class and sets all its member
@@ -173,5 +178,9 @@ public final class CorrectnessCheckResult {
    */
   public void setResult(String result) {
     this.result = result;
+  }
+
+  public void setAttribute(String key, String value) {
+    requestAttributes.put(key, value);
   }
 }
