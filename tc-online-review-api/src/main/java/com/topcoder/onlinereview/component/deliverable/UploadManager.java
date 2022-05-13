@@ -9,6 +9,7 @@ import com.topcoder.onlinereview.component.id.IDGenerator;
 import com.topcoder.onlinereview.component.project.management.LogMessage;
 import com.topcoder.onlinereview.component.search.SearchBuilderException;
 import com.topcoder.onlinereview.component.search.SearchBundle;
+import com.topcoder.onlinereview.component.search.SearchBundleManager;
 import com.topcoder.onlinereview.component.search.filter.Filter;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
@@ -17,7 +18,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import org.springframework.util.MimeType;
 
 import javax.annotation.PostConstruct;
 import javax.persistence.EntityManager;
@@ -303,7 +303,9 @@ public class UploadManager {
    * The persistence store for Uploads, Submission, and related objects. This field is set in the
    * constructor, is immutable, and can never be null.
    */
-  @Autowired private UploadPersistence persistence;
+  //  @Autowired private UploadPersistence persistence;
+
+  @Autowired private SqlUploadPersistence persistence;
 
   /**
    * The search bundle that is used when searching for uploads. This field is set in the
@@ -358,7 +360,12 @@ public class UploadManager {
    */
   private IDGenerator submissionTypeIdGenerator;
 
-  @Autowired @Qualifier("entityManagerMap")private Map<String, EntityManager> entityManagerMap;
+  @Autowired
+  @Qualifier("entityManagerMap")
+  private Map<String, EntityManager> entityManagerMap;
+
+  @Autowired private SearchBundleManager searchBundleManager;
+
   @Autowired private DBHelper dbHelper;
 
   @Value("${review.persistence.entity-manager-name}")
@@ -369,9 +376,8 @@ public class UploadManager {
   @PostConstruct
   public void postRun() throws IDGenerationException {
     entityManager = entityManagerMap.get(entityManagerName);
-    // TODO
-    //        uploadSearchBundle = uploadSearchBundle;
-    //        submissionSearchBundle = submissionSearchBundle;
+    uploadSearchBundle = searchBundleManager.getSearchBundle(UPLOAD_SEARCH_BUNDLE_NAME);
+    submissionSearchBundle = searchBundleManager.getSearchBundle(SUBMISSION_SEARCH_BUNDLE_NAME);
     uploadIdGenerator = new IDGenerator(UPLOAD_ID_GENERATOR_NAME, dbHelper);
     uploadTypeIdGenerator = new IDGenerator(UPLOAD_TYPE_ID_GENERATOR_NAME, dbHelper);
     uploadStatusIdGenerator = new IDGenerator(UPLOAD_STATUS_ID_GENERATOR_NAME, dbHelper);
@@ -702,7 +708,7 @@ public class UploadManager {
   public Submission[] searchSubmissions(Filter filter)
       throws UploadPersistenceException, SearchBuilderException {
     DeliverableHelper.checkObjectNotNull(filter, "filter");
-    var customResult = (List<Map<String, Object>>) submissionSearchBundle.search(filter);
+    var customResult = submissionSearchBundle.search(filter);
 
     log.debug(
         new LogMessage(null, null, "search submissions with filter.")

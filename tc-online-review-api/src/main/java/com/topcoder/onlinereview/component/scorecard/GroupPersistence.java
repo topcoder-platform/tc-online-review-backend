@@ -430,7 +430,7 @@ public class GroupPersistence {
    * @return the list of groups for the given parent.
    * @throws PersistenceException if database error occur.
    */
-  Group[] getGroups(long parentId) throws PersistenceException {
+  Group[] getGroups(Long parentId) throws PersistenceException {
     try {
       // get all groups
       var rs =

@@ -19,6 +19,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.google.common.collect.Lists.newArrayList;
+import static com.topcoder.onlinereview.util.CommonUtils.executeSql;
 import static com.topcoder.onlinereview.util.CommonUtils.executeSqlWithParam;
 import static com.topcoder.onlinereview.util.CommonUtils.getDouble;
 import static com.topcoder.onlinereview.util.CommonUtils.getInt;
@@ -74,9 +75,9 @@ public class UserRetrieval {
    * @throws RetrievalException if any exception occurred during processing; it will wrap the
    *     underlying exception.
    */
-  public ExternalUser retrieveUser(long id) throws RetrievalException {
+  public ExternalUser retrieveUser(Long id) throws RetrievalException {
     // Gets Users by calling retrieveUsers(long[]).
-    ExternalUser[] users = retrieveUsers(new long[] {id});
+    ExternalUser[] users = retrieveUsers(new Long[] {id});
 
     // If the array is empty, return null; else, return this first one.
     return retFirstObject(users);
@@ -124,7 +125,7 @@ public class UserRetrieval {
    * @throws RetrievalException if any exception occurred during processing; it will wrap the
    *     underlying exception.
    */
-  public ExternalUser[] retrieveUsers(long[] ids) throws RetrievalException {
+  public ExternalUser[] retrieveUsers(Long[] ids) throws RetrievalException {
     if (ids.length == 0) {
       return new ExternalUser[0];
     }
@@ -242,7 +243,7 @@ public class UserRetrieval {
    *
    * <p>All the other retrieveUsers method delegate to this one.
    *
-   * @param queryAndClause the query of the prepareStatement, given be the caller.
+   * @param rawClause the query of the prepareStatement, given be the caller.
    * @param parameters the parameter of the query, it can be long[] or String[], due to the
    *     different caller.
    * @return an array of external users whose first name and last name start with the given first
@@ -250,8 +251,10 @@ public class UserRetrieval {
    * @throws RetrievalException if any exception occurred during processing; it will wrap the
    *     underlying exception.
    */
-  private ExternalUser[] retrieveUsers(String queryAndClause, List<Object> parameters)
+  private ExternalUser[] retrieveUsers(String rawClause, List<Object> parameters)
       throws RetrievalException {
+    var marks = parameters.stream().map(p -> "?").collect(Collectors.joining(","));
+    var queryAndClause = rawClause + "(" + marks + ")";
     // Selects Users.
     var userMap = selectUsers(queryAndClause, parameters);
 
@@ -284,6 +287,7 @@ public class UserRetrieval {
         "SELECT u.user_id id, first_name, last_name, handle, address "
             + "FROM user u, email WHERE u.user_id = email.user_id AND email.primary_ind = 1 ";
     var result = executeSqlWithParam(entityManager, userQuery + queryAndClause, queryParameter);
+//      var result = executeSql(entityManager, userQuery);
     return result.stream()
         .collect(
             Collectors.toMap(

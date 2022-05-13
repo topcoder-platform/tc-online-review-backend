@@ -3,6 +3,8 @@
  */
 package com.topcoder.onlinereview.component.or.util;
 
+import com.google.common.collect.ImmutableMap;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -709,7 +711,22 @@ public class ConfigHelper {
    * This member variable holds the names of all permissions for the application (as keys), and
    * lists of roles that have every of the permissions (as values for the corresponding keys).
    */
-  private static Map<String, String[]> permissionsMatrix = new HashMap<String, String[]>();
+  // TODO
+  private static Map<String, String[]> permissionsMatrix =
+      new ImmutableMap.Builder<String, String[]>()
+          .put(
+              "View Late Deliverable",
+              new String[] {
+                "Global Manager",
+                "Manager",
+                "Client Manager",
+                "Copilot",
+                "Cockpit Project User",
+                "Observer"
+              })
+          .put(
+              "Edit Late Deliverable", new String[] {"Global Manager", "Global Manager", "Copilot"})
+          .build();
 
   /**
    * This member variable holds the list of names of the phase groups. The names are represented as
@@ -758,7 +775,7 @@ public class ConfigHelper {
           newHashSet("Registration"),
           newHashSet("Checkpoint Submission", "Checkpoint Screening", "Checkpoint Review"),
           newHashSet("Submission", "Screening"),
-          newHashSet("Review", "Review", "Appeals Response"),
+          newHashSet("Review", "Appeals", "Appeals Response"),
           newHashSet("Aggregation", "Aggregation Review"),
           newHashSet("Final Fix", "Final Review"),
           newHashSet("Approval"),

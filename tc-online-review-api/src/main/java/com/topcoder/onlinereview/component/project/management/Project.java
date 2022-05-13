@@ -89,7 +89,7 @@ public class Project extends AuditableObject implements Serializable {
      *
      * @since 1.2
      */
-    private long tcDirectProjectId;
+    private Long tcDirectProjectId;
 
     /**
      * Represents the name of the associated cockpit (tc direct) project. The default value is null. It's changeable. It's accessed in setter
@@ -376,7 +376,7 @@ public class Project extends AuditableObject implements Serializable {
      * @return the direct project id
      * @since 1.2
      */
-    public long getTcDirectProjectId() {
+    public Long getTcDirectProjectId() {
         return this.tcDirectProjectId;
     }
 
@@ -387,7 +387,7 @@ public class Project extends AuditableObject implements Serializable {
      *            the directProjectId to set
      * @since 1.2
      */
-    public void setTcDirectProjectId(long tcDirectProjectId) {
+    public void setTcDirectProjectId(Long tcDirectProjectId) {
         this.tcDirectProjectId = tcDirectProjectId;
     }
 

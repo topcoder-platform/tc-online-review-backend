@@ -90,14 +90,14 @@ public class DeliverablePersistence {
    * @throws IllegalArgumentException If deliverableId is <= 0 or resourceId <=0
    * @throws DeliverablePersistenceException If there is an error when reading the persistence
    */
-  public Deliverable[] loadDeliverables(long deliverableId, long resourceId, long phaseId)
+  public Deliverable[] loadDeliverables(Long deliverableId, Long resourceId, Long phaseId)
       throws DeliverablePersistenceException {
     Helper.assertIdNotUnset(deliverableId, "deliverableId");
     Helper.assertIdNotUnset(resourceId, "resourceId");
     Helper.assertIdNotUnset(phaseId, "phaseId");
 
     return loadDeliverables(
-        new long[] {deliverableId}, new long[] {resourceId}, new long[] {phaseId});
+        new Long[] {deliverableId}, new Long[] {resourceId}, new Long[] {phaseId});
   }
 
   /**
@@ -124,10 +124,10 @@ public class DeliverablePersistence {
 
     Deliverable[] deliverables =
         loadDeliverables(
-            new long[] {deliverableId},
-            new long[] {resourceId},
-            new long[] {phaseId},
-            new long[] {submissionId});
+            new Long[] {deliverableId},
+            new Long[] {resourceId},
+            new Long[] {phaseId},
+            new Long[] {submissionId});
 
     return (deliverables.length == 0) ? null : deliverables[0];
   }
@@ -144,7 +144,7 @@ public class DeliverablePersistence {
    * @throws IllegalArgumentException If the two arguments do not have the same number of elements
    * @throws DeliverablePersistenceException if there is an error when reading the persistence data
    */
-  public Deliverable[] loadDeliverables(long[] deliverableIds, long[] resourceIds, long[] phaseIds)
+  public Deliverable[] loadDeliverables(Long[] deliverableIds, Long[] resourceIds, Long[] phaseIds)
       throws DeliverablePersistenceException {
     Helper.assertLongArrayNotNullAndOnlyHasPositive(deliverableIds, "deliverableIds");
     Helper.assertLongArrayNotNullAndOnlyHasPositive(resourceIds, "resourceIds");
@@ -232,7 +232,7 @@ public class DeliverablePersistence {
    * @throws DeliverablePersistenceException if there is an error when reading the persistence data
    */
   public Deliverable[] loadDeliverables(
-      long[] deliverableIds, long[] resourceIds, long[] phaseIds, long[] submissionIds)
+      Long[] deliverableIds, Long[] resourceIds, Long[] phaseIds, Long[] submissionIds)
       throws DeliverablePersistenceException {
     Helper.assertLongArrayNotNullAndOnlyHasPositive(deliverableIds, "deliverableIds");
     Helper.assertLongArrayNotNullAndOnlyHasPositive(resourceIds, "resourceIds");

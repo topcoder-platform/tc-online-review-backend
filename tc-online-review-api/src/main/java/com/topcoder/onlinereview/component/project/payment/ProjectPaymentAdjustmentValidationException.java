@@ -3,7 +3,7 @@
  */
 package com.topcoder.onlinereview.component.project.payment;
 
-import com.topcoder.util.errorhandling.ExceptionData;
+import com.topcoder.onlinereview.component.exception.ExceptionData;
 
 /**
  * <p>

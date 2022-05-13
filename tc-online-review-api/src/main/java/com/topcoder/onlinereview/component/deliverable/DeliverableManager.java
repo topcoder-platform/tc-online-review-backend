@@ -223,7 +223,7 @@ public class DeliverableManager {
 
     // Check if the return object is a CustomResultSet, and it's record count is correct too.
     // And retrieve long[][] from correct CustomResultSet.
-    long[][] array = checkAndGetCustomResultSetValidDeliverable(obj, cols);
+    Long[][] array = checkAndGetCustomResultSetValidDeliverable(obj, cols);
 
     // Create a List for temporary storage.
     List<Deliverable> list = new ArrayList<>();
@@ -283,12 +283,12 @@ public class DeliverableManager {
    * @return long[][] from CustomResultSet
    * @since 1.2
    */
-  private static long[][] checkAndGetCustomResultSetValidDeliverable(
+  private static Long[][] checkAndGetCustomResultSetValidDeliverable(
       List<Map<String, Object>> obj, List<String> cols) {
     log.debug("CustomResultSet Records: " + obj.size());
 
     // Create a long array for temporary storage.
-    long[][] res = new long[cols.size()][obj.size()];
+    Long[][] res = new Long[cols.size()][obj.size()];
 
     // Retrieved long[][] from CustomResultSet. If the expected data is not present,
     // according to the implementation of CustomerResult.getInt(), ClassCastException

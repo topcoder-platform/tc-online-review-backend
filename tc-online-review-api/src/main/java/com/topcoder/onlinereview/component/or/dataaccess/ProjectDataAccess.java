@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static com.google.common.collect.Lists.newArrayList;
 import static com.topcoder.onlinereview.component.or.dataaccess.BaseDataAccess.PROJECT_STATUS_ACTIVE_ID;
 import static com.topcoder.onlinereview.component.or.dataaccess.BaseDataAccess.PROJECT_STATUS_DRAFT_ID;
 import static com.topcoder.onlinereview.util.CommonUtils.getDate;
@@ -238,7 +239,7 @@ public class ProjectDataAccess {
    */
   public List<ClientProject> getAllClientProjects() {
     var results = baseDataAccess.runQuery("client_projects", (String) null, (String) null);
-    var projectsResultContainer = results.get("client_projects");
+    var projectsResultContainer = results.getOrDefault("client_projects", newArrayList());
 
     List<ClientProject> result = new ArrayList<ClientProject>();
     for (var row : projectsResultContainer) {

@@ -1,5 +1,6 @@
 package com.topcoder.onlinereview.util;
 
+import org.apache.commons.lang3.StringUtils;
 import org.hibernate.query.Query;
 import org.hibernate.transform.AliasToEntityMapResultTransformer;
 import org.springframework.beans.BeanUtils;
@@ -7,6 +8,7 @@ import org.springframework.context.MessageSource;
 
 import javax.persistence.EntityManager;
 import java.util.Date;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -42,7 +44,18 @@ public class CommonUtils {
   }
 
   public static Boolean getBoolean(Map<String, Object> map, String key) {
-    return getT(map, key, v -> (Boolean) v);
+    return getT(
+        map,
+        key,
+        v -> {
+          if (v instanceof Boolean) {
+            return (Boolean) v;
+          } else if (StringUtils.isNumeric(v.toString())) {
+            return Integer.parseInt(v.toString()) != 0;
+          } else {
+            return "true".equalsIgnoreCase(v.toString());
+          }
+        });
   }
 
   public static String getString(Map<String, Object> map, String key) {

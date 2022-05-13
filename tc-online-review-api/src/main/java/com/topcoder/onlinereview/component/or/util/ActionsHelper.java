@@ -742,7 +742,7 @@ public class ActionsHelper {
         ResourceManager resMgr = ActionsHelper.createResourceManager();
         // Get submitter's resource
         Resource submitter = resMgr.getResource(upload.getOwner());
-        populateEmailProperty(request, submitter);
+//        populateEmailProperty(request, submitter);
 
         // Place submitter's user ID into the request
         request.setAttribute("submitterId", submitter.getUserId());
@@ -757,19 +757,18 @@ public class ActionsHelper {
      * @param resource Resource instance
      * @throws BaseException if error occurs
      */
-    public static void populateEmailProperty(HttpServletRequest request, Resource resource) throws BaseException {
-        populateEmailProperty(request, new Resource[] { resource });
-    }
+//    public static void populateEmailProperty(HttpServletRequest request, Resource resource) throws BaseException {
+//        populateEmailProperty(request, new Resource[] { resource });
+//    }
 
     /**
      * Populate resource email resource info to resources.
      *
-     * @param request   the request to retrieve manager instance
      * @param resources array of Resource instance
      * @throws BaseException if error occurs
      */
-    public static void populateEmailProperty(HttpServletRequest request, Resource[] resources) throws BaseException {
-        long[] userIDs = new long[resources.length];
+    public static void populateEmailProperty(UserRetrieval userRetrieval, Resource[] resources) throws BaseException {
+        Long[] userIDs = new Long[resources.length];
         for (int i = 0; i < resources.length; i++) {
             Long userID = resources[i].getUserId();
             if (userID == null) {
@@ -777,25 +776,22 @@ public class ActionsHelper {
             }
             userIDs[i] = userID;
         }
+        ExternalUser[] users = userRetrieval.retrieveUsers(userIDs);
 
-//        UserRetrieval userRetrieval = ActionsHelper.createUserRetrieval(request);
-//        ExternalUser[] users = userRetrieval.retrieveUsers(userIDs);
-//
-//        if (users == null) {
-//            throw new BaseException("Error during user retrieval in populateEmailProperty() method.");
-//        }
-//        Map<Long, String> emailsMap = new HashMap<Long, String>();
-//        for (ExternalUser user : users) {
-//            emailsMap.put(user.getId(), user.getEmail());
-//        }
-//
-//        for (int i = 0; i < resources.length; i++) {
-//            String email = emailsMap.get(userIDs[i]);
-//            if (email == null) {
-//                throw new BaseException("Can't retrieve email property for the resourceId: " + resources[i].getId());
-//            }
-//            resources[i].setProperty("Email", email);
-//        }
+        if (users == null) {
+            throw new BaseException("Error during user retrieval in populateEmailProperty() method.");
+        }
+        Map<Long, String> emailsMap = new HashMap<>();
+        for (ExternalUser user : users) {
+            emailsMap.put(user.getId(), user.getEmail());
+        }
+        for (int i = 0; i < resources.length; i++) {
+            String email = emailsMap.get(userIDs[i]);
+            if (email == null) {
+                throw new BaseException("Can't retrieve email property for the resourceId: " + resources[i].getId());
+            }
+            resources[i].setProperty("Email", email);
+        }
     }
 
     /**
@@ -1528,7 +1524,7 @@ public class ActionsHelper {
         }
 
         // Prepare an array to store External User IDs
-        long[] extUserIds = new long[resources.length];
+        Long[] extUserIds = new Long[resources.length];
         // Fill the array with user IDs retrieved from resource properties
         for (int i = 0; i < resources.length; ++i) {
             extUserIds[i] = resources[i].getUserId();
@@ -2194,14 +2190,38 @@ public class ActionsHelper {
 //        project.setProperty("Rated Timestamp", format.format(endDate));
     }
 
-    // TODO
-    public static boolean hasUserPermission(String roles, String... permission) {
+    public static boolean hasUserPermission(String roles, String permissionName) {
+        String[] roleArray = ConfigHelper.getRolesForPermission(permissionName);
+        for (String role : roleArray) {
+            if (hasUserRole(roles, role)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public static boolean hasUserRole(String roles, String... role) {
+        for (var r : role) {
+            if (!roles.contains(r)) {
+                return false;
+            }
+        }
         return true;
     }
 
-    // TODO
-    public static boolean hasUserRole(String roles, String... role) {
-        return true;
+    public static Resource[] getMyResources(UserRetrieval userRetrieval, ResourceManager resourceManager, Long userId, Long projectId) throws BaseException {
+        // Create filter to filter only the resources for the currently logged user
+        Filter filterUserID = ResourceFilterBuilder.createUserIdFilter(userId);
+
+        // Create filter to filter only the resources for the project in question
+        Filter filterProject = ResourceFilterBuilder.createProjectIdFilter(projectId);
+        // Create combined final filter
+        Filter filter = new AndFilter(filterUserID, filterProject);
+
+        // Obtain an instance of Resource Manager and run the search
+        var resources = resourceManager.searchResources(filter);
+        populateEmailProperty(userRetrieval, resources);
+        return resources;
     }
 
     /**
@@ -2226,7 +2246,8 @@ public class ActionsHelper {
      * @param getRedirectUrlFromReferer if it is a redirect url from referer
      * @throws BaseException if any error occurs.
      */
-    public static CorrectnessCheckResult checkForCorrectProjectId(ContestEligibilityService contestEligibilityService, Long projectId,
+    public static CorrectnessCheckResult checkForCorrectProjectId(ContestEligibilityService contestEligibilityService,
+                                                                  ProjectManager projectManager, Long projectId,
                                                                   MessageSource message, String roles, Resource[] myResources, boolean isUserLoggedIn,
                                                                   String permission, boolean getRedirectUrlFromReferer) throws BaseException {
         // Prepare bean that will be returned as the result
@@ -2235,11 +2256,8 @@ public class ActionsHelper {
         if (permission == null || permission.trim().length() == 0) {
             permission = null;
         }
-
-        // Obtain an instance of Project Manager
-        ProjectManager projMgr = createProjectManager();
         // Get Project by its id
-        Project project = projMgr.getProject(projectId);
+        Project project = projectManager.getProject(projectId);
         // Verify that project with given ID exists
         if (project == null) {
             result.setResult(produceErrorReport(message, result, permission, "Error.ProjectNotFound", false));

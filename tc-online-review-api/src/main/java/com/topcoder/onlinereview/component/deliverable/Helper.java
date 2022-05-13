@@ -147,7 +147,7 @@ class Helper {
    * @throws IllegalArgumentException if the given long array is null or contains negative or zero
    *     values.
    */
-  static void assertLongArrayNotNullAndOnlyHasPositive(long[] values, String name) {
+  static void assertLongArrayNotNullAndOnlyHasPositive(Long[] values, String name) {
     Helper.assertObjectNotNull(values, name);
 
     for (int i = 0; i < values.length; ++i) {

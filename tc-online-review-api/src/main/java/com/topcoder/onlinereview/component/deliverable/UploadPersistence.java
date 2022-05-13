@@ -4,13 +4,10 @@
 package com.topcoder.onlinereview.component.deliverable;
 
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import org.springframework.util.MimeType;
 
 import javax.annotation.PostConstruct;
 import javax.persistence.EntityManager;
@@ -37,12 +34,13 @@ import static com.topcoder.onlinereview.util.CommonUtils.getString;
 @Slf4j
 @Component
 public class UploadPersistence {
-  private static final Logger logger = LoggerFactory.getLogger(UploadPersistence.class.getName());
-
   @Value("${upload.persistence.entity-manager-name}")
   private String entityManagerName;
 
-  @Autowired @Qualifier("entityManagerMap")private Map<String, EntityManager> entityManagerMap;
+  @Autowired
+  @Qualifier("entityManagerMap")
+  private Map<String, EntityManager> entityManagerMap;
+
   private EntityManager entityManager;
 
   @PostConstruct
@@ -154,8 +152,8 @@ public class UploadPersistence {
    * @throws IllegalArgumentException if uploadTypeId is <= 0
    * @throws UploadPersistenceException if there is an error reading the persistence data
    */
-  public UploadType loadUploadType(long uploadTypeId) throws UploadPersistenceException {
-    UploadType[] types = loadUploadTypes(new long[] {uploadTypeId});
+  public UploadType loadUploadType(Long uploadTypeId) throws UploadPersistenceException {
+    UploadType[] types = loadUploadTypes(new Long[] {uploadTypeId});
 
     if (types.length > 0) {
       return types[0];
@@ -189,7 +187,7 @@ public class UploadPersistence {
    * @return The ids of all upload types
    * @throws UploadPersistenceException If there is an error reading the persistence store
    */
-  public long[] getAllUploadTypeIds() throws UploadPersistenceException {
+  public Long[] getAllUploadTypeIds() throws UploadPersistenceException {
     String query = "SELECT upload_type_id FROM upload_type_lu";
     return selectIds(query, "upload_type_id");
   }
@@ -202,10 +200,10 @@ public class UploadPersistence {
    * @return the ids array (may be empty).
    * @throws UploadPersistenceException if any error occurs during operation.
    */
-  private long[] selectIds(String query, String idName) throws UploadPersistenceException {
+  private Long[] selectIds(String query, String idName) throws UploadPersistenceException {
     try {
       var result = executeSql(entityManager, query);
-      var ids = new long[0];
+      var ids = new Long[result.size()];
       for (var i = 0; i < result.size(); i++) {
         ids[i] = getLong(result.get(i), idName);
       }
@@ -292,8 +290,8 @@ public class UploadPersistence {
    * @throws IllegalArgumentException if uploadStatusId is <= 0
    * @throws UploadPersistenceException if there is an error reading the persistence data
    */
-  public UploadStatus loadUploadStatus(long uploadStatusId) throws UploadPersistenceException {
-    UploadStatus[] statuses = loadUploadStatuses(new long[] {uploadStatusId});
+  public UploadStatus loadUploadStatus(Long uploadStatusId) throws UploadPersistenceException {
+    UploadStatus[] statuses = loadUploadStatuses(new Long[] {uploadStatusId});
 
     if (statuses.length > 0) {
       return statuses[0];
@@ -327,7 +325,7 @@ public class UploadPersistence {
    * @return The ids of all upload statuses
    * @throws UploadPersistenceException If there is an error reading the persistence store
    */
-  public long[] getAllUploadStatusIds() throws UploadPersistenceException {
+  public Long[] getAllUploadStatusIds() throws UploadPersistenceException {
     String query = "SELECT upload_status_id FROM upload_status_lu";
     return selectIds(query, "upload_status_id");
   }
@@ -412,9 +410,9 @@ public class UploadPersistence {
    * @throws IllegalArgumentException if submissionStatusId is <= 0
    * @throws UploadPersistenceException if there is an error reading the persistence data
    */
-  public SubmissionStatus loadSubmissionStatus(long submissionStatusId)
+  public SubmissionStatus loadSubmissionStatus(Long submissionStatusId)
       throws UploadPersistenceException {
-    SubmissionStatus[] statuses = loadSubmissionStatuses(new long[] {submissionStatusId});
+    SubmissionStatus[] statuses = loadSubmissionStatuses(new Long[] {submissionStatusId});
 
     if (statuses.length > 0) {
       return statuses[0];
@@ -449,7 +447,7 @@ public class UploadPersistence {
    * @return The ids of all submission statuses
    * @throws UploadPersistenceException If there is an error reading the persistence store
    */
-  public long[] getAllSubmissionStatusIds() throws UploadPersistenceException {
+  public Long[] getAllSubmissionStatusIds() throws UploadPersistenceException {
     String query = "SELECT submission_status_id FROM submission_status_lu;";
     return selectIds(query, "submission_status_id");
   }
@@ -792,7 +790,7 @@ public class UploadPersistence {
    * @throws IllegalArgumentException if any id is <= 0
    * @throws UploadPersistenceException if there is an error reading the persistence data
    */
-  public UploadType[] loadUploadTypes(long[] uploadTypeIds) throws UploadPersistenceException {
+  public UploadType[] loadUploadTypes(Long[] uploadTypeIds) throws UploadPersistenceException {
     String query =
         "SELECT upload_type_id type_id, name type_name, description type_description, "
             + "create_user type_create_user, create_date type_create_date, modify_user type_modify_user, "
@@ -848,7 +846,7 @@ public class UploadPersistence {
    * @throws IllegalArgumentException if any id is <= 0
    * @throws UploadPersistenceException if there is an error reading the persistence data
    */
-  public UploadStatus[] loadUploadStatuses(long[] uploadStatusIds)
+  public UploadStatus[] loadUploadStatuses(Long[] uploadStatusIds)
       throws UploadPersistenceException {
     String query =
         "SELECT upload_status_id status_id, name status_name, description status_description, "
@@ -879,7 +877,7 @@ public class UploadPersistence {
    * @throws IllegalArgumentException if any id is <= 0
    * @throws UploadPersistenceException if there is an error reading the persistence data
    */
-  public SubmissionStatus[] loadSubmissionStatuses(long[] submissionStatusIds)
+  public SubmissionStatus[] loadSubmissionStatuses(Long[] submissionStatusIds)
       throws UploadPersistenceException {
     String query =
         "SELECT submission_status_id status_id, name status_name, description status_description, "
@@ -956,15 +954,15 @@ public class UploadPersistence {
     executeSingleCommand(query, values);
   }
 
-  public long[] getAllSubmissionTypeIds() throws UploadPersistenceException {
+  public Long[] getAllSubmissionTypeIds() throws UploadPersistenceException {
     String query = "SELECT submission_type_id FROM submission_type_lu;";
 
     return selectIds(query, "submission_type_id");
   }
 
-  public SubmissionType loadSubmissionType(long submissionTypeId)
+  public SubmissionType loadSubmissionType(Long submissionTypeId)
       throws UploadPersistenceException {
-    SubmissionType[] types = loadSubmissionTypes(new long[] {submissionTypeId});
+    SubmissionType[] types = loadSubmissionTypes(new Long[] {submissionTypeId});
 
     if (types.length > 0) {
       return types[0];
@@ -973,7 +971,7 @@ public class UploadPersistence {
     return null;
   }
 
-  public SubmissionType[] loadSubmissionTypes(long[] submissionTypeIds)
+  public SubmissionType[] loadSubmissionTypes(Long[] submissionTypeIds)
       throws UploadPersistenceException {
     String query =
         "SELECT submission_type_id type_id, name type_name, description type_description, "

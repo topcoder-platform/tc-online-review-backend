@@ -2032,7 +2032,7 @@ public class ProjectPersistence {
       projects[i].setModificationTimestamp(getDate(row, "modify_date"));
 
       // set the tc direct project id and name
-      projects[i].setTcDirectProjectId(getInt(row, "tc_direct_project_id"));
+      projects[i].setTcDirectProjectId(getLong(row, "tc_direct_project_id"));
       projects[i].setTcDirectProjectName(getString(row, "tc_direct_project_name"));
 
       // set the file types
