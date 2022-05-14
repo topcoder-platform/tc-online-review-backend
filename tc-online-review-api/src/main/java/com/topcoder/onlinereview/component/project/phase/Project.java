@@ -3,6 +3,7 @@
  */
 package com.topcoder.onlinereview.component.project.phase;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.topcoder.onlinereview.component.workday.Workdays;
 
 import java.util.Arrays;
@@ -311,6 +312,7 @@ public class Project extends AttributableObject {
    *
    * @return an array of all phases in this project
    */
+  @JsonIgnore
   public Phase[] getAllPhases() {
     return getAllPhases(new PhaseDateComparator());
   }
@@ -339,6 +341,7 @@ public class Project extends AttributableObject {
    *
    * @return an array of initial phases which does not depend on the other phases in the project.
    */
+  @JsonIgnore
   public Phase[] getInitialPhases() {
     Set initialPhases = new HashSet();
 

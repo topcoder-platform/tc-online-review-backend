@@ -3,6 +3,8 @@
  */
 package com.topcoder.onlinereview.component.project.phase;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import java.io.Serializable;
 
 /**
@@ -34,12 +36,14 @@ public class Dependency implements Serializable {
      * The dependency phase. Initialized in the constructor and could be accessed via getter and setter method. Cannot
      * be null.
      */
+    @JsonIgnore
     private Phase dependency;
 
     /**
      * The dependent phase. Initialized in the constructor and could be accessed via getter and setter method. Cannot be
      * null.
      */
+    @JsonIgnore
     private Phase dependent;
 
     /**

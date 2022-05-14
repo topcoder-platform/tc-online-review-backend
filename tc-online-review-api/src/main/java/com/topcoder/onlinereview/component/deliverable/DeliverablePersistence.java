@@ -48,7 +48,7 @@ public class DeliverablePersistence {
           + "FROM deliverable_lu "
           + "INNER JOIN resource ON resource.resource_role_id = deliverable_lu.resource_role_id "
           + "INNER JOIN project_phase ON project_phase.project_id = resource.project_id AND project_phase.phase_type_id = deliverable_lu.phase_type_id "
-          + "WHERE deliverable_lu.per_submission = 0 AND ";
+          + "WHERE ";
 
   /** Represents the sql statement to load deliverables with submission. */
   private static final String LOAD_DELIVERABLES_WITH_SUBMISSION_SQL =
@@ -64,7 +64,7 @@ public class DeliverablePersistence {
           + "INNER JOIN upload ON upload.project_id = resource.project_id "
           + "INNER JOIN submission ON submission.upload_id = upload.upload_id "
           + "INNER JOIN submission_status_lu ON submission.submission_status_id = submission_status_lu.submission_status_id "
-          + "WHERE deliverable_lu.per_submission = 1 AND submission_status_lu.name = 'Active' AND ";
+          + "WHERE submission_status_lu.name = 'Active' AND ";
 
   @Value("${deliverable.persistence.entity-manager-name}")
   private String entityManagerName;

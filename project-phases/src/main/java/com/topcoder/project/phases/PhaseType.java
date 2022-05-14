@@ -30,6 +30,9 @@ public class PhaseType implements Serializable {
      */
     private String name;
 
+    public PhaseType() {
+    }
+
     /**
      * The constructor with the phase type id and name.
      *
