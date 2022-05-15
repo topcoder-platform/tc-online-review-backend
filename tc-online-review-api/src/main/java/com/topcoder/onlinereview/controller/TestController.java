@@ -18,4 +18,9 @@ public class TestController {
       map.put("stid", "1");
     return ResponseEntity.ok(queryService.executeCommand("tcs_projects_by_status", map));
   }
+
+    @GetMapping("test_update")
+    public ResponseEntity<?> testUpdate() {
+        return ResponseEntity.ok(queryService.testUpdate());
+    }
 }

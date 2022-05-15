@@ -15,6 +15,7 @@ import org.hibernate.transform.AliasToEntityMapResultTransformer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import javax.persistence.EntityManager;
 import java.text.ParsePosition;
@@ -25,6 +26,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import static com.google.common.collect.Lists.newArrayList;
+import static com.topcoder.onlinereview.util.CommonUtils.executeUpdateSql;
 import static com.topcoder.onlinereview.util.Constants.DATE_FORMAT;
 import static com.topcoder.onlinereview.util.Constants.DATE_INPUT_TYPE;
 import static com.topcoder.onlinereview.util.Constants.DECIMAL_INPUT_TYPE;
@@ -50,6 +52,12 @@ public class QueryService {
   @Autowired
   @Qualifier("idsEntityManager")
   private EntityManager entityManager;
+
+  @Transactional
+  public int testUpdate() {
+    return executeUpdateSql(entityManager, "insert into contest_type_lu(contest_type_id, contest_type_desc) values(?, ?)",
+            newArrayList(100L, "TCO100 test insert sql"));
+  }
 
   public HashMap<String, List<Map<String, Object>>> executeCommand(
       String commandDesc, Map<String, String> inputMap) {

@@ -92,7 +92,7 @@ public class DeliverableManager {
    * The persistence store for Deliverables. This field is set in the constructor, is immutable, and
    * can never be null.
    */
-  @Autowired private DeliverablePersistence persistence;
+  @Autowired private SqlDeliverablePersistence persistence;
 
   /**
    * The search bundle that is used when searching for deliverables. This field is set in the

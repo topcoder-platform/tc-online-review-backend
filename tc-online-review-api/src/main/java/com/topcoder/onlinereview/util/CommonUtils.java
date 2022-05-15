@@ -82,6 +82,15 @@ public class CommonUtils {
     return nativeQuery.getResultList();
   }
 
+  public static int executeUpdateSql(EntityManager entityManager, String sql, List<Object> parameters) {
+    var nativeQuery = entityManager.createNativeQuery(sql);
+    for (int i = 0; i < parameters.size(); i++) {
+      nativeQuery.setParameter(i + 1, parameters.get(i));
+    }
+    entityManager.joinTransaction();
+    return nativeQuery.executeUpdate();
+  }
+
   public static String getMessageText(MessageSource messages, String code) {
     return messages.getMessage(code, null, Locale.ENGLISH);
   }
