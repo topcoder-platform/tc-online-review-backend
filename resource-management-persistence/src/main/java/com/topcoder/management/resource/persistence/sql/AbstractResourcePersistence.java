@@ -920,7 +920,7 @@ public abstract class AbstractResourcePersistence implements ResourcePersistence
             query.append(")");
             statement = connection.prepareStatement(query.toString());
             rs = statement.executeQuery();
-            if (rs.next()) {
+            while (rs.next()) {
                 long resourceId = rs.getLong(1);
                 Long projectId = rs.getLong(2);
                 Long phaseId = rs.getLong(3);
