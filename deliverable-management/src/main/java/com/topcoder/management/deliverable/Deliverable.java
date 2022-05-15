@@ -20,6 +20,8 @@ import java.util.Date;
  * @version 1.0.2
  */
 public class Deliverable extends NamedDeliverableStructure {
+    public Deliverable() {
+    }
     /**
      * <p>
      * The serial version id.
@@ -31,19 +33,19 @@ public class Deliverable extends NamedDeliverableStructure {
      * The identifier of the project the Deliverable is associated with. This field is set in the
      * constructor and is immutable. This field must always be greater than 0.
      */
-    private final long project;
+    private long project;
 
     /**
      * The identifier of the phase the Deliverable is associated with. This field is set in the
      * constructor and is immutable. This field must always be greater than 0.
      */
-    private final long phase;
+    private long phase;
 
     /**
      * The identifier of the resource the Deliverable is associated with. This field is set in the
      * constructor and is immutable. This field must always be greater than 0.
      */
-    private final long resource;
+    private long resource;
 
     /**
      * The identifier of the submission that is associated with the deliverable. This field is set
@@ -57,7 +59,7 @@ public class Deliverable extends NamedDeliverableStructure {
      * Tells whether the deliverable is required to be completed for the project phase to end. This
      * field is set in the constructor.
      */
-    private final boolean required;
+    private boolean required;
 
     /**
      * The date on which the deliverable was completed. If the deliverable has not been completed,

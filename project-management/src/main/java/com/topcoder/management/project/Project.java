@@ -34,6 +34,8 @@ import java.util.Map.Entry;
 @SuppressWarnings("serial")
 public class Project extends AuditableObject implements Serializable {
 
+    public Project() {
+    }
     /**
      * Represents the id of this instance. Only values greater than or equal to zero is allowed. This variable is
      * initialized in the constructor and can be accessed in the corresponding getter/setter method.
@@ -406,5 +408,9 @@ public class Project extends AuditableObject implements Serializable {
      */
     public void setTcDirectProjectName(String tcDirectProjectName) {
         this.tcDirectProjectName = tcDirectProjectName;
+    }
+
+    public void setAllProperties(Map properties) {
+        this.properties = properties;
     }
 }

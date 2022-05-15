@@ -22,6 +22,8 @@ import java.io.Serializable;
  */
 @SuppressWarnings("serial")
 public class ProjectCategory implements Serializable {
+    public ProjectCategory() {
+    }
     /**
      * Represents Web Page Design project category.
      *

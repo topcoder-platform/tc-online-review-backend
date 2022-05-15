@@ -40,7 +40,7 @@ public class Section extends WeightedScorecardStructure {
      * reference equality) are allowed.
      * </p>
      */
-    private final List questions = new ArrayList();
+    private final List<Question> questions = new ArrayList();
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Constructors
@@ -301,6 +301,10 @@ public class Section extends WeightedScorecardStructure {
         return (Question[]) questions.toArray(new Question[questions.size()]);
     }
 
+    public void setAllQuestions(List<Question> allQuestions) {
+        this.questions.clear();
+        this.questions.addAll(allQuestions);
+    }
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Member Methods - questions Miscellaneous Accessors and Mutators
 

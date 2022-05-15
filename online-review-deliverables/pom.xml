@@ -65,9 +65,15 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+<<<<<<< Updated upstream
             <groupId>com.ibm.informix</groupId>
             <artifactId>jdbc</artifactId>
             <version>4.50.7.1</version>
+=======
+            <groupId>com.topcoder.thirdpart</groupId>
+            <artifactId>ifxjdbc</artifactId>
+            <version>1.0-SNAPSHOT</version>
+>>>>>>> Stashed changes
             <scope>test</scope>
         </dependency>
     </dependencies>

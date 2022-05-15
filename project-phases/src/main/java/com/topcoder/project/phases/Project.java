@@ -47,7 +47,7 @@ public class Project extends AttributableObject {
      * Represents the instance of <code>Workdays</code> to calculate the end date for the phase in the project. It is
      * initialized in the constructor, and never changed later.
      */
-    private final Workdays workdays;
+    private Workdays workdays;
 
     /**
      * Represents the start date of the project, it is initialized in the constructor, and changed in the setter method.
@@ -66,6 +66,8 @@ public class Project extends AttributableObject {
      */
     private boolean changed = true;
 
+    public Project() {
+    }
     /**
      * Create a new instance with the start date of the project and the <code>Workdays</code> instance. There is no
      * phases in the project initially.

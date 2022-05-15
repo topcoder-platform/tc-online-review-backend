@@ -170,7 +170,7 @@ public class Scorecard extends NamedScorecardStructure {
      * equality) are allowed.
      * </p>
      */
-    private final List groups = new ArrayList();
+    private final List<Group> groups = new ArrayList();
 
     /**
      * Whether or not this scorecard is currently in active use.
@@ -674,6 +674,11 @@ public class Scorecard extends NamedScorecardStructure {
      */
     public Group[] getAllGroups() {
         return (Group[]) groups.toArray(new Group[groups.size()]);
+    }
+
+    public void setAllGroups(List<Group> groups) {
+        this.groups.clear();
+        this.groups.addAll(groups);
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -21,6 +21,8 @@ import java.io.Serializable;
 @SuppressWarnings("serial")
 public class ProjectStatus implements Serializable {
 
+    public ProjectStatus() {
+    }
     /**
      * Represents the id of this instance. Only values greater than zero is allowed. This variable is initialized in the
      * constructor and can be accessed in the corresponding getter/setter method.

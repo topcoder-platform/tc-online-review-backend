@@ -41,7 +41,7 @@ public class Group extends WeightedScorecardStructure {
      * reference equality) are allowed.
      * </p>
      */
-    private final List sections = new ArrayList();
+    private final List<Section> sections = new ArrayList();
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Constructors
@@ -300,6 +300,10 @@ public class Group extends WeightedScorecardStructure {
         return (Section[]) sections.toArray(new Section[sections.size()]);
     }
 
+    public void setAllSections(List<Section> allSections) {
+        this.sections.clear();
+        this.sections.addAll(allSections);
+    }
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Member Methods - sections Miscellaneous Accessors and Mutators
 
