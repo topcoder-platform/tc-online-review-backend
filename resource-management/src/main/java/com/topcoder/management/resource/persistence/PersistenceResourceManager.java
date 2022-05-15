@@ -4,7 +4,9 @@
 package com.topcoder.management.resource.persistence;
 
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 import com.topcoder.management.resource.AuditableResourceStructure;
@@ -798,6 +800,31 @@ public class PersistenceResourceManager implements ResourceManager {
         CustomResultSet resultSet = getCustomResultSet(resourceSearchBundle.search(filter));
 
         return persistence.loadResources(resultSet);
+    }
+
+    /**
+     * <p>
+     * Get resources by given project ids
+     * </p>
+     *
+     * @return The resources array
+     *
+     * @param projectIds The project ids
+     *
+     * @throws ResourcePersistenceException If there is an error reading the persistence store
+     */
+    public Resource[] getResourcesByProjects(Long[] projectIds) throws ResourcePersistenceException {
+
+        Helper.checkNull(projectIds, "projectIds");
+
+        // Get the list of existing resource roles and build a cache
+        ResourceRole[] resourceRoles = getAllResourceRoles();
+        Map<Long, ResourceRole> cachedRoles = new HashMap<Long, ResourceRole>();
+        for (ResourceRole role : resourceRoles) {
+            cachedRoles.put(role.getId(), role);
+        }
+
+        return persistence.getResourcesByProjects(projectIds, cachedRoles);
     }
 
     /**
