@@ -142,24 +142,35 @@ public class MockProjectPersistence implements ProjectPersistence {
     }
 
     /**
-     * <p>
-     * Retrieves an array of project instance from the persistence. The project instances are
-     * retrieved with their properties.
-     * </p>
-     *
-     * @param userId the user id.
-     * @param status the project status.
-     * @param my the my projects flag.
+     * @param userId         the user id.
+     * @param status         the project status.
+     * @param page           the page.
+     * @param perPage        the items per page.
+     * @param categoryId     the category id.
+     * @param my             the my projects flag.
      * @param hasManagerRole the manager role flag.
      * @return An array of project instances.
      * @throws PersistenceException if error occurred while accessing the database.
      */
-    public Project[] getAllProjects(Long userId, ProjectStatus status, ProjectCategory[] categories, boolean my, boolean hasManagerRole) throws PersistenceException {
+    public Project[] getAllProjects(Long userId, ProjectStatus status, int page, int perPage, long categoryId, boolean my, boolean hasManagerRole) throws PersistenceException {
         if (status == null) {
             throw new IllegalArgumentException("status should not be null.");
         }
-        if (categories == null) {
-            throw new IllegalArgumentException("categories should not be null.");
+        return null;
+    }
+
+
+    /**
+     * @param userId the user id.
+     * @param status the project status.
+     * @param my the my projects flag.
+     * @param hasManagerRole the manager role flag.
+     * @return An array of project types instances.
+     * @throws PersistenceException if error occurred while accessing the database.
+     */
+    public List<UserProjectType> countUserProjects(Long userId, ProjectStatus status, boolean my, boolean hasManagerRole) throws PersistenceException {
+        if (status == null) {
+            throw new IllegalArgumentException("status should not be null.");
         }
         return null;
     }

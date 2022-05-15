@@ -82,7 +82,12 @@ public class MockProjectManager implements ProjectManager {
         return null;
     }
 
-    public Project[] getAllProjects(Long userId, ProjectStatus status, ProjectCategory[] categories, boolean my, boolean hasManagerRole) throws PersistenceException {
+    public Project[] getAllProjects(Long userId, ProjectStatus status, int page, int perPage, long categoryId, boolean my, boolean hasManagerRole) throws PersistenceException {
+        return null;
+    }
+
+
+    public List<UserProjectType> countUserProjects(Long userId, ProjectStatus status, boolean my, boolean hasManagerRole) throws PersistenceException {
         return null;
     }
 

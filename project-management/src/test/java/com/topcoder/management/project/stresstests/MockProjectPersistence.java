@@ -86,16 +86,34 @@ public class MockProjectPersistence implements ProjectPersistence {
     }
 
     /**
-     * do nothing.
+     * do nothing
+     *
+     * @param userId         the user id.
+     * @param status         the project status.
+     * @param page           the page.
+     * @param perPage        the items per page.
+     * @param categoryId     the category id.
+     * @param my             the my projects flag.
+     * @param hasManagerRole the manager role flag.
+     * @return An array of project instances.
+     * @throws PersistenceException if error occurred while accessing the database.
+     */
+    public Project[] getAllProjects(Long userId, ProjectStatus status, int page, int perPage, long categoryId, boolean my, boolean hasManagerRole) throws PersistenceException {
+        return null;
+    }
+
+
+    /**
+     * do nothing
      *
      * @param userId the user id.
      * @param status the project status.
      * @param my the my projects flag.
      * @param hasManagerRole the manager role flag.
-     * @return An array of project instances.
+     * @return An array of project types instances.
      * @throws PersistenceException if error occurred while accessing the database.
      */
-    public Project[] getAllProjects(Long userId, ProjectStatus status, ProjectCategory[] categories, boolean my, boolean hasManagerRole) throws PersistenceException {
+    public List<UserProjectType> countUserProjects(Long userId, ProjectStatus status, boolean my, boolean hasManagerRole) throws PersistenceException {
         return null;
     }
 
