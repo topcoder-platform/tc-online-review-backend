@@ -6,6 +6,7 @@ package com.topcoder.management.resource.stresstests;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import com.topcoder.management.resource.Notification;
@@ -93,6 +94,23 @@ public class MockResourcePersistence implements ResourcePersistence {
      *             If there is an error loading the Resource
      */
     public Resource loadResource(long resourceId) throws ResourcePersistenceException {
+        return null;
+    }
+
+    
+    /**
+     * <p>
+     * Get resources by given project ids
+     * </p>
+     *
+     * @return The resources array
+     *
+     * @param projectIds The project ids
+     * @param roles The resource prole map
+     *
+     * @throws ResourcePersistenceException If there is an error reading the persistence store
+     */
+    public Resource[] getResourcesByProjects(Long[] projectIds, Map<Long, ResourceRole> roles) throws ResourcePersistenceException {
         return null;
     }
 

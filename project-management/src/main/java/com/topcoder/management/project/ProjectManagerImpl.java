@@ -284,17 +284,36 @@ public class ProjectManagerImpl implements ProjectManager {
      * retrieved with their properties.
      * </p>
      *
-     * @param userId the user id.
-     * @param status the project status.
-     * @param my the my projects flag.
+     * @param userId         the user id.
+     * @param status         the project status.
+     * @param page           the page.
+     * @param perPage        the items per page.
+     * @param categoryId     the category id.
+     * @param my             the my projects flag.
      * @param hasManagerRole the manager role flag.
      * @return An array of project instances.
      * @throws PersistenceException if error occurred while accessing the database.
      */
-    public Project[] getAllProjects(Long userId, ProjectStatus status, ProjectCategory[] categories, boolean my, boolean hasManagerRole) throws PersistenceException {
-        return persistence.getAllProjects(userId, status, categories, my, hasManagerRole);
+    public Project[] getAllProjects(Long userId, ProjectStatus status, int page, int perPage, long categoryId,
+            boolean my, boolean hasManagerRole) throws PersistenceException {
+        return persistence.getAllProjects(userId, status, page, perPage, categoryId, my, hasManagerRole);
     }
 
+    /**
+     * <p>
+     * Retrieves an array of project types instance from the persistence.
+     * </p>
+     *
+     * @param userId the user id.
+     * @param status the project status.
+     * @param my the my projects flag.
+     * @param hasManagerRole the manager role flag.
+     * @return An array of project types instances.
+     * @throws PersistenceException if error occurred while accessing the database.
+     */
+    public List<UserProjectType> countUserProjects(Long userId, ProjectStatus status, boolean my, boolean hasManagerRole) throws PersistenceException {
+        return persistence.countUserProjects(userId, status, my, hasManagerRole);
+    }
     /**
      * <p>
      * Searches project instances using the given filter parameter. The filter parameter decides the condition of

@@ -135,6 +135,27 @@ public class Project extends AuditableObject implements Serializable {
     }
 
     /**
+     * Create a new Project instance with the given project id and project status. This method is supposed
+     * to use by persistence implementation to load project from the persistence when the project id is already set.
+     *
+     * @param projectId
+     *            The project id.
+     * @param projectStatus
+     *            The project status instance of this project.
+     * @throws IllegalArgumentException
+     *             If id is less than zero, or any parameter is null.
+     */
+    @SuppressWarnings("unchecked")
+    public Project(long projectId, ProjectStatus projectStatus) {
+        if (projectId < 0) {
+            throw new IllegalArgumentException("id can not less than zero.");
+        }
+        this.id = projectId;
+        setProjectStatus(projectStatus);
+        this.properties = new HashMap();
+    }
+
+    /**
      * Create a new Project instance with the given project id, project type id, project status id and the associated
      * properties. The input properties map should contains String/Object as key/value pairs. This method is supposed to
      * use by persistence implementation to load project from the persistence when the project id is already set.

@@ -10,6 +10,7 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.*;
 import java.util.Map.Entry;
+import java.util.stream.Collectors;
 
 import com.topcoder.db.connectionfactory.DBConnectionFactory;
 import com.topcoder.management.resource.Notification;
@@ -137,6 +138,17 @@ public abstract class AbstractResourcePersistence implements ResourcePersistence
         "SELECT resource.resource_id, resource_role_id, project_id,"
             + " project_phase_id, user_id, resource.create_user, resource.create_date, resource.modify_user, "
             + " resource.modify_date" + " FROM resource WHERE resource.resource_id IN (";
+
+    /**
+     * <p>
+     * Represents the sql to get all resources.
+     * </p>
+     */
+    private static final String SQL_SELECT_ALL_RES_BY_PROJECT =
+        "SELECT r.resource_id, r.project_id, r.project_phase_id, r.resource_role_id"
+            + " FROM resource r"
+            + " LEFT JOIN project p ON r.project_id = p.project_id"
+            + " WHERE p.project_id IN (";
 
     /**
      * <p>
@@ -876,6 +888,58 @@ public abstract class AbstractResourcePersistence implements ResourcePersistence
                     + resource.getResourceRole().getName() + " in [id=" + resource.getPhase() + "] phase.", e));
             throw new ResourcePersistenceException("Fail to update resource", e);
         } finally {
+            closeConnection(connection);
+        }
+    }
+
+    /**
+     * <p>
+     * Get resources by given project ids
+     * </p>
+     *
+     * @return The resources array
+     *
+     * @param projectIds The project ids
+     * @param roles The resource prole map
+     *
+     * @throws ResourcePersistenceException If there is an error reading the persistence store
+     */
+    public Resource[] getResourcesByProjects(Long[] projectIds, Map<Long, ResourceRole> roles) throws ResourcePersistenceException {
+        LOGGER.log(Level.DEBUG, "Getting resources by project Ids");
+        Connection connection = openConnection();
+
+        List<Resource> resourceList= new ArrayList<>();
+
+        ResultSet rs = null;
+        PreparedStatement statement = null;
+
+        try {
+            StringBuilder query = new StringBuilder();
+            query.append(SQL_SELECT_ALL_RES_BY_PROJECT);
+            query.append(String.join(",", Arrays.stream(projectIds).map(x -> x.toString()).collect(Collectors.toList())));
+            query.append(")");
+            statement = connection.prepareStatement(query.toString());
+            rs = statement.executeQuery();
+            while (rs.next()) {
+                long resourceId = rs.getLong(1);
+                Long projectId = rs.getLong(2);
+                Long phaseId = rs.getLong(3);
+                if (rs.wasNull()) {
+                    phaseId = null;
+                }
+                long resourceRoleId = rs.getLong(4);
+                Resource resource = new Resource(resourceId, roles.get(resourceRoleId));
+                resource.setProject(projectId);
+                resource.setPhase(phaseId);
+                resourceList.add(resource);
+            }
+            return resourceList.toArray(new Resource[resourceList.size()]);
+        } catch (SQLException e) {
+            closeConnectionOnError(connection);
+            throw new ResourcePersistenceException("Unable to get resources by project ids", e);
+        } finally {
+            Util.closeStatement(statement);
+            Util.closeResultSet(rs);
             closeConnection(connection);
         }
     }

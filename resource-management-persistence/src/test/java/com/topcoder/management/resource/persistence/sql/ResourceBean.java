@@ -3,6 +3,8 @@
  */
 package com.topcoder.management.resource.persistence.sql;
 
+import java.util.Map;
+
 import javax.ejb.CreateException;
 import javax.ejb.SessionBean;
 import javax.ejb.SessionContext;
@@ -250,6 +252,23 @@ public class ResourceBean implements SessionBean, ResourcePersistence {
             sessionContext.setRollbackOnly();
             throw e;
         }
+    }
+
+    
+    /**
+     * <p>
+     * Get resources by given project ids
+     * </p>
+     *
+     * @return The resources array
+     *
+     * @param projectIds The project ids
+     * @param roles The resource prole map
+     *
+     * @throws ResourcePersistenceException If there is an error reading the persistence store
+     */
+    public Resource[] getResourcesByProjects(Long[] projectIds, Map<Long, ResourceRole> roles) throws ResourcePersistenceException {
+        return null;
     }
 
     /**
