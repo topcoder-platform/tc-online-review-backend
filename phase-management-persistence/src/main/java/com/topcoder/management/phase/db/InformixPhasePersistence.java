@@ -1562,7 +1562,7 @@ public class InformixPhasePersistence implements PhasePersistence {
                         + createQuestionMarks(oldCriteria.size()));
                 deleteStatement.setLong(1, phase.getId());
 
-                int i = 1;
+                int i = 2;
                 for (Iterator it = oldCriteria.keySet().iterator(); it.hasNext();) {
                     String name = (String) it.next();
                     deleteStatement.setLong(i++, ((Long) lookUp.get(name)).longValue());
