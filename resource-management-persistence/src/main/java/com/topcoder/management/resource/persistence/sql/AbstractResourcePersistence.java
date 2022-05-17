@@ -148,7 +148,7 @@ public abstract class AbstractResourcePersistence implements ResourcePersistence
         "SELECT r.resource_id, r.project_id, r.project_phase_id, r.resource_role_id"
             + " FROM resource r"
             + " LEFT JOIN project p ON r.project_id = p.project_id"
-            + " WHERE p.project_id IN (";
+            + " WHERE r.user_id = ? AND p.project_id IN (";
 
     /**
      * <p>
@@ -904,7 +904,7 @@ public abstract class AbstractResourcePersistence implements ResourcePersistence
      *
      * @throws ResourcePersistenceException If there is an error reading the persistence store
      */
-    public Resource[] getResourcesByProjects(Long[] projectIds, Map<Long, ResourceRole> roles) throws ResourcePersistenceException {
+    public Resource[] getResourcesByProjects(Long[] projectIds, long userId, Map<Long, ResourceRole> roles) throws ResourcePersistenceException {
         LOGGER.log(Level.DEBUG, "Getting resources by project Ids");
         Connection connection = openConnection();
 
@@ -919,6 +919,7 @@ public abstract class AbstractResourcePersistence implements ResourcePersistence
             query.append(String.join(",", Arrays.stream(projectIds).map(x -> x.toString()).collect(Collectors.toList())));
             query.append(")");
             statement = connection.prepareStatement(query.toString());
+            statement.setLong(1, userId);
             rs = statement.executeQuery();
             while (rs.next()) {
                 long resourceId = rs.getLong(1);
