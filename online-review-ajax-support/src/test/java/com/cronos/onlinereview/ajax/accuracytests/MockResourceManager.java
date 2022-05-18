@@ -38,7 +38,7 @@ public class MockResourceManager implements ResourceManager {
         
     }
 
-    public Resource[] getResourcesByProjects(Long[] projectIds) throws ResourcePersistenceException {
+    public Resource[] getResourcesByProjects(Long[] projectIds, long userId) throws ResourcePersistenceException {
         return null;
     }
 

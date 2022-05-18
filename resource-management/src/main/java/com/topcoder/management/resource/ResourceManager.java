@@ -144,7 +144,7 @@ public interface ResourceManager {
      *
      * @throws ResourcePersistenceException If there is an error reading the persistence store
      */
-    public Resource[] getResourcesByProjects(Long[] projectIds) throws ResourcePersistenceException;
+    public Resource[] getResourcesByProjects(Long[] projectIds, long userId) throws ResourcePersistenceException;
 
     /**
      * <p>

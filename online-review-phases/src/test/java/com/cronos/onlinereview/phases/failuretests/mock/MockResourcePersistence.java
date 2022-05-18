@@ -240,7 +240,7 @@ public class MockResourcePersistence implements ResourcePersistence {
      *
      * @throws ResourcePersistenceException If there is an error reading the persistence store
      */
-    public Resource[] getResourcesByProjects(Long[] projectIds, Map<Long, ResourceRole> roles) throws ResourcePersistenceException {
+    public Resource[] getResourcesByProjects(Long[] projectIds, long userId, Map<Long, ResourceRole> roles) throws ResourcePersistenceException {
         return null;
     }
 

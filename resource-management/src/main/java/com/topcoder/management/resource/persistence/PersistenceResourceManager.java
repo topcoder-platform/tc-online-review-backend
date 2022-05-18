@@ -813,7 +813,7 @@ public class PersistenceResourceManager implements ResourceManager {
      *
      * @throws ResourcePersistenceException If there is an error reading the persistence store
      */
-    public Resource[] getResourcesByProjects(Long[] projectIds) throws ResourcePersistenceException {
+    public Resource[] getResourcesByProjects(Long[] projectIds, long userId) throws ResourcePersistenceException {
 
         Helper.checkNull(projectIds, "projectIds");
 
@@ -824,7 +824,7 @@ public class PersistenceResourceManager implements ResourceManager {
             cachedRoles.put(role.getId(), role);
         }
 
-        return persistence.getResourcesByProjects(projectIds, cachedRoles);
+        return persistence.getResourcesByProjects(projectIds, userId, cachedRoles);
     }
 
     /**
