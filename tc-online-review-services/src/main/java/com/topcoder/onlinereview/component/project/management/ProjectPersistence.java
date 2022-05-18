@@ -17,6 +17,7 @@ import javax.annotation.PostConstruct;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
@@ -24,6 +25,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -285,6 +287,21 @@ public class ProjectPersistence {
   private static final String DELETE_PROJECT_PROPERTIES_SQL =
       "DELETE FROM project_info " + "WHERE project_id=? AND project_info_type_id IN ";
 
+  /** Represents the sql statement to query projects count */
+  private static final String QUERY_LIST_PROJECTS_COUNT =
+      "SELECT count(p.project_id) as p_count, p.project_category_id, cat.name as cat_name, typ.project_type_id, typ.name as type_name"
+          + " FROM project p"
+          + " LEFT JOIN project_category_lu cat ON cat.project_category_id = p.project_category_id"
+          + " LEFT JOIN project_type_lu typ ON typ.project_type_id = cat.project_type_id"
+          + " WHERE p.project_status_id = ?";
+
+  /** Represents the sql condition statement to list all projects for not logged in user */
+  private static final String QUERY_LIST_PROJECTS_FOR_GUEST =
+      " and not EXISTS (SELECT 1 FROM contest_eligibility WHERE is_studio = 0 and contest_id=p.project_id)";
+
+  /** Represents the sql statement to query projects ordering */
+  private static final String QUERY_LIST_PROJECTS_ORDER = " ORDER BY p.project_id DESC";
+
   /**
    * Represents the audit creation type.
    *
@@ -537,6 +554,30 @@ public class ProjectPersistence {
    */
   private static final String QUERY_PROJECT_IDS_WITH_PRIZE_SQL =
       "SELECT project_id FROM prize WHERE prize_id=";
+
+  /** Represents the sql condition statement to list user's projects */
+  private static final String QUERY_LIST_PROJECTS_FOR_USER =
+      " and EXISTS (SELECT 1 FROM resource r WHERE r.project_id=p.project_id and r.user_id = ?)";
+
+  /** Represents the sql condition statement to list all projects for logged in user */
+  private static final String QUERY_LIST_PROJECTS_ALL_FOR_USER =
+      " and (EXISTS (SELECT 1 FROM resource r WHERE r.project_id=p.project_id and r.user_id = ?)"
+          + " or not EXISTS (SELECT 1 FROM contest_eligibility WHERE is_studio = 0 and contest_id=p.project_id))";
+
+  /** Represents the sql statement to query projects count grouping */
+  private static final String QUERY_LIST_PROJECTS_COUNT_GROUP =
+      " GROUP BY p.project_category_id, cat.name, typ.project_type_id, typ.name"
+          + " ORDER BY typ.name, cat.name";
+
+  /** Represents the sql statement to query projects */
+  private static final String QUERY_LIST_PROJECTS =
+      "SELECT SKIP ? FIRST ? p.project_id,"
+          + "(SELECT pi.value FROM project_info pi WHERE pi.project_id=p.project_id and pi.project_info_type_id=6) as project_name,"
+          + "(SELECT pi.value FROM project_info pi WHERE pi.project_id=p.project_id and pi.project_info_type_id=7) as project_version,"
+          + "(SELECT pi.value FROM project_info pi WHERE pi.project_id=p.project_id and pi.project_info_type_id=5) as root_catalog_id,"
+          + "(SELECT pi.value FROM project_info pi WHERE pi.project_id=p.project_id and pi.project_info_type_id=23) as winner_reference_id"
+          + " FROM project p"
+          + " WHERE p.project_status_id = ? and p.project_category_id = ?";
 
   @Value("${project.persistence.project-id-sequence-name:project_id_seq}")
   private String projectIdSeqName;
@@ -2446,5 +2487,133 @@ public class ProjectPersistence {
       Project project, int auditType, long projectInfoTypeId, String value)
       throws PersistenceException {
     auditProjectInfo(project.getId(), project, auditType, projectInfoTypeId, value);
+  }
+
+  /**
+   * Retrieves an array of project types instance from the persistence.
+   *
+   * @param userId the user id.
+   * @param status the project status.
+   * @param my the my projects flag.
+   * @param hasManagerRole the manager role flag.
+   * @return An array of project types instances.
+   * @throws PersistenceException if error occurred while accessing the database.
+   */
+  public List<UserProjectType> countUserProjects(
+      Long userId, ProjectStatus status, boolean my, boolean hasManagerRole)
+      throws PersistenceException {
+    String query = QUERY_LIST_PROJECTS_COUNT;
+
+    List<Object> argsList = new ArrayList<>();
+    argsList.add(status.getId());
+
+    if (userId == null) {
+      query = query + QUERY_LIST_PROJECTS_FOR_GUEST;
+      log.debug("get all" + status.getName() + " projects count");
+    } else if (my) {
+      query = query + QUERY_LIST_PROJECTS_FOR_USER;
+      argsList.add(userId);
+      log.debug("get my projects count for user: " + userId);
+    } else {
+      if (!hasManagerRole) {
+        query = query + QUERY_LIST_PROJECTS_ALL_FOR_USER;
+        argsList.add(userId);
+      }
+      log.debug("get all" + status.getName() + " projects count for user: " + userId);
+    }
+    query = query + QUERY_LIST_PROJECTS_COUNT_GROUP;
+
+    // get the project objects
+    List<UserProjectType> projects = countUserProjects(query, argsList);
+    return projects;
+  }
+
+  private List<UserProjectType> countUserProjects(String query, List<Object> args)
+      throws PersistenceException {
+    // find projects in the table.
+    List<Map<String, Object>> rows = executeSqlWithParam(jdbcTemplate, query, args);
+
+    // create the UserProjectType array.
+    List<UserProjectType> projectTypes = new ArrayList<>();
+
+    for (int i = 0; i < rows.size(); ++i) {
+      Map<String, Object> row = rows.get(i);
+      UserProjectType projectType;
+      Optional<UserProjectType> projectTypeOpt =
+          projectTypes.stream()
+              .filter(x -> x.getId() == getLong(row, "project_type_id"))
+              .findFirst();
+      if (!projectTypeOpt.isPresent()) {
+        projectType =
+            new UserProjectType(getLong(row, "project_type_id"), getString(row, "type_name"));
+        projectTypes.add(projectType);
+      } else {
+        projectType = projectTypeOpt.get();
+      }
+      projectType.addCategory(
+          new UserProjectCategory(
+              getLong(row, "project_category_id"),
+              getString(row, "cat_name"),
+              getInt(row, "p_count")));
+      projectType.setCount(projectType.getCount() + getInt(row, "p_count"));
+    }
+    return projectTypes;
+  }
+
+  public Project[] getAllProjects(
+      Long userId,
+      ProjectStatus status,
+      int page,
+      int perPage,
+      long categoryId,
+      boolean my,
+      boolean hasManagerRole)
+      throws PersistenceException {
+    String query = QUERY_LIST_PROJECTS;
+
+    List<Object> argsList = new ArrayList<>();
+    argsList.add((page - 1) * perPage);
+    argsList.add(perPage);
+    argsList.add(status.getId());
+    argsList.add(categoryId);
+
+    if (userId == null) {
+      query = query + QUERY_LIST_PROJECTS_FOR_GUEST;
+      log.debug("get all" + status.getName() + " projects");
+    } else if (my) {
+      query = query + QUERY_LIST_PROJECTS_FOR_USER;
+      argsList.add(userId);
+      log.debug("get my projects for user: " + userId);
+    } else {
+      if (!hasManagerRole) {
+        query = query + QUERY_LIST_PROJECTS_ALL_FOR_USER;
+        argsList.add(userId);
+      }
+      log.debug("get all" + status.getName() + " projects for user: " + userId);
+    }
+    query = query + QUERY_LIST_PROJECTS_ORDER;
+
+    // get the project objects
+    Project[] projects = getProjectsList(query, argsList, status);
+    return projects;
+  }
+
+  private Project[] getProjectsList(String query, List<Object> args, ProjectStatus status)
+      throws PersistenceException {
+    // find projects in the table.
+    List<Map<String, Object>> rows = executeSqlWithParam(jdbcTemplate, query, args);
+    // create the Project array.
+    Project[] projects = new Project[rows.size()];
+    for (int i = 0; i < rows.size(); ++i) {
+      Map<String, Object> row = rows.get(i);
+      // create a new instance of Project class
+      Project project = new Project(getLong(row, "project_id"), status);
+      project.setProperty("Project Name", row.get("project_name"));
+      project.setProperty("Project Version", row.get("project_version"));
+      project.setProperty("Root Catalog ID", row.get("root_catalog_id"));
+      project.setProperty("Winner External Reference ID", row.get("winner_reference_id"));
+      projects[i] = project;
+    }
+    return projects;
   }
 }

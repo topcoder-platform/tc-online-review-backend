@@ -59,6 +59,15 @@ public class ProjectManager {
     }
   }
 
+  public Project[] getAllProjects(Long userId, ProjectStatus status, int page, int perPage, long categoryId,
+                                  boolean my, boolean hasManagerRole) throws PersistenceException {
+    return persistence.getAllProjects(userId, status, page, perPage, categoryId, my, hasManagerRole);
+  }
+
+  public List<UserProjectType> countUserProjects(Long userId, ProjectStatus status, boolean my, boolean hasManagerRole) throws PersistenceException {
+    return persistence.countUserProjects(userId, status, my, hasManagerRole);
+  }
+
   public ProjectType[] getAllProjectTypes() throws PersistenceException {
     return this.persistence.getAllProjectTypes();
   }

@@ -118,6 +118,15 @@ public class Project extends AuditableObject implements Serializable {
         this(0, projectCategory, projectStatus);
     }
 
+    public Project(long projectId, ProjectStatus projectStatus) {
+        if (projectId < 0) {
+            throw new IllegalArgumentException("id can not less than zero.");
+        }
+        this.id = projectId;
+        setProjectStatus(projectStatus);
+        this.properties = new HashMap();
+    }
+
     /**
      * Create a new Project instance with the given project id, project type and project status. This method is supposed
      * to use by persistence implementation to load project from the persistence when the project id is already set.
