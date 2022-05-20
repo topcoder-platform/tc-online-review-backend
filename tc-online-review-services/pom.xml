@@ -64,6 +64,11 @@
             <version>1.18.12</version>
         </dependency>
         <dependency>
+            <groupId>javax.mail</groupId>
+            <artifactId>javax.mail-api</artifactId>
+            <version>1.4.4</version>
+        </dependency>
+        <dependency>
             <groupId>com.ibm.informix</groupId>
             <artifactId>jdbc</artifactId>
             <version>4.50.8</version>

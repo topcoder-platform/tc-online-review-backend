@@ -25,27 +25,7 @@ import java.util.Map.Entry;
  * @author tuenm, iamajia
  * @version 1.0
  */
-@Component
-public class ProjectValidator {
-    /**
-     * represents the max length of name.
-     */
-    private static final int MAX_LENGTH_OF_NAME = 64;
-
-    /**
-     * represents the max length of property key.
-     */
-    private static final int MAX_LENGTH_OF_PROPERTY_KEY = 64;
-
-    /**
-     * represents the max length of description.
-     */
-    private static final int MAX_LENGTH_OF_DESCRIPTION = 256;
-
-    /**
-     * represents the max length of property value.
-     */
-    private static final int MAX_LENGTH_OF_PROPERTY_VALUE = 4096;
+public interface ProjectValidator {
 
     /**
      * <p>
@@ -67,44 +47,5 @@ public class ProjectValidator {
      * @throws IllegalArgumentException
      *             if project is null.
      */
-    public void validateProject(Project project) throws ValidationException {
-        if (project == null) {
-            throw new IllegalArgumentException("project can not be null.");
-        }
-        validateStringLength(project.getProjectStatus().getName(), "project status's name", MAX_LENGTH_OF_NAME);
-        validateStringLength(project.getProjectCategory().getName(), "project category's name", MAX_LENGTH_OF_NAME);
-        validateStringLength(project.getProjectCategory().getProjectType().getName(), "project type's name",
-                MAX_LENGTH_OF_NAME);
-        validateStringLength(project.getProjectStatus().getDescription(), "project status's description",
-                MAX_LENGTH_OF_DESCRIPTION);
-        validateStringLength(project.getProjectCategory().getDescription(), "project category's description",
-                MAX_LENGTH_OF_DESCRIPTION);
-        validateStringLength(project.getProjectCategory().getProjectType().getDescription(),
-                "project type's description", MAX_LENGTH_OF_DESCRIPTION);
-        // validate each property.
-        for (Object item : project.getAllProperties().entrySet()) {
-            Entry entry = (Entry) item;
-            validateStringLength((String) entry.getKey(), "property key", MAX_LENGTH_OF_PROPERTY_KEY);
-            validateStringLength(entry.getValue().toString(), "property value", MAX_LENGTH_OF_PROPERTY_VALUE);
-        }
-    }
-
-    /**
-     * This private method is used to validate the given string.<br>
-     * check if given string length is less than or equal to given length.
-     *
-     * @param str
-     *            the string to validate
-     * @param name
-     *            the name of given string
-     * @param length
-     *            the max length of given string
-     * @throws ValidationException
-     *             if name or key length greater than given length
-     */
-    private void validateStringLength(String str, String name, int length) throws ValidationException {
-        if (str.length() > length) {
-            throw new ValidationException(name + "length must be less than or equal to " + length);
-        }
-    }
+    void validateProject(Project project) throws ValidationException;
 }

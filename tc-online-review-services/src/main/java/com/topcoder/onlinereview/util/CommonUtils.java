@@ -2,7 +2,11 @@ package com.topcoder.onlinereview.util;
 
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.support.GeneratedKeyHolder;
+import org.springframework.jdbc.support.KeyHolder;
 
+import java.sql.PreparedStatement;
+import java.sql.Statement;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -67,5 +71,20 @@ public class CommonUtils {
   public static int executeUpdateSql(
       JdbcTemplate jdbcTemplate, String sql, List<Object> parameters) {
     return jdbcTemplate.update(sql, parameters.toArray());
+  }
+
+  public static long executeUpdateSqlWithReturn(
+      JdbcTemplate jdbcTemplate, String sql, List<Object> parameters) {
+    KeyHolder keyHolder = new GeneratedKeyHolder();
+    jdbcTemplate.update(
+        connection -> {
+          PreparedStatement ps = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
+          for (int i = 0; i < parameters.size(); i++) {
+            ps.setObject(i + 1, parameters.get(i));
+          }
+          return ps;
+        },
+        keyHolder);
+    return keyHolder.getKey().longValue();
   }
 }
