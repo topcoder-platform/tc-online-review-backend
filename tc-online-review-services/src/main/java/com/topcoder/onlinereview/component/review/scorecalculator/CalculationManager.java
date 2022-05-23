@@ -67,16 +67,16 @@ public class CalculationManager {
      */
     private ScorecardMatrixBuilder scorecardMatrixBuilder;
 
-    @Value("${CalculationManager.calculators.binaryQuestionTypes:4}")
+    @Value("${calculationManager.calculators.binaryQuestionTypes:4}")
     private List<Long> binaryQuestionTypes;
 
-    @Value("${CalculationManager.calculators.binaryAnswers:1:0}")
+    @Value("${calculationManager.calculators.binaryAnswers:1:0}")
     private List<String> binaryAnswers;
 
-    @Value("${CalculationManager.calculators.scaleQuestionTypes:1,2,3,5,6,7}")
+    @Value("${calculationManager.calculators.scaleQuestionTypes:1,2,3,5,6,7}")
     private List<Long> scaleQuestionTypes;
 
-    @Value("${CalculationManager.calculators.scaleDefaultScales:4,10,-1,3,9,4}")
+    @Value("${calculationManager.calculators.scaleDefaultScales:4,10,-1,3,9,4}")
     private List<Long> scaleDefaultScales;
 
     @PostConstruct

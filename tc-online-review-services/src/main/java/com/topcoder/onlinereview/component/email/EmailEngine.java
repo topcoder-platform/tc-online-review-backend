@@ -279,6 +279,8 @@ public class EmailEngine {
      */
     static final String PROPERTY_SMTP_USER = "username";
 
+    static final String PROPERTY_PREFIX = "emailEngine.";
+
     /**
      * the default ctor.
      * @since 3.1
@@ -387,28 +389,28 @@ public class EmailEngine {
         int port = -1;
 
         try {
-            host = getPropertyValue(PROPERTY_SMTP_HOST_ADDR);
+            host = getPropertyValue(PROPERTY_PREFIX + PROPERTY_SMTP_HOST_ADDR);
         } catch (Exception e) {
             host = null;
-            log.debug(PROPERTY_SMTP_HOST_ADDR + " cannot be found in the EmailEngine configuration file");
+            log.debug(PROPERTY_PREFIX + PROPERTY_SMTP_HOST_ADDR + " cannot be found in the EmailEngine configuration file");
         }
         if (host == null || host.equals("")) {
-            log.debug(PROPERTY_SMTP_HOST_ADDR + " has an invalid value in the EmailEngine configuration file:" + host);
+            log.debug(PROPERTY_PREFIX + PROPERTY_SMTP_HOST_ADDR + " has an invalid value in the EmailEngine configuration file:" + host);
             host = SMTP_HOST_ADDR;
-            log.debug(PROPERTY_SMTP_HOST_ADDR + " set to default:" + host);
+            log.debug(PROPERTY_PREFIX + PROPERTY_SMTP_HOST_ADDR + " set to default:" + host);
         }
         String tempPort = "";
         try {
-            tempPort = getPropertyValue(PROPERTY_SMTP_HOST_PORT);
+            tempPort = getPropertyValue(PROPERTY_PREFIX + PROPERTY_SMTP_HOST_PORT);
         } catch (Exception e) {
-            log.debug(PROPERTY_SMTP_HOST_PORT + " cannot be found in the EmailEngine configuration file");
+            log.debug(PROPERTY_PREFIX + PROPERTY_SMTP_HOST_PORT + " cannot be found in the EmailEngine configuration file");
         }
         try {
             port = Integer.parseInt(tempPort);
         } catch (Exception e) {
-            log.debug(PROPERTY_SMTP_HOST_PORT + " has an invalid value in the EmailEngine configuration file:" + port);
+            log.debug(PROPERTY_PREFIX + PROPERTY_SMTP_HOST_PORT + " has an invalid value in the EmailEngine configuration file:" + port);
             port = SMTP_HOST_PORT;
-            log.debug(PROPERTY_SMTP_HOST_PORT + " set to default:" + port);
+            log.debug(PROPERTY_PREFIX + PROPERTY_SMTP_HOST_PORT + " set to default:" + port);
         }
 
         Properties props = new Properties();
@@ -420,8 +422,8 @@ public class EmailEngine {
             eMailSession = javax.mail.Session.getInstance(props, null);
             eMailMessage = new MimeMessage(eMailSession);
             eMailTransport = eMailSession.getTransport(SMTP_HOST_TYPE);
-            eMailTransport.connect(host, port, getPropertyValue(PROPERTY_SMTP_USER),
-                    getPropertyValue(PROPERTY_SMTP_PASSWORD));
+            eMailTransport.connect(host, port, getPropertyValue(PROPERTY_PREFIX + PROPERTY_SMTP_USER),
+                    getPropertyValue(PROPERTY_PREFIX + PROPERTY_SMTP_PASSWORD));
             eMailMessage.setRecipients(javax.mail.Message.RecipientType.TO, to);
             if (cc != null) {
                 eMailMessage.setRecipients(javax.mail.Message.RecipientType.CC, cc);

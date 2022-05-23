@@ -971,14 +971,14 @@ public final class PhasesHelper {
 
         try {
             // Create new Post-Mortem phase
-            String postMortemPhaseDuration = getPropertyValue("PostMortemPhaseDuration");
+            String postMortemPhaseDuration = getPropertyValue("postMortemPhaseHandler.PostMortemPhaseDuration");
 
             createNewPhases(currentPrj, currentPhase, new PhaseType[] {postMortemPhaseType },
                 new Long[] {Long.parseLong(postMortemPhaseDuration) * Constants.HOUR }, phaseStatus, false);
 
             // Set the number of required reviewers for Post-Mortem phase to default value
-            String postMortemPhaseDefaultReviewerNumber = getPropertyValue("PostMortemPhaseDefaultReviewersNumber");
-            String postMortemPhaseDefaultScorecardID = getPropertyValue("PostMortemPhaseDefaultScorecardID");
+            String postMortemPhaseDefaultReviewerNumber = getPropertyValue("postMortemPhaseHandler.PostMortemPhaseDefaultReviewersNumber");
+            String postMortemPhaseDefaultScorecardID = getPropertyValue("postMortemPhaseHandler.PostMortemPhaseDefaultScorecardID");
             Phase postMortemPhase = getPostMortemPhase(currentPrj);
             postMortemPhase.setAttribute(Constants.PHASE_CRITERIA_REVIEWER_NUMBER, postMortemPhaseDefaultReviewerNumber);
             postMortemPhase.setAttribute(Constants.PHASE_CRITERIA_SCORECARD_ID, postMortemPhaseDefaultScorecardID);
@@ -986,8 +986,6 @@ public final class PhasesHelper {
             phaseManager.updatePhases(currentPrj, operator);
         } catch (PhaseManagementException e) {
             throw new PhaseHandlingException("Problem when persisting phases", e);
-//        } catch (ConfigurationException e) {
-//            throw new PhaseHandlingException("Problem when reading configuration file", e);
         }
     }
 

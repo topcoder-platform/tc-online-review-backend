@@ -280,35 +280,35 @@ public class ManagerHelper {
      * This constant stores Online Review's project details page URL.
      * @since 1.3
      */
-    @Value("${ProjectDetailsURL}")
+    @Value("${managerHelper.ProjectDetailsURL}")
     private String projectDetailsBaseURL;
 
 
     /**
      * This constant stores the challenge page URL for the new topcoder site.
      */
-    @Value("${ChallengePageURL}")
+    @Value("${managerHelper.ChallengePageURL}")
     private String challengePageBaseURL;
 
     /**
      * This constant stores studio project details page URL.
      * @since 1.6
      */
-    @Value("${StudioProjectDetailsURL}")
+    @Value("${managerHelper.StudioProjectDetailsURL}")
     private String studioProjectDetailsBaseURL;
 
     /**
      * This constant stores URL for contest details page in direct.
      * @since 1.7.6
      */
-    @Value("${DirectContestURL}")
+    @Value("${managerHelper.DirectContestURL}")
     private String directContestBaseURL;
 
     /**
      * This constant stores URL for copilot posting contest details page in direct.
      * @since 1.6.2
      */
-    @Value("${CopilotDirectContestURL}")
+    @Value("${managerHelper.CopilotDirectContestURL}")
     private String copilotDirectContestBaseURL;
 
     /**
@@ -317,7 +317,7 @@ public class ManagerHelper {
      * 
      * @since 1.7.15
      */
-    @Value("${DirectContestFinalFixURL}")
+    @Value("${managerHelper.DirectContestFinalFixURL}")
     private String directContestFinalFixBaseURL;
 
     /**
@@ -325,14 +325,14 @@ public class ManagerHelper {
      * application.</p>
      * @since 1.7.15
      */
-    @Value("${StudioProjectFinalFixURL}")
+    @Value("${managerHelper.StudioProjectFinalFixURL}")
     private String studioProjectFinalFixBaseURL;
 
     /**
      * This constant stores URL for project page in direct.
      * @since 1.7.6
      */
-    @Value("${DirectProjectURL}")
+    @Value("${managerHelper.DirectProjectURL}")
     private String directProjectBaseURL;
 
     /**
