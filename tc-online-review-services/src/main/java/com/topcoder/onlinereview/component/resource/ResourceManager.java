@@ -17,7 +17,9 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -879,6 +881,31 @@ public class ResourceManager {
           "Error occurs while searching the notification types.", e);
     }
     return notificationTypes;
+  }
+
+  /**
+   * <p>
+   * Get resources by given project ids
+   * </p>
+   *
+   * @return The resources array
+   *
+   * @param projectIds The project ids
+   *
+   * @throws ResourcePersistenceException If there is an error reading the persistence store
+   */
+  public Resource[] getResourcesByProjects(Long[] projectIds, long userId) throws ResourcePersistenceException {
+
+    Helper.checkNull(projectIds, "projectIds");
+
+    // Get the list of existing resource roles and build a cache
+    ResourceRole[] resourceRoles = getAllResourceRoles();
+    Map<Long, ResourceRole> cachedRoles = new HashMap<Long, ResourceRole>();
+    for (ResourceRole role : resourceRoles) {
+      cachedRoles.put(role.getId(), role);
+    }
+
+    return persistence.getResourcesByProjects(projectIds, userId, cachedRoles);
   }
 
   /**

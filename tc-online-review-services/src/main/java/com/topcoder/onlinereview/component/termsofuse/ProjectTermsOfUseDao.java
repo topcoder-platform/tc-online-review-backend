@@ -170,7 +170,7 @@ public class ProjectTermsOfUseDao {
         + " WHERE project_id = ?";
 
     @Autowired
-    @Qualifier("tcsJdbcTemplate")
+    @Qualifier("commonJdbcTemplate")
     private JdbcTemplate jdbcTemplate;
 
     /**

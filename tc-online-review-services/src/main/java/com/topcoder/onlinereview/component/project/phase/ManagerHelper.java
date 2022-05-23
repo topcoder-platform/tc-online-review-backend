@@ -8,14 +8,16 @@ import com.topcoder.onlinereview.component.external.UserRetrieval;
 import com.topcoder.onlinereview.component.project.management.ProjectLinkManager;
 import com.topcoder.onlinereview.component.project.management.ProjectManager;
 import com.topcoder.onlinereview.component.project.payment.ProjectPaymentManager;
+import com.topcoder.onlinereview.component.project.payment.calculator.ProjectPaymentCalculator;
 import com.topcoder.onlinereview.component.resource.ResourceManager;
 import com.topcoder.onlinereview.component.review.ReviewManager;
 import com.topcoder.onlinereview.component.reviewfeedback.ReviewFeedbackManager;
-import com.topcoder.onlinereview.component.scorecard.ReviewScoreAggregator;
+import com.topcoder.onlinereview.component.review.scoreaggregator.ReviewScoreAggregator;
 import com.topcoder.onlinereview.component.scorecard.ScorecardManager;
 import com.topcoder.onlinereview.component.termsofuse.ProjectTermsOfUseDao;
 import com.topcoder.onlinereview.component.termsofuse.UserTermsOfUseDao;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -359,6 +361,12 @@ public class ManagerHelper {
 
     @Autowired
     private ProjectPaymentManager projectPaymentManager;
+    @Autowired
+    @Qualifier("defaultProjectPaymentCalculator")
+    private ProjectPaymentCalculator defaultProjectPaymentCalculator;
+    @Autowired
+    @Qualifier("projectPaymentAdjustmentCalculator")
+    private ProjectPaymentCalculator projectPaymentAdjustmentCalculator;
 
     /**
      * Gets the non-null ProjectManager instance.
@@ -561,5 +569,13 @@ public class ManagerHelper {
 
     public ProjectPaymentManager getProjectPaymentManager() {
         return projectPaymentManager;
+    }
+
+    public ProjectPaymentCalculator getDefaultProjectPaymentCalculator() {
+        return defaultProjectPaymentCalculator;
+    }
+
+    public ProjectPaymentCalculator getProjectPaymentAdjustmentCalculator() {
+        return projectPaymentAdjustmentCalculator;
     }
 }

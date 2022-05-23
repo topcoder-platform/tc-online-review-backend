@@ -33,11 +33,11 @@ import com.topcoder.onlinereview.component.review.Comment;
 import com.topcoder.onlinereview.component.review.Item;
 import com.topcoder.onlinereview.component.review.Review;
 import com.topcoder.onlinereview.component.review.ReviewManagementException;
-import com.topcoder.onlinereview.component.scorecard.AggregatedSubmission;
-import com.topcoder.onlinereview.component.scorecard.InconsistentDataException;
+import com.topcoder.onlinereview.component.review.scoreaggregator.AggregatedSubmission;
+import com.topcoder.onlinereview.component.review.scoreaggregator.InconsistentDataException;
 import com.topcoder.onlinereview.component.scorecard.PersistenceException;
-import com.topcoder.onlinereview.component.scorecard.RankedSubmission;
-import com.topcoder.onlinereview.component.scorecard.ReviewScoreAggregator;
+import com.topcoder.onlinereview.component.review.scoreaggregator.RankedSubmission;
+import com.topcoder.onlinereview.component.review.scoreaggregator.ReviewScoreAggregator;
 import com.topcoder.onlinereview.component.scorecard.Scorecard;
 import com.topcoder.onlinereview.component.scorecard.ScorecardManager;
 import com.topcoder.onlinereview.component.search.SearchBuilderException;
@@ -1974,8 +1974,8 @@ public final class PhasesHelper {
             float minScore = getScorecardMinimumScore(managerHelper.getScorecardManager(), reviews[0]);
 
             // create array to hold scores from all reviewers for all submissions.
-            com.topcoder.onlinereview.component.scorecard.Submission[] submissionScores =
-                new com.topcoder.onlinereview.component.scorecard.Submission[subs.length];
+            com.topcoder.onlinereview.component.review.scoreaggregator.Submission[] submissionScores =
+                new com.topcoder.onlinereview.component.review.scoreaggregator.Submission[subs.length];
 
             // for each submission, populate scores array to use with review score aggregator.
             for (int iSub = 0; iSub < subs.length; iSub++) {
@@ -2002,7 +2002,7 @@ public final class PhasesHelper {
                     scores[iScore] = scoresList.get(iScore);
                 }
 
-                submissionScores[iSub] = new com.topcoder.onlinereview.component.scorecard.Submission(subId, scores);
+                submissionScores[iSub] = new com.topcoder.onlinereview.component.review.scoreaggregator.Submission(subId, scores);
             }
 
             // now calculate the aggregated scores and placements.

@@ -2,7 +2,11 @@
  * Copyright (C) 2006 TopCoder Inc., All Rights Reserved.
  */
 
-package com.topcoder.onlinereview.component.scorecard;
+package com.topcoder.onlinereview.component.review.scoreaggregator;
+
+import com.topcoder.onlinereview.component.review.scoreaggregator.AggregatedSubmission;
+import com.topcoder.onlinereview.component.review.scoreaggregator.Submission;
+import com.topcoder.onlinereview.component.scorecard.WeightedScorecardStructure;
 
 import java.util.Iterator;
 import java.util.List;
@@ -129,5 +133,87 @@ final class Util {
 
         // Check the sum against 100 plus/minus the tolerance.
         return (Math.abs(sum - TARGET_SUM_WEIGHT) < tolerance);
+    }
+
+    /**
+     * <p>
+     * Checks whether the given Object is null.
+     * </p>
+     *
+     * @param arg
+     *            the argument to check
+     * @param name
+     *            the name of the argument to check
+     *
+     * @throws IllegalArgumentException
+     *             if the given Object is null
+     */
+    public static void checkNull(Object arg, String name) {
+        if (arg == null) {
+            throw new IllegalArgumentException(name + " should not be null.");
+        }
+    }
+
+    /**
+     * <p>
+     * Checks whether the given double value is valid.
+     * </p>
+     * <p>
+     * If score is negative/NaN/Infinite, IllegalArgumentException will be thrown.
+     * </p>
+     *
+     * @param score
+     *            The double value to check
+     * @param name
+     *            The name of the double value
+     * @throws IllegalArgumentException
+     *             if score is negative/Nan/Infinite
+     */
+    public static void checkDoubleValue(double score, String name) {
+        if (Double.isNaN(score)) {
+            throw new IllegalArgumentException(name + " should not be NaN.");
+        }
+        if (Double.isInfinite(score)) {
+            throw new IllegalArgumentException(name + " should not be Infinite.");
+        }
+        if (score < 0) {
+            throw new IllegalArgumentException(name + " should not be negative.");
+        }
+    }
+
+    /**
+     * <p>
+     * Helper method to return the id of the given Submission.
+     * </p>
+     *
+     * @param sub
+     *            the submission to get id from
+     * @return the id of the submission
+     * @throws IllegalArgumentException
+     *             if sub is null
+     */
+    public static long getId(Submission sub) {
+        if (sub == null) {
+            throw new IllegalArgumentException("sub should not be null.");
+        }
+        return sub.getId();
+    }
+
+    /**
+     * <p>
+     * Returns the aggregatedScore of the given AggregatedSubmission.
+     * </p>
+     *
+     * @param sub
+     *            the submission to get aggregatedScore from
+     * @return the aggregatedScore of the submission
+     * @throws IllegalArgumentException
+     *             if sub is null
+     */
+    public static double getAggregatedScore(AggregatedSubmission sub) {
+        if (sub == null) {
+            throw new IllegalArgumentException("sub should not be null.");
+        }
+        return sub.getAggregatedScore();
     }
 }

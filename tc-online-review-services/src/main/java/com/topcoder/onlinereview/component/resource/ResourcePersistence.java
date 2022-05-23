@@ -14,6 +14,7 @@ import org.springframework.stereotype.Component;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -24,6 +25,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static com.google.common.collect.Lists.newArrayList;
 import static com.topcoder.onlinereview.util.CommonUtils.executeSql;
@@ -240,6 +242,17 @@ public class ResourcePersistence {
           + "(resource_id, resource_role_id, project_id, project_phase_id, user_id, create_user, create_date,"
           + " modify_user, modify_date)"
           + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
+  /**
+   * <p>
+   * Represents the sql to get all resources.
+   * </p>
+   */
+  private static final String SQL_SELECT_ALL_RES_BY_PROJECT =
+          "SELECT r.resource_id, r.project_id, r.project_phase_id, r.resource_role_id"
+                  + " FROM resource r"
+                  + " LEFT JOIN project p ON r.project_id = p.project_id"
+                  + " WHERE r.user_id = ? AND p.project_id IN (";
 
   /**
    * Represents the project user audit creation type
@@ -1530,6 +1543,39 @@ public class ResourcePersistence {
               .toString());
       throw new ResourcePersistenceException("Failed to load all the resources.", e);
     }
+  }
+
+  /**
+   * <p>
+   * Get resources by given project ids
+   * </p>
+   *
+   * @return The resources array
+   *
+   * @param projectIds The project ids
+   * @param roles The resource prole map
+   *
+   * @throws ResourcePersistenceException If there is an error reading the persistence store
+   */
+  public Resource[] getResourcesByProjects(Long[] projectIds, long userId, Map<Long, ResourceRole> roles) throws ResourcePersistenceException {
+    LOGGER.debug("Getting resources by project Ids");
+    List<Resource> resourceList= new ArrayList<>();
+    StringBuilder query = new StringBuilder();
+    query.append(SQL_SELECT_ALL_RES_BY_PROJECT);
+    query.append(String.join(",", Arrays.stream(projectIds).map(x -> x.toString()).collect(Collectors.toList())));
+    query.append(")");
+    List<Map<String, Object>> rs = executeSqlWithParam(jdbcTemplate, query.toString(), newArrayList(userId));
+    for (Map<String, Object> row: rs) {
+      long resourceId = getLong(row, "resource_id");
+      Long projectId = getLong(row, "project_id");
+      Long phaseId = getLong(row, "project_phase_id");
+      long resourceRoleId = getLong(row, "resource_role_id");
+      Resource resource = new Resource(resourceId, roles.get(resourceRoleId));
+      resource.setProject(projectId);
+      resource.setPhase(phaseId);
+      resourceList.add(resource);
+    }
+    return resourceList.toArray(new Resource[resourceList.size()]);
   }
 
   /**

@@ -184,7 +184,7 @@ public class UserTermsOfUseDao {
         + " AND terms_of_use_id=?";
 
     @Autowired
-    @Qualifier("tcsJdbcTemplate")
+    @Qualifier("commonJdbcTemplate")
     private JdbcTemplate jdbcTemplate;
     /**
      * Records the fact of acceptance of specified terms of use by specified user.
