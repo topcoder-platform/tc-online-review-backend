@@ -60,7 +60,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static com.topcoder.onlinereview.util.SpringUtils.getPropertyValue;
+import static com.topcoder.onlinereview.component.util.SpringUtils.getPropertyValue;
 
 /**
  * <p>

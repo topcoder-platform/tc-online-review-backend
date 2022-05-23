@@ -1,4 +1,4 @@
-package com.topcoder.onlinereview.util;
+package com.topcoder.onlinereview.component.util;
 
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;

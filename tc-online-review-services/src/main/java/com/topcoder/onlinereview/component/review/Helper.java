@@ -15,10 +15,10 @@ import java.util.Map;
 import java.util.function.Function;
 
 import static com.google.common.collect.Lists.newArrayList;
-import static com.topcoder.onlinereview.util.CommonUtils.executeSql;
-import static com.topcoder.onlinereview.util.CommonUtils.executeSqlWithParam;
-import static com.topcoder.onlinereview.util.CommonUtils.executeUpdateSql;
-import static com.topcoder.onlinereview.util.CommonUtils.getLong;
+import static com.topcoder.onlinereview.component.util.CommonUtils.executeSql;
+import static com.topcoder.onlinereview.component.util.CommonUtils.executeSqlWithParam;
+import static com.topcoder.onlinereview.component.util.CommonUtils.executeUpdateSql;
+import static com.topcoder.onlinereview.component.util.CommonUtils.getLong;
 
 /**
  * Helper class for this component.

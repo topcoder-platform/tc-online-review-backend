@@ -15,7 +15,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import static com.topcoder.onlinereview.util.CommonUtils.executeSqlWithParam;
+import static com.topcoder.onlinereview.component.util.CommonUtils.executeSqlWithParam;
 
 /**
  * This is a Search Strategy that is tuned for searching a database. It is responsible for building

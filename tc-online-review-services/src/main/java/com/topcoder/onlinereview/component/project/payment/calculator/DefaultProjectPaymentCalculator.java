@@ -18,11 +18,11 @@ import java.util.List;
 import java.util.Map;
 
 import static com.google.common.collect.Lists.newArrayList;
-import static com.topcoder.onlinereview.util.CommonUtils.executeSqlWithParam;
-import static com.topcoder.onlinereview.util.CommonUtils.getDouble;
-import static com.topcoder.onlinereview.util.CommonUtils.getFloat;
-import static com.topcoder.onlinereview.util.CommonUtils.getInt;
-import static com.topcoder.onlinereview.util.CommonUtils.getLong;
+import static com.topcoder.onlinereview.component.util.CommonUtils.executeSqlWithParam;
+import static com.topcoder.onlinereview.component.util.CommonUtils.getDouble;
+import static com.topcoder.onlinereview.component.util.CommonUtils.getFloat;
+import static com.topcoder.onlinereview.component.util.CommonUtils.getInt;
+import static com.topcoder.onlinereview.component.util.CommonUtils.getLong;
 
 
 /**

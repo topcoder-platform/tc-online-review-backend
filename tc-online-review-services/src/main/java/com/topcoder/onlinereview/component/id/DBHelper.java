@@ -13,7 +13,7 @@ import java.util.List;
 import java.util.Map;
 
 import static com.google.common.collect.Lists.newArrayList;
-import static com.topcoder.onlinereview.util.CommonUtils.executeSqlWithParam;
+import static com.topcoder.onlinereview.component.util.CommonUtils.executeSqlWithParam;
 
 /** The DB helper class centralizes db operations for generating ids. */
 @Component

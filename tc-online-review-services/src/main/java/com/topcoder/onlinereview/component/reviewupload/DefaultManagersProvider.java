@@ -59,7 +59,6 @@ import org.springframework.stereotype.Component;
  * @version 1.1.2
  */
 @Slf4j
-@Component
 public class DefaultManagersProvider implements ManagersProvider {
 
     /**

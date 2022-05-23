@@ -19,11 +19,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import static com.topcoder.onlinereview.util.CommonUtils.getBoolean;
-import static com.topcoder.onlinereview.util.CommonUtils.getDate;
-import static com.topcoder.onlinereview.util.CommonUtils.getDouble;
-import static com.topcoder.onlinereview.util.CommonUtils.getLong;
-import static com.topcoder.onlinereview.util.CommonUtils.getString;
+import static com.topcoder.onlinereview.component.util.CommonUtils.getBoolean;
+import static com.topcoder.onlinereview.component.util.CommonUtils.getDate;
+import static com.topcoder.onlinereview.component.util.CommonUtils.getDouble;
+import static com.topcoder.onlinereview.component.util.CommonUtils.getLong;
+import static com.topcoder.onlinereview.component.util.CommonUtils.getString;
 
 @Slf4j
 @Component

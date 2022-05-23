@@ -5,7 +5,6 @@ package com.topcoder.onlinereview.component.project.management;
 
 import org.springframework.jdbc.core.JdbcTemplate;
 
-import javax.persistence.EntityManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Arrays;
@@ -13,10 +12,9 @@ import java.util.List;
 import java.util.Map;
 
 import static com.google.common.collect.Lists.newArrayList;
-import static com.topcoder.onlinereview.util.CommonUtils.executeSql;
-import static com.topcoder.onlinereview.util.CommonUtils.executeSqlWithParam;
-import static com.topcoder.onlinereview.util.CommonUtils.executeUpdateSql;
-import static com.topcoder.onlinereview.util.CommonUtils.getLong;
+import static com.topcoder.onlinereview.component.util.CommonUtils.executeSql;
+import static com.topcoder.onlinereview.component.util.CommonUtils.executeUpdateSql;
+import static com.topcoder.onlinereview.component.util.CommonUtils.getLong;
 
 /**
  * <p>

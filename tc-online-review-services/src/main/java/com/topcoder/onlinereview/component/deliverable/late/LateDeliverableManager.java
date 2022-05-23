@@ -22,10 +22,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static com.topcoder.onlinereview.util.CommonUtils.getDate;
-import static com.topcoder.onlinereview.util.CommonUtils.getInt;
-import static com.topcoder.onlinereview.util.CommonUtils.getLong;
-import static com.topcoder.onlinereview.util.CommonUtils.getString;
+import static com.topcoder.onlinereview.component.util.CommonUtils.getDate;
+import static com.topcoder.onlinereview.component.util.CommonUtils.getInt;
+import static com.topcoder.onlinereview.component.util.CommonUtils.getLong;
+import static com.topcoder.onlinereview.component.util.CommonUtils.getString;
 
 /**
  * <p>

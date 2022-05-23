@@ -32,7 +32,7 @@ import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.Vector;
 
-import static com.topcoder.onlinereview.util.SpringUtils.getPropertyValue;
+import static com.topcoder.onlinereview.component.util.SpringUtils.getPropertyValue;
 
 
 /**

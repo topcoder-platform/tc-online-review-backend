@@ -1,4 +1,4 @@
-package com.topcoder.onlinereview.util;
+package com.topcoder.onlinereview.component.util;
 
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.jdbc.core.JdbcTemplate;

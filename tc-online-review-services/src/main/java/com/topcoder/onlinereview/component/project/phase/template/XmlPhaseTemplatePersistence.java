@@ -127,7 +127,7 @@ public class XmlPhaseTemplatePersistence implements PhaseTemplatePersistence {
      */
     private final Map<String, Document> templates = new HashMap<String, Document>();
 
-    @Value("${phase.template.file}")
+    @Value("#{'${phase.template.file}'.split(',')}")
     private List<String> fileNames;
 
     @PostConstruct

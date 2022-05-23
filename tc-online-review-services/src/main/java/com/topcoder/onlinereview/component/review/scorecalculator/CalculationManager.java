@@ -67,16 +67,16 @@ public class CalculationManager {
      */
     private ScorecardMatrixBuilder scorecardMatrixBuilder;
 
-    @Value("${calculationManager.calculators.binaryQuestionTypes:4}")
+    @Value("#{'${calculationManager.calculators.binaryQuestionTypes:4}'.split(',')}")
     private List<Long> binaryQuestionTypes;
 
-    @Value("${calculationManager.calculators.binaryAnswers:1:0}")
+    @Value("#{'${calculationManager.calculators.binaryAnswers:1:0}'.split(',')}")
     private List<String> binaryAnswers;
 
-    @Value("${calculationManager.calculators.scaleQuestionTypes:1,2,3,5,6,7}")
+    @Value("#{'${calculationManager.calculators.scaleQuestionTypes:1,2,3,5,6,7}'.split(',')}")
     private List<Long> scaleQuestionTypes;
 
-    @Value("${calculationManager.calculators.scaleDefaultScales:4,10,-1,3,9,4}")
+    @Value("#{'${calculationManager.calculators.scaleDefaultScales:4,10,-1,3,9,4}'.split(',')}")
     private List<Long> scaleDefaultScales;
 
     @PostConstruct
@@ -88,7 +88,11 @@ public class CalculationManager {
             calculators.put(binaryQuestionTypes.get(i), new BinaryScoreCalculator(pN[0], pN[1]));
         }
         for (int i = 0; i < scaleQuestionTypes.size(); i++) {
-            calculators.put(scaleQuestionTypes.get(i), new ScaledScoreCalculator(scaleDefaultScales.get(i)));
+            if (scaleDefaultScales.get(i) < 0) {
+                calculators.put(scaleQuestionTypes.get(i), new ScaledScoreCalculator());
+            } else {
+                calculators.put(scaleQuestionTypes.get(i), new ScaledScoreCalculator(scaleDefaultScales.get(i)));
+            }
         }
     }
 

@@ -15,9 +15,9 @@ import java.util.List;
 import java.util.Map;
 
 import static com.google.common.collect.Lists.newArrayList;
-import static com.topcoder.onlinereview.util.CommonUtils.executeSqlWithParam;
-import static com.topcoder.onlinereview.util.CommonUtils.getDate;
-import static com.topcoder.onlinereview.util.CommonUtils.getLong;
+import static com.topcoder.onlinereview.component.util.CommonUtils.executeSqlWithParam;
+import static com.topcoder.onlinereview.component.util.CommonUtils.getDate;
+import static com.topcoder.onlinereview.component.util.CommonUtils.getLong;
 
 /**
  * The FinalReviewDeliverableChecker class subclasses the SingleQuerySqlDeliverableChecker class.
