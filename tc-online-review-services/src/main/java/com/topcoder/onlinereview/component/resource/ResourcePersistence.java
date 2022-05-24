@@ -742,7 +742,7 @@ public class ResourcePersistence {
   private Long[] getSubmissionEntry(Resource resource) throws SQLException {
     List<Long> submissions = new ArrayList<>();
     List<Map<String, Object>> result =
-        executeSqlWithParam(jdbcTemplate, SQL_SELECT_SUBMISSIONS, newArrayList(resource.getId()));
+            executeSql(jdbcTemplate, buildQueryWithIds(SQL_SELECT_SUBMISSIONS, new Long[]{resource.getId()}));
     for (Map<String, Object> map : result) {
       submissions.add(getLong(map, "submission_id"));
     }

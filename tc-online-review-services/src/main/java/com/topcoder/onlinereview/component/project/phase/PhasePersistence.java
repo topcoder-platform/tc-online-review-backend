@@ -690,7 +690,7 @@ public class PhasePersistence {
         executeSql(jdbcTemplate, SELECT_PROJECT_PHASE_ID + createQuestionMarks(phaseIds)).stream()
             .collect(toMap(m -> getLong(m, "project_phase_id"), m -> getLong(m, "project_id")));
     Map<Long, Project> projects =
-        Stream.of(getProjectPhasesImpl(phaseProjects.values().toArray(new Long[0])))
+        Stream.of(getProjectPhasesImpl(phaseProjects.values().stream().distinct().toArray(Long[]::new)))
             .collect(toMap(Project::getId, p -> p));
     Map<Long, Optional<Phase>> phases =
         phaseProjects.entrySet().stream()
@@ -698,7 +698,7 @@ public class PhasePersistence {
                 toMap(
                     e -> e.getKey(),
                     e ->
-                        Arrays.stream(projects.get(e.getKey()).getAllPhases())
+                        Arrays.stream(projects.get(e.getValue()).getAllPhases())
                             .filter(p -> p.getId() == e.getKey())
                             .findFirst()));
     // prepare the result array - if any phase not exists - set the result for it to null

@@ -5,6 +5,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
+import org.springframework.jdbc.support.rowset.SqlRowSet;
 
 import java.sql.Blob;
 import java.sql.PreparedStatement;
@@ -56,16 +57,24 @@ public class CommonUtils {
   }
 
   public static String getString(Map<String, Object> map, String key) {
-    return getT(map, key, v -> {
-      if (v instanceof byte[]) {
-        return new String((byte[])v);
-      }
-      return v.toString();
-    });
+    return getT(
+        map,
+        key,
+        v -> {
+          if (v instanceof byte[]) {
+            return new String((byte[]) v);
+          }
+          return v.toString();
+        });
   }
 
   public static Date getDate(Map<String, Object> map, String key) {
     return getT(map, key, v -> (Date) v);
+  }
+
+  public static SqlRowSet queryForRowSet(JdbcTemplate jdbcTemplate, String sql) {
+    log.info("execute sql '{}'", sql);
+    return jdbcTemplate.queryForRowSet(sql);
   }
 
   public static List<Map<String, Object>> executeSql(JdbcTemplate jdbcTemplate, String sql) {
@@ -78,7 +87,9 @@ public class CommonUtils {
     log.info(
         "execute sql '{}', with params '{}'",
         sql,
-        parameters.stream().map(Object::toString).collect(Collectors.joining(",")));
+        parameters.stream()
+            .map(o -> o == null ? "null" : o.toString())
+            .collect(Collectors.joining(",")));
     return jdbcTemplate.queryForList(sql, parameters.toArray());
   }
 
@@ -87,7 +98,9 @@ public class CommonUtils {
     log.info(
         "execute update sql '{}', with params '{}'",
         sql,
-        parameters.stream().map(Object::toString).collect(Collectors.joining(",")));
+        parameters.stream()
+            .map(o -> o == null ? "null" : o.toString())
+            .collect(Collectors.joining(",")));
     return jdbcTemplate.update(sql, parameters.toArray());
   }
 
@@ -96,7 +109,9 @@ public class CommonUtils {
     log.info(
         "execute insert sql '{}' with params '{}'",
         sql,
-        parameters.stream().map(Object::toString).collect(Collectors.joining(",")));
+        parameters.stream()
+            .map(o -> o == null ? "null" : o.toString())
+            .collect(Collectors.joining(",")));
     KeyHolder keyHolder = new GeneratedKeyHolder();
     jdbcTemplate.update(
         connection -> {

@@ -16,6 +16,7 @@ import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static com.google.common.collect.Lists.newArrayList;
 import static com.topcoder.onlinereview.component.util.CommonUtils.executeSqlWithParam;
@@ -23,6 +24,7 @@ import static com.topcoder.onlinereview.component.util.CommonUtils.getDouble;
 import static com.topcoder.onlinereview.component.util.CommonUtils.getFloat;
 import static com.topcoder.onlinereview.component.util.CommonUtils.getInt;
 import static com.topcoder.onlinereview.component.util.CommonUtils.getLong;
+import static java.util.Optional.ofNullable;
 
 
 /**
@@ -552,26 +554,7 @@ public class DefaultProjectPaymentCalculator implements ProjectPaymentCalculator
         }
 
         try {
-      // "SELECT dpp.resource_role_id, dpp.fixed_amount, dpp.base_coefficient,
-      // dpp.incremental_coefficient,"
-      //            + "max(pr.prize_amount) as prize,"
-      //            + "sum(case when s.submission_type_id = 1 then 1 else 0 end) as
-      // total_contest_submissions,"
-      //            + "sum(case when s.submission_type_id = 1 and s.submission_status_id != 2 then 1
-      // else 0 end) "
-      //            + "as passed_contest_submissions,"
-      //            + "sum(case when s.submission_type_id = 3 then 1 else 0 end) as
-      // total_checkpoint_submissions,"
-      //            + "sum(case when s.submission_type_id = 3 and s.submission_status_id != 6 then 1
-      // else 0 end) "
-      //            + "as passed_checkpoint_submissions, "
-      //            + "sum(case when s.submission_type_id = 1 and exists (select 1 from review r "
-      //            + "where r.submission_id = s.submission_id and r.committed = 1) then 1 else 0
-      // end) "
-      //            + "as total_reviewed_contest_submissions "
-      //            + "FROM default_project_payment dpp "
-
-      // Execute the query and get the result.
+          // Execute the query and get the result.
           List<Map<String, Object>> resultSet = executeSqlWithParam(jdbcTemplate, GET_DEFAULT_PAYMENTS_QUERY, newArrayList(projectId));
 
             Map<Long, BigDecimal> defaultPaymentsMap = new HashMap<Long, BigDecimal>();
@@ -583,9 +566,9 @@ public class DefaultProjectPaymentCalculator implements ProjectPaymentCalculator
                 if (resourceRoleIDs.contains(roleId)) {
                     BigDecimal fixedAmount =
                         new BigDecimal(getDouble(row, FIXED_AMOUNT_COLUMN)).setScale(2, RoundingMode.HALF_UP);
-                    float baseCoefficient = getFloat(row, BASE_COEFFICIENT_COLUMN);
-                    float incrementalCoefficient = getFloat(row, INCREMENTAL_COEFFICIENT_COLUMN);
-                    float prize = getFloat(row, PRIZE_COLUMN);
+                    float baseCoefficient = ofNullable(getFloat(row, BASE_COEFFICIENT_COLUMN)).orElse(0F);
+                    float incrementalCoefficient = ofNullable(getFloat(row, INCREMENTAL_COEFFICIENT_COLUMN)).orElse(0F);
+                    float prize = ofNullable(getFloat(row, PRIZE_COLUMN)).orElse(0F);
 
                     // get submission count
                     int submissionsCount = getSubmissionsCount(row, roleId);

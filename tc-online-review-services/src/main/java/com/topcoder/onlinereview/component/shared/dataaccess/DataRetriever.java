@@ -3,6 +3,7 @@ package com.topcoder.onlinereview.component.shared.dataaccess;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.support.rowset.SqlRowSet;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -22,6 +23,7 @@ import static com.topcoder.onlinereview.component.util.CommonUtils.executeUpdate
 import static com.topcoder.onlinereview.component.util.CommonUtils.getInt;
 import static com.topcoder.onlinereview.component.util.CommonUtils.getLong;
 import static com.topcoder.onlinereview.component.util.CommonUtils.getString;
+import static com.topcoder.onlinereview.component.util.CommonUtils.queryForRowSet;
 
 /**
  * Retrieves data from the database.
@@ -260,12 +262,11 @@ public class DataRetriever {
     }
 
     // Save query for exception handling
-    List<Map<String, Object>> rs2 = executeSql(jdbcTemplate, specialQuery);
-    if (rs2.isEmpty()) {
+    SqlRowSet rs2 = queryForRowSet(jdbcTemplate, specialQuery);
+    if (!rs2.next()) {
       throw new Exception("Default input query " + defaultQueryId + " did not return a value");
     }
-    // TODO
-    input = getString(rs2.get(0), "");
+    input = rs2.getString(1);
 
     // If input is still null, we're hosed - this indicates
     // some problem with the DW data or the default input

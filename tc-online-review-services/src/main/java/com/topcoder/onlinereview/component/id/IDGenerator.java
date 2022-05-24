@@ -168,7 +168,7 @@ public class IDGenerator {
    */
   private synchronized void getNextBlock() throws IDGenerationException {
     try {
-      List<Map<String, Object>> result = helper.execute(DBHelper.SELECT_NEXT_BLOCK_KEY, new Object[] {idName});
+      List<Map<String, Object>> result = helper.executeQuery(DBHelper.SELECT_NEXT_BLOCK_KEY, new Object[] {idName});
 
       if (result.size() == 0) {
         throw new NoSuchIDSequenceException("The specified IDName does not exist in the database.");
@@ -214,28 +214,19 @@ public class IDGenerator {
       // From here, we need to consider the rollback problem while error occurs
       // if the ids are exausted, set the flag
       if ((myNextID - 1) >= (Long.MAX_VALUE - blockSize)) {
-        helper.execute(DBHelper.UPDATE_EXHAUSTED_KEY, new Object[] {idName});
+        helper.executeUpdate(DBHelper.UPDATE_EXHAUSTED_KEY, new Object[] {idName});
       }
 
       long myMaxBlockID = (myNextID + blockSize) - 1;
 
       // update the next block start
-      helper.execute(
+      helper.executeUpdate(
           DBHelper.UPDATE_NEXT_BLOCK_START_KEY, new Object[] {myMaxBlockID + 1, idName});
       helper.commit();
 
       // it is safe to assign all the value now
       idsLeft = blockSize;
       nextID = myNextID;
-    } catch (SQLException e) {
-      // rollback for SQL error
-      // IDGenerationException will be thrown only while try to get connection. in this case we
-      // needn't rollback
-      // while thrown IDsExhaustedException, no any updating at the underlying persistence.
-      // Selection operation needn't to be rollback while error occurs. So it needn't to rollback
-      // too
-      helper.rollback();
-      throw new IDGenerationException("Failed to get next block.", e);
     } finally {
       helper.releaseDatabaseResources(false);
     }
@@ -249,15 +240,12 @@ public class IDGenerator {
   private void checkIDName() throws IDGenerationException {
     // Check if the given id generator exist on the underlying persistence
     try {
-      List<Map<String, Object>> result = helper.execute(DBHelper.SELECT_NEXT_BLOCK_KEY, new Object[] {idName});
+      List<Map<String, Object>> result = helper.executeQuery(DBHelper.SELECT_NEXT_BLOCK_KEY, new Object[] {idName});
 
       if (result.size() == 0) {
         throw new NoSuchIDSequenceException(
             "The specified IDName does not exist in the underlying persistence.");
       }
-    } catch (SQLException e) {
-      throw new IDGenerationException(
-          "Error occurs while accessing the underlying persistence.", e);
     } finally {
       helper.releaseDatabaseResources(false);
     }

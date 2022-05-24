@@ -7,13 +7,13 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
-import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import static com.google.common.collect.Lists.newArrayList;
 import static com.topcoder.onlinereview.component.util.CommonUtils.executeSqlWithParam;
+import static com.topcoder.onlinereview.component.util.CommonUtils.executeUpdateSql;
 
 /** The DB helper class centralizes db operations for generating ids. */
 @Component
@@ -69,12 +69,29 @@ public class DBHelper {
    * @param key the key to the sql statement
    * @param parameters the parameters of the sql statement
    * @return the result set for a select statement, or an integer value for an update statement.
-   * @throws SQLException if any error occurs while accessing database.
    * @throws IDGenerationException if the connection to the database cannot be created.
    */
-  public List<Map<String, Object>> execute(String key, Object[] parameters)
-      throws SQLException, IDGenerationException {
-    return tryExecute(key, parameters);
+  public List<Map<String, Object>> executeQuery(String key, Object[] parameters)
+      throws IDGenerationException {
+    if ((key == null) || (key.trim().length() == 0)) {
+      throw new IllegalArgumentException("The key should not be null or empty!");
+    }
+    if (!sqlSentences.containsKey(key)) {
+      throw new IllegalArgumentException(
+          "The key is not for a required sql statement supporting id generation.");
+    }
+    return executeSqlWithParam(jdbcTemplate, sqlSentences.get(key), newArrayList(parameters));
+  }
+
+  public int executeUpdate(String key, Object[] parameters) throws IDGenerationException {
+    if ((key == null) || (key.trim().length() == 0)) {
+      throw new IllegalArgumentException("The key should not be null or empty!");
+    }
+    if (!sqlSentences.containsKey(key)) {
+      throw new IllegalArgumentException(
+          "The key is not for a required sql statement supporting id generation.");
+    }
+    return executeUpdateSql(jdbcTemplate, sqlSentences.get(key), newArrayList(parameters));
   }
 
   /** Commits all the changes to the database. */
@@ -89,27 +106,4 @@ public class DBHelper {
    * @param force whether to release the resources even reuseConnection is true.
    */
   public void releaseDatabaseResources(boolean force) {}
-
-  /**
-   * Executes a sql statement.
-   *
-   * @param key the key to the sql statement
-   * @param parameters the parameters of the sql statement
-   * @return a map array containing data in the result set for a select statement, or an integer
-   *     value for an update statement.
-   * @throws SQLException if any error occurs while accessing database.
-   * @throws IDGenerationException if the connection to database cannot be created.
-   * @throws IllegalArgumentException if the key is null or empty or not a key to a desired sql
-   *     statement.
-   */
-  private List<Map<String, Object>> tryExecute(String key, Object[] parameters) {
-    if ((key == null) || (key.trim().length() == 0)) {
-      throw new IllegalArgumentException("The key should not be null or empty!");
-    }
-    if (!sqlSentences.containsKey(key)) {
-      throw new IllegalArgumentException(
-          "The key is not for a required sql statement supporting id generation.");
-    }
-    return executeSqlWithParam(jdbcTemplate, sqlSentences.get(key), newArrayList(parameters));
-  }
 }
