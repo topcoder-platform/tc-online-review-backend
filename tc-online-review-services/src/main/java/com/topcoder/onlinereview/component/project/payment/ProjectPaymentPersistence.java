@@ -18,6 +18,7 @@ import java.util.Map;
 import static com.google.common.collect.Lists.newArrayList;
 import static com.topcoder.onlinereview.component.util.CommonUtils.executeSqlWithParam;
 import static com.topcoder.onlinereview.component.util.CommonUtils.executeUpdateSql;
+import static com.topcoder.onlinereview.component.util.CommonUtils.executeUpdateSqlWithReturn;
 import static com.topcoder.onlinereview.component.util.CommonUtils.getBoolean;
 import static com.topcoder.onlinereview.component.util.CommonUtils.getDate;
 import static com.topcoder.onlinereview.component.util.CommonUtils.getDouble;
@@ -84,22 +85,22 @@ public class ProjectPaymentPersistence {
       // Check project payment integrity
       checkProjectPaymentIntegrity(projectPayment);
       Date date = new Date();
-      executeUpdateSql(
-          jdbcTemplate,
-          SQL_INSERT_PAYMENT,
-          newArrayList(
-              projectPayment.getResourceId(),
-              projectPayment.getSubmissionId(),
-              projectPayment.getAmount(),
-              projectPayment.getPactsPaymentId(),
-              operator,
-              date,
-              operator,
-              date,
-              projectPayment.getProjectPaymentType().getProjectPaymentTypeId()));
 
       // INSERT
-      long projectPaymentId = 1L; // TODO
+      long projectPaymentId =
+          executeUpdateSqlWithReturn(
+              jdbcTemplate,
+              SQL_INSERT_PAYMENT,
+              newArrayList(
+                  projectPayment.getResourceId(),
+                  projectPayment.getSubmissionId(),
+                  projectPayment.getAmount(),
+                  projectPayment.getPactsPaymentId(),
+                  operator,
+                  date,
+                  operator,
+                  date,
+                  projectPayment.getProjectPaymentType().getProjectPaymentTypeId()));
 
       projectPayment.setProjectPaymentId(projectPaymentId);
 

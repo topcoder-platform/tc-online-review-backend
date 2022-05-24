@@ -802,10 +802,10 @@ public class ProjectPersistence {
    * @throws IllegalArgumentException if the input id is less than or equal to zero.
    * @throws PersistenceException if error occurred while accessing the database.
    */
-  public Project getProject(long id) throws PersistenceException {
+  public Project getProject(Long id) throws PersistenceException {
     Helper.assertLongPositive(id, "id");
 
-    Project[] projects = getProjects(new long[] {id});
+    Project[] projects = getProjects(new Long[] {id});
     return projects.length == 0 ? null : projects[0];
   }
 
@@ -827,7 +827,7 @@ public class ProjectPersistence {
       if (result.isEmpty()) {
         return new Project[0];
       }
-      long[] ids = new long[result.size()];
+      Long[] ids = new Long[result.size()];
       for (int i = 0; i < result.size(); i++) {
         ids[i] = getLong(result.get(i), "project_id");
       }
@@ -2004,7 +2004,7 @@ public class ProjectPersistence {
    * @throws PersistenceException if error occurred while accessing the database.
    */
   @SuppressWarnings("unchecked")
-  public Project[] getProjects(long ids[]) throws PersistenceException {
+  public Project[] getProjects(Long ids[]) throws PersistenceException {
     Helper.assertObjectNotNull(ids, "ids");
 
     // check if ids is empty
@@ -2066,7 +2066,7 @@ public class ProjectPersistence {
       projects[i].setModificationTimestamp(getDate(row, "modify_date"));
 
       // set the tc direct project id and name
-      projects[i].setTcDirectProjectId(getLong(row, "tc_direct_project_id"));
+      projects[i].setTcDirectProjectId(Optional.ofNullable(getLong(row, "tc_direct_project_id")).orElse(0L));
       projects[i].setTcDirectProjectName(getString(row, "tc_direct_project_name"));
 
       // set the file types

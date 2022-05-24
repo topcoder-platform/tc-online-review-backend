@@ -688,7 +688,7 @@ public final class PhasesHelper {
         long scorecardId = review.getScorecard();
 
         try {
-            Scorecard[] scoreCards = scorecardManager.getScorecards(new long[] {scorecardId }, false);
+            Scorecard[] scoreCards = scorecardManager.getScorecards(new Long[] {scorecardId }, false);
 
             if (scoreCards.length == 0) {
                 throw new PhaseHandlingException("No scorecards found for scorecard id: " + scorecardId);

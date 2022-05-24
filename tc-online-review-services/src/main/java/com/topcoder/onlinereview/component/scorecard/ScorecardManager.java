@@ -250,7 +250,7 @@ public class ScorecardManager {
    * @throws IllegalArgumentException if the ids is less than or equal to zero. Or the input array
    *     is null or empty.
    */
-  public Scorecard[] getScorecards(long[] ids, boolean complete) throws PersistenceException {
+  public Scorecard[] getScorecards(Long[] ids, boolean complete) throws PersistenceException {
     return persistence.getScorecards(ids, complete);
   }
 

@@ -92,7 +92,7 @@ final class Util {
      * @throws IllegalArgumentException
      *             if values is null, or contains <= 0 value.
      */
-    static void checkLongArray(long[] values, String name) {
+    static void checkLongArray(Long[] values, String name) {
         checkNull(values, name);
 
         for (int i = 0; i < values.length; i++) {

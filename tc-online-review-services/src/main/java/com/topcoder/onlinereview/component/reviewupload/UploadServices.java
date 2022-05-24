@@ -1113,7 +1113,7 @@ public class UploadServices {
             // Update all the time line notifications if the timelineNotificationId is retrieved properly
             if ("On".equals(project.getProperty("Timeline Notification"))
                     && timelineNotificationId != Long.MIN_VALUE) {
-                resourceManager.addNotifications(new long[]{userId}, project.getId(), timelineNotificationId,
+                resourceManager.addNotifications(new Long[]{userId}, project.getId(), timelineNotificationId,
                         Long.toString(userId));
             }
             return resource.getId();

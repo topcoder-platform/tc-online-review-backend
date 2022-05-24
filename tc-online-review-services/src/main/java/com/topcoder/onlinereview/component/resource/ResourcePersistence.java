@@ -756,7 +756,7 @@ public class ResourcePersistence {
    * @throws SQLException if failed to get the submission entry for <code>Resource</code> instances.
    */
   private void loadResourceSubmissions(List<Resource> resources) throws SQLException {
-    long[] resourceIds = new long[resources.size()];
+    Long[] resourceIds = new Long[resources.size()];
     for (int i = 0; i < resources.size(); i++) {
       resourceIds[i] = resources.get(i).getId();
     }
@@ -955,7 +955,7 @@ public class ResourcePersistence {
    * @throws ResourcePersistenceException If there is an error making the change in the persistence
    *     store
    */
-  public void addNotification(long user, long project, long notificationType, String operator)
+  public void addNotification(Long user, Long project, Long notificationType, String operator)
       throws ResourcePersistenceException {
 
     Util.checkPositiveValue(user, "user");
@@ -1501,7 +1501,7 @@ public class ResourcePersistence {
    * @throws IllegalArgumentException If any id is <= 0 or the array is <code>null</code>
    * @throws ResourcePersistenceException If there is an error loading the Resources
    */
-  public Resource[] loadResources(long[] resourceIds) throws ResourcePersistenceException {
+  public Resource[] loadResources(Long[] resourceIds) throws ResourcePersistenceException {
     Util.checkLongArray(resourceIds, "resourceIds");
     if (resourceIds.length == 0) {
       return new Resource[0];
@@ -1637,7 +1637,7 @@ public class ResourcePersistence {
       loadResourceSubmissions(list);
 
       Resource[] resources = list.toArray(new Resource[list.size()]);
-      long[] resourceIds = new long[resources.length];
+      Long[] resourceIds = new Long[resources.length];
 
       for (int i = 0; i < resources.length; ++i) {
         resourceIds[i] = resources[i].getId();
@@ -1679,7 +1679,7 @@ public class ResourcePersistence {
    * @param ids the ids for select sql query
    * @return the result string
    */
-  private String buildQueryWithIds(String baseQuery, long[] ids) {
+  private String buildQueryWithIds(String baseQuery, Long[] ids) {
     StringBuffer buffer = new StringBuffer(baseQuery);
     for (int i = 0; i < ids.length; i++) {
       if (i > 0) {
@@ -1703,7 +1703,7 @@ public class ResourcePersistence {
    * @return a <code>Map</code> contained all external properties.
    * @throws ResourcePersistenceException if failed to select all external properties at once.
    */
-  private Map getAllExternalProperties(long[] resourceIds) throws ResourcePersistenceException {
+  private Map getAllExternalProperties(Long[] resourceIds) throws ResourcePersistenceException {
     // Map from resource id to a Map containing the properties of the resource.
     Map resourcesProperties = new HashMap();
     try {
@@ -1743,7 +1743,7 @@ public class ResourcePersistence {
    * @throws IllegalArgumentException If any id is <= 0 or the array is <code>null</code>
    * @throws ResourcePersistenceException If there is an error loading from persistence
    */
-  public NotificationType[] loadNotificationTypes(long[] notificationTypeIds)
+  public NotificationType[] loadNotificationTypes(Long[] notificationTypeIds)
       throws ResourcePersistenceException {
     Util.checkLongArray(notificationTypeIds, "notificationTypeIds");
     if (notificationTypeIds.length == 0) {
@@ -1831,7 +1831,7 @@ public class ResourcePersistence {
    * @throws IllegalArgumentException If any id is <= 0 or the array is <code>null</code>
    * @throws ResourcePersistenceException If there is an error loading from persistence
    */
-  public ResourceRole[] loadResourceRoles(long[] resourceRoleIds)
+  public ResourceRole[] loadResourceRoles(Long[] resourceRoleIds)
       throws ResourcePersistenceException {
     Util.checkLongArray(resourceRoleIds, "resourceRoleIds");
 
@@ -1891,7 +1891,7 @@ public class ResourcePersistence {
    * @throws ResourcePersistenceException If there is an error loading from the persistence
    */
   public Notification[] loadNotifications(
-      long[] userIds, long[] projectIds, long[] notificationTypes)
+          Long[] userIds, Long[] projectIds, Long[] notificationTypes)
       throws ResourcePersistenceException {
     Util.checkLongArray(userIds, "userIds");
     Util.checkLongArray(projectIds, "projectIds");

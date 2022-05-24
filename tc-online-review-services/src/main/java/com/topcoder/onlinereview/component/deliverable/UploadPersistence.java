@@ -657,7 +657,7 @@ public class UploadPersistence {
    * @throws UploadPersistenceException if there is an error reading the persistence data
    */
   public Submission loadSubmission(long submissionId) throws UploadPersistenceException {
-    Submission[] submissions = loadSubmissions(new long[] {submissionId});
+    Submission[] submissions = loadSubmissions(new Long[] {submissionId});
     if (submissions.length > 0) {
       return submissions[0];
     }
@@ -697,7 +697,7 @@ public class UploadPersistence {
    * @throws IllegalArgumentException if any id is <= 0
    * @throws UploadPersistenceException if there is an error reading the persistence data
    */
-  public Submission[] loadSubmissions(long[] submissionIds) throws UploadPersistenceException {
+  public Submission[] loadSubmissions(Long[] submissionIds) throws UploadPersistenceException {
     String query =
         "SELECT submission_id, upload_id, "
             + "submission.create_user submission_create_user, submission.create_date submission_create_date, "
@@ -812,8 +812,8 @@ public class UploadPersistence {
     return null;
   }
 
-  public long[] getAllMimeTypeIds() throws UploadPersistenceException {
-    return new long[0];
+  public Long[] getAllMimeTypeIds() throws UploadPersistenceException {
+    return new Long[0];
   }
 
   public MimeType[] loadMimeTypes(long[] mimeTypeIds) throws UploadPersistenceException {

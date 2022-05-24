@@ -37,7 +37,6 @@ import static com.topcoder.onlinereview.component.util.CommonUtils.getString;
  *
  * <p>
  * Change log for version 1.1: Updated the code for initializing the retrieved project link types with value of
- * allow_overlap flag; update {@link #updateProjectLinks(long, long[], long[])} method to validate the project links
  * against cycle.
  * </p>
  *
@@ -156,7 +155,7 @@ public class ProjectLinkManager {
 
         ProjectLink[] projectLinks = new ProjectLink[rows.size()];
 
-        long[] ids = new long[rows.size() + 1];
+        Long[] ids = new Long[rows.size() + 1];
         ids[0] = sourceProjectId;
         for (int i = 0; i < rows.size(); ++i) {
             Map<String, Object> row = rows.get(i);
@@ -196,7 +195,7 @@ public class ProjectLinkManager {
 
         ProjectLink[] projectLinks = new ProjectLink[rows.size()];
 
-        long[] ids = new long[rows.size() + 1];
+        Long[] ids = new Long[rows.size() + 1];
         ids[0] = destProjectId;
         for (int i = 0; i < rows.size(); ++i) {
             Map<String, Object> row = rows.get(i);
@@ -256,7 +255,7 @@ public class ProjectLinkManager {
      *             and link type array
      * @throws PersistenceException if any persistence error occurs
      */
-    public void updateProjectLinks(long sourceProjectId, long[] destProjectIds, long[] linkTypeIds)
+    public void updateProjectLinks(Long sourceProjectId, Long[] destProjectIds, Long[] linkTypeIds)
         throws PersistenceException {
         log.debug(new LogMessage(null, null, "Enter updateProjectLinks method.").toString());
         Helper.assertObjectNotNull(destProjectIds, "destProjectIds");
@@ -281,8 +280,8 @@ public class ProjectLinkManager {
      */
     public void checkForCycle(long sourceProjectId) throws PersistenceException {
         ProjectLink[] destProjectLinks = getDestProjectLinks(sourceProjectId);
-        long[] destProjectIds = new long[destProjectLinks.length];
-        long[] linkTypeIds = new long[destProjectLinks.length];
+        Long[] destProjectIds = new Long[destProjectLinks.length];
+        Long[] linkTypeIds = new Long[destProjectLinks.length];
 
         for (int i = 0; i < destProjectLinks.length; i++) {
             ProjectLink link = destProjectLinks[i];
@@ -301,7 +300,7 @@ public class ProjectLinkManager {
      * @param linkTypeIds the type ids.
      * @throws PersistenceException if any persistence error occurs.
      */
-    private void checkForCycle(long sourceProjectId, long[] destProjectIds, long[] linkTypeIds)
+    private void checkForCycle(Long sourceProjectId, Long[] destProjectIds, Long[] linkTypeIds)
         throws PersistenceException {
 
         // Build project link types map

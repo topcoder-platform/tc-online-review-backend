@@ -1,17 +1,21 @@
 package com.topcoder.onlinereview.component.util;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 
+import java.sql.Blob;
 import java.sql.PreparedStatement;
 import java.sql.Statement;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
+@Slf4j
 public class CommonUtils {
   private static <T> T getT(Map<String, Object> map, String key, Function<Object, T> function) {
     if (map.get(key) == null) {
@@ -52,7 +56,12 @@ public class CommonUtils {
   }
 
   public static String getString(Map<String, Object> map, String key) {
-    return getT(map, key, v -> v.toString());
+    return getT(map, key, v -> {
+      if (v instanceof byte[]) {
+        return new String((byte[])v);
+      }
+      return v.toString();
+    });
   }
 
   public static Date getDate(Map<String, Object> map, String key) {
@@ -60,21 +69,34 @@ public class CommonUtils {
   }
 
   public static List<Map<String, Object>> executeSql(JdbcTemplate jdbcTemplate, String sql) {
+    log.info("execute sql '{}'", sql);
     return jdbcTemplate.queryForList(sql);
   }
 
   public static List<Map<String, Object>> executeSqlWithParam(
       JdbcTemplate jdbcTemplate, String sql, List<Object> parameters) {
+    log.info(
+        "execute sql '{}', with params '{}'",
+        sql,
+        parameters.stream().map(Object::toString).collect(Collectors.joining(",")));
     return jdbcTemplate.queryForList(sql, parameters.toArray());
   }
 
   public static int executeUpdateSql(
       JdbcTemplate jdbcTemplate, String sql, List<Object> parameters) {
+    log.info(
+        "execute update sql '{}', with params '{}'",
+        sql,
+        parameters.stream().map(Object::toString).collect(Collectors.joining(",")));
     return jdbcTemplate.update(sql, parameters.toArray());
   }
 
   public static long executeUpdateSqlWithReturn(
       JdbcTemplate jdbcTemplate, String sql, List<Object> parameters) {
+    log.info(
+        "execute insert sql '{}' with params '{}'",
+        sql,
+        parameters.stream().map(Object::toString).collect(Collectors.joining(",")));
     KeyHolder keyHolder = new GeneratedKeyHolder();
     jdbcTemplate.update(
         connection -> {

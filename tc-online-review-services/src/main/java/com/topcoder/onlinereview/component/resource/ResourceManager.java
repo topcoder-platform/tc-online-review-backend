@@ -634,7 +634,7 @@ public class ResourceManager {
    *     or if operator or users is null
    * @throws ResourcePersistenceException if there is an error updating the persistence store
    */
-  public void addNotifications(long[] users, long project, long notificationType, String operator)
+  public void addNotifications(Long[] users, Long project, Long notificationType, String operator)
       throws ResourcePersistenceException {
 
     Helper.checkNull(users, "users");
@@ -666,7 +666,7 @@ public class ResourceManager {
    * @throws ResourcePersistenceException if there is an error updating the persistence store
    */
   public void removeNotifications(
-      long[] users, long project, long notificationType, String operator)
+      Long[] users, Long project, Long notificationType, String operator)
       throws ResourcePersistenceException {
 
     Helper.checkNull(users, "users");
@@ -694,7 +694,7 @@ public class ResourceManager {
    * @throws IllegalArgumentException if project or notificationType is &lt;= 0
    * @throws ResourcePersistenceException if there is an error reading the persistence store
    */
-  public long[] getNotifications(long project, long notificationType)
+  public Long[] getNotifications(Long project, Long notificationType)
       throws ResourcePersistenceException {
 
     Helper.checkLongPositive(project, "project");
@@ -721,7 +721,7 @@ public class ResourceManager {
     }
 
     // extract the id from the returned array.
-    long[] ids = new long[notifications.length];
+    Long[] ids = new Long[notifications.length];
 
     for (int i = 0; i < ids.length; i++) {
       // extract the user ids

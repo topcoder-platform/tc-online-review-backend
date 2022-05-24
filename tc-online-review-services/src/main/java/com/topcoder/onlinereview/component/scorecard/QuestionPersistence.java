@@ -173,7 +173,7 @@ public class QuestionPersistence {
         new LogMessage(null, operator, "Create new Questions with parentId:" + parentId)
             .toString());
     // generate the ids
-    long[] ids = DBUtils.generateIdsArray(questions.length, questionIdGenerator);
+    Long[] ids = DBUtils.generateIdsArray(questions.length, questionIdGenerator);
     try {
       Date time = new Date();
       // set the creation values for all questions.
@@ -279,7 +279,7 @@ public class QuestionPersistence {
    *     is null or empty.
    * @throws PersistenceException if error occurred while accessing the database.
    */
-  public void deleteQuestions(long[] ids) throws PersistenceException {
+  public void deleteQuestions(Long[] ids) throws PersistenceException {
     DBUtils.checkIdsArray(ids, "ids");
     log.debug(new LogMessage(null, null, "Delete Questions with ids:" + ids).toString());
     try {

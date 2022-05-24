@@ -45,7 +45,7 @@ public class ProjectManager {
     return this.persistence.getProject(id);
   }
 
-  public Project[] getProjects(long[] ids) throws PersistenceException {
+  public Project[] getProjects(Long[] ids) throws PersistenceException {
     return this.persistence.getProjects(ids);
   }
 

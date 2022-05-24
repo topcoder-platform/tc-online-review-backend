@@ -164,7 +164,7 @@ public class GroupPersistence {
     log.debug(
         new LogMessage(null, operator, "create new Groups with parentId:" + parentId).toString());
     // generate the ids
-    long[] groupIds = DBUtils.generateIdsArray(groups.length, groupIdGenerator);
+    Long[] groupIds = DBUtils.generateIdsArray(groups.length, groupIdGenerator);
     Date time = new Date();
     try {
       // for each group - set the variables
@@ -356,7 +356,7 @@ public class GroupPersistence {
    *     is null or empty.
    * @throws PersistenceException if error occurred while accessing the database.
    */
-  public void deleteGroups(long[] ids) throws PersistenceException {
+  public void deleteGroups(Long[] ids) throws PersistenceException {
     DBUtils.checkIdsArray(ids, "ids");
 
     log.debug(new LogMessage(null, null, "Delete Groups with ids:" + ids).toString());

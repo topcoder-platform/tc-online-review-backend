@@ -472,7 +472,7 @@ public abstract class AbstractPhaseHandler implements PhaseHandler {
             project = managerHelper.getProjectManager().getProject(projectId);
 
             // retrieve users to be notified
-            long[] externalIds = rm.getNotifications(projectId, notificationTypeId);
+            Long[] externalIds = rm.getNotifications(projectId, notificationTypeId);
 
             for (Resource resource : resources) {
                 long externalId = resource.getUserId();
@@ -914,7 +914,7 @@ public abstract class AbstractPhaseHandler implements PhaseHandler {
      *
      * @return true if exists
      */
-    private static boolean contains(long[] ids, long id) {
+    private static boolean contains(Long[] ids, long id) {
         for (long id1 : ids) {
             if (id1 == id) {
                 return true;

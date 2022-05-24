@@ -26,7 +26,7 @@ final class DBUtils {
    * @throws IllegalArgumentException if array is <code>null</code> or empty or contains negatize or
    *     zero value.
    */
-  public static void checkIdsArray(long[] array, String name) {
+  public static void checkIdsArray(Long[] array, String name) {
     if (array == null) {
       throw new IllegalArgumentException(name + " cannot be null.");
     }
@@ -50,9 +50,9 @@ final class DBUtils {
    * @return the array of ids.
    * @throws PersistenceException if error occurs while generating the ids.
    */
-  public static long[] generateIdsArray(int length, IDGenerator idGenerator)
+  public static Long[] generateIdsArray(int length, IDGenerator idGenerator)
       throws PersistenceException {
-    long[] result = new long[length];
+    Long[] result = new Long[length];
 
     try {
       for (int i = 0; i < result.length; i++) {
@@ -89,8 +89,8 @@ final class DBUtils {
    * @param ids the ids list.
    * @return the ids array.
    */
-  static long[] listToArray(List ids) {
-    long[] result = new long[ids.size()];
+  static Long[] listToArray(List ids) {
+    Long[] result = new Long[ids.size()];
     for (int i = 0; i < result.length; i++) {
       result[i] = ((Long) ids.get(i)).longValue();
     }

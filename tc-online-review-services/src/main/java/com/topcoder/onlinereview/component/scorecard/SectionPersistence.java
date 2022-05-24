@@ -160,7 +160,7 @@ public class SectionPersistence {
       throws PersistenceException {
     log.debug(
         new LogMessage(null, operator, "create new Sections with parentId:" + parentId).toString());
-    long[] ids = DBUtils.generateIdsArray(sections.length, sectionIdGenerator);
+    Long[] ids = DBUtils.generateIdsArray(sections.length, sectionIdGenerator);
     Date time = new Date();
     try {
       for (int i = 0; i < sections.length; i++) {
@@ -339,7 +339,7 @@ public class SectionPersistence {
    *     is null or empty.
    * @throws PersistenceException if error occurred while accessing the database.
    */
-  public void deleteSections(long[] ids) throws PersistenceException {
+  public void deleteSections(Long[] ids) throws PersistenceException {
     DBUtils.checkIdsArray(ids, "ids");
     log.debug(new LogMessage(null, null, "Delete Section with ids:" + ids).toString());
     try {

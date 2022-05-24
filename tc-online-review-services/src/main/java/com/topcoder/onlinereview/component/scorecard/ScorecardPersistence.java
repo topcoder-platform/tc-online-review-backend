@@ -65,10 +65,10 @@ public class ScorecardPersistence {
 
   /** Selects the scorecards by ids. */
   private static final String SELECT_SCORECARD =
-      "SELECT sc.scorecard_id, status.scorecard_status_id, "
-          + "type.scorecard_type_id, sc.project_category_id, sc.name, sc.version, sc.min_score, "
+      "SELECT sc.scorecard_id, status.scorecard_status_id as status_id, "
+          + "type.scorecard_type_id as type_id, sc.project_category_id, sc.name as scorecard_name, sc.version, sc.min_score, "
           + "sc.max_score, sc.create_user, sc.create_date, sc.modify_user, sc.modify_date, "
-          + "status.name AS StatusName, type.name AS TypeName FROM scorecard AS sc JOIN scorecard_type_lu AS type "
+          + "status.name AS status_name, type.name AS type_name FROM scorecard AS sc JOIN scorecard_type_lu AS type "
           + "ON sc.scorecard_type_id=type.scorecard_type_id JOIN scorecard_status_lu AS status ON "
           + "sc.scorecard_status_id=status.scorecard_status_id WHERE sc.scorecard_id IN ";
 
@@ -384,8 +384,8 @@ public class ScorecardPersistence {
    * @throws IllegalArgumentException if the input id is less than or equal to zero.
    * @throws PersistenceException if error occurred while accessing the database.
    */
-  public Scorecard getScorecard(long id, boolean complete) throws PersistenceException {
-    Scorecard[] result = getScorecards(new long[] {id}, complete);
+  public Scorecard getScorecard(Long id, boolean complete) throws PersistenceException {
+    Scorecard[] result = getScorecards(new Long[] {id}, complete);
 
     if (result.length > 0) {
       return result[0];
@@ -487,7 +487,7 @@ public class ScorecardPersistence {
    *     is null or empty.
    * @throws PersistenceException if error occurred while accessing the persistence.
    */
-  public Scorecard[] getScorecards(long[] ids, boolean complete) throws PersistenceException {
+  public Scorecard[] getScorecards(Long[] ids, boolean complete) throws PersistenceException {
     DBUtils.checkIdsArray(ids, "ids");
     log.debug(
         new LogMessage(
@@ -623,7 +623,7 @@ public class ScorecardPersistence {
    * @return the list of Scorecards.
    * @throws PersistenceException if any error occurs.
    */
-  private List getScorecards(long[] ids, Set<Long> inUseIds) throws PersistenceException {
+  private List getScorecards(Long[] ids, Set<Long> inUseIds) throws PersistenceException {
     try {
       List<Map<String, Object>> rs =
           executeSqlWithParam(
@@ -647,44 +647,13 @@ public class ScorecardPersistence {
   }
 
   /**
-   * Create the Scorecard instance using the data from the ResultSet object.
-   *
-   * @param rs the source result set.
-   * @return the Scorecard instance.
-   * @throws SQLException if any database error occurs.
-   */
-  private static Scorecard populateScorecard(ResultSet rs) throws SQLException {
-    Scorecard card = new Scorecard(rs.getLong("scorecard_id"));
-    card.setCategory(rs.getLong("project_category_id"));
-    card.setVersion(rs.getString("version"));
-    card.setMinScore(rs.getFloat("min_score"));
-    card.setMaxScore(rs.getFloat("max_score"));
-    card.setName(rs.getString("name"));
-
-    ScorecardStatus status = new ScorecardStatus();
-    status.setId(rs.getLong("scorecard_status_id"));
-    status.setName(rs.getString("StatusName"));
-    card.setScorecardStatus(status);
-
-    card.setScorecardType(
-        new ScorecardType(rs.getLong("scorecard_type_id"), rs.getString("TypeName")));
-
-    card.setModificationUser(rs.getString("modify_user"));
-    card.setCreationUser(rs.getString("create_user"));
-    card.setCreationTimestamp(rs.getTimestamp("create_date"));
-    card.setModificationTimestamp(rs.getTimestamp("modify_date"));
-
-    return card;
-  }
-
-  /**
    * Checks if the scorecard is in use or not. It returns the set of ids that are in use.
    *
    * @param ids the scorecards ids to check.
    * @return true if the scorecard is in use.
    * @throws PersistenceException if database error occurs.
    */
-  private Set<Long> selectInUse(long[] ids) throws PersistenceException {
+  private Set<Long> selectInUse(Long[] ids) throws PersistenceException {
     Set<Long> result = new HashSet<Long>();
     try {
       List<Map<String, Object>> rs =

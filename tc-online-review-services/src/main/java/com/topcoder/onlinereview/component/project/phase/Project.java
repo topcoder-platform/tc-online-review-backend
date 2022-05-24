@@ -39,7 +39,7 @@ public class Project extends AttributableObject {
    * Represents a set of phases owned by this project. This set could be accessed by the
    * create/get/clear/remove methods.
    */
-  private final Set phases = new HashSet();
+  private final Set<Phase> phases = new HashSet();
 
   /**
    * Represents the instance of <code>Workdays</code> to calculate the end date for the phase in the
