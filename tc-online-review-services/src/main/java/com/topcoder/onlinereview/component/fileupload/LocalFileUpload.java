@@ -73,7 +73,7 @@ public class LocalFileUpload extends FileUpload {
      * non-empty.
      * </p>
      */
-    @Value("$#{'{fileUpload.localFileUpload.allowedDirs}'.split(',')}")
+    @Value("#{'${fileUpload.localFileUpload.allowedDirs}'.split(',')}")
     private String[] allowedDirs;
 
     /**
