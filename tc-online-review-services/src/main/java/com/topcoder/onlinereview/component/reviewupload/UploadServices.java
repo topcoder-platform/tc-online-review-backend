@@ -37,10 +37,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -1264,34 +1260,5 @@ public class UploadServices {
             return 0;
         }
         return Long.parseLong(obj.toString());
-    }
-
-    /**
-     * Closes JDBC resource.
-     *
-     * @param obj JDBC resource
-     *
-     * @since 1.0
-     */
-    private static void close(Object obj) {
-        if (obj instanceof Connection) {
-            try {
-                ((Connection) obj).close();
-            } catch (SQLException e) {
-                // Ignore
-            }
-        } else if (obj instanceof Statement) {
-            try {
-                ((Statement) obj).close();
-            } catch (SQLException e) {
-                // Ignore
-            }
-        } else if (obj instanceof ResultSet) {
-            try {
-                ((ResultSet) obj).close();
-            } catch (SQLException e) {
-                // Ignore
-            }
-        }
     }
 }

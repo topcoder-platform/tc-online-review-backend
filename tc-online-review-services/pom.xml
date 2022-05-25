@@ -31,7 +31,7 @@
         <dependency>
             <groupId>org.hibernate</groupId>
             <artifactId>hibernate-entitymanager</artifactId>
-            <version>4.2.21.Final</version>
+            <version>3.2.1.ga</version>
             <exclusions>
                 <exclusion>
                     <groupId>javax.transaction</groupId>
@@ -82,6 +82,12 @@
             <groupId>javax.servlet</groupId>
             <artifactId>javax.servlet-api</artifactId>
             <version>3.0.1</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>javax.ejb</groupId>
+            <artifactId>ejb-api</artifactId>
+            <version>3.0</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>

@@ -14,9 +14,6 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -1508,7 +1505,7 @@ public class ProjectPersistence {
       // create the project studio specification
       log.debug("insert record into project studio specification with id:" + newId);
 
-      Timestamp createDate = new Timestamp(System.currentTimeMillis());
+      Date createDate = new Date();
 
       // insert the project studio specification into database
       Object[] queryArgs =
@@ -1750,9 +1747,6 @@ public class ProjectPersistence {
     Helper.assertObjectNotNull(spec, "spec");
     Helper.assertLongPositive(projectId, "projectId");
     Helper.assertStringNotNullNorEmpty(operator, "operator");
-
-    Connection conn = null;
-
     log.debug(
         new LogMessage(
                 null,
@@ -2194,8 +2188,6 @@ public class ProjectPersistence {
     // create a property id-property value map that contains the properties
     // to insert
     Map createIdValueMap = new HashMap();
-
-    PreparedStatement preparedStatement = null;
     try {
       log.debug(
           new LogMessage(

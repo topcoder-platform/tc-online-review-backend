@@ -9,7 +9,6 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
-import java.sql.Connection;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -122,8 +121,6 @@ public class ProjectLinkManager {
      * @throws PersistenceException if any persistence error occurs
      */
     public ProjectLinkType[] getAllProjectLinkTypes() throws PersistenceException {
-        Connection conn = null;
-
         log.debug( new LogMessage(null, null, "Enter getAllProjectLinkTypes method.").toString());
         List<Map<String, Object>> rows = executeSql(jdbcTemplate, QUERY_ALL_PROJECT_LINK_TYPES_SQL);
 
