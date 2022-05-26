@@ -43,6 +43,10 @@ public class SpringUtils implements ApplicationContextAware {
     return applicationContext.getBean("tcsJdbcTemplate", JdbcTemplate.class);
   }
 
+  public static JdbcTemplate getOltpJdbcTemplate() {
+    return applicationContext.getBean("oltpJdbcTemplate", JdbcTemplate.class);
+  }
+
   public static <T> T getBean(Class<T> clazz) {
     return applicationContext.getBean(clazz);
   }
