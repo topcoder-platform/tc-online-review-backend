@@ -51,6 +51,21 @@ public class MockResourceManager implements ResourceManager {
     }
 
     /**
+     * <p>
+     * Get resources by given project ids
+     * </p>
+     *
+     * @return The resources array
+     *
+     * @param projectIds The project ids
+     *
+     * @throws ResourcePersistenceException If there is an error reading the persistence store
+     */
+    public Resource[] getResourcesByProjects(Long[] projectIds, long userId) throws ResourcePersistenceException {
+        return null;
+    }
+
+    /**
      * Mock implementation.
      *
      * @param filter

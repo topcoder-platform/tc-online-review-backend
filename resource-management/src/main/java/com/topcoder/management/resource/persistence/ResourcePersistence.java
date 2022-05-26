@@ -3,6 +3,8 @@
  */
 package com.topcoder.management.resource.persistence;
 
+import java.util.Map;
+
 import com.topcoder.management.resource.Notification;
 import com.topcoder.management.resource.NotificationType;
 import com.topcoder.management.resource.Resource;
@@ -13,7 +15,7 @@ import com.topcoder.util.sql.databaseabstraction.CustomResultSet;
  * <p>
  * The ResourcePersistence interface defines the methods for persisting and
  * retrieving the object model in this component. This interface handles the
- * persistence of the four classes that make up the object model ¨C Resources,
+ * persistence of the four classes that make up the object model ï¿½C Resources,
  * ResourceRoles, Notifications, and NotificationTypes. This interface is not
  * responsible for searching the persistence for the various entities. This is
  * instead handled by a ResourceManager implementation.
@@ -103,6 +105,20 @@ public interface ResourcePersistence {
      * @throws ResourcePersistenceException If there is an error loading the Resource
      */
     public Resource loadResource(long resourceId) throws ResourcePersistenceException;
+
+    /**
+     * <p>
+     * Get resources by given project ids
+     * </p>
+     *
+     * @return The resources array
+     *
+     * @param projectIds The project ids
+     * @param roles The resource prole map
+     *
+     * @throws ResourcePersistenceException If there is an error reading the persistence store
+     */
+    public Resource[] getResourcesByProjects(Long[] projectIds, long userId, Map<Long, ResourceRole> roles) throws ResourcePersistenceException;
 
     /**
      * <p>

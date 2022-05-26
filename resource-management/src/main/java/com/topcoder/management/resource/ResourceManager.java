@@ -135,6 +135,19 @@ public interface ResourceManager {
 
     /**
      * <p>
+     * Get resources by given project ids
+     * </p>
+     *
+     * @return The resources array
+     *
+     * @param projectIds The project ids
+     *
+     * @throws ResourcePersistenceException If there is an error reading the persistence store
+     */
+    public Resource[] getResourcesByProjects(Long[] projectIds, long userId) throws ResourcePersistenceException;
+
+    /**
+     * <p>
      * Updates the given resource role in the persistence
      * store. If the resource role is new (id is UNSET_ID), then an id should be
      * assigned and the resource role added to the persistence store. Otherwise

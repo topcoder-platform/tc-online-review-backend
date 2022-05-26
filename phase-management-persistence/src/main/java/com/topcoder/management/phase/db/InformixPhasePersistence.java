@@ -206,14 +206,25 @@ public class InformixPhasePersistence implements PhasePersistence {
     /**
      * Selects phase data.
      */
-    private static final String SELECT_PHASE_FOR_PROJECTS = "SELECT project_phase_id, project_id, fixed_start_time, "
-            + "scheduled_start_time, scheduled_end_time, actual_start_time, actual_end_time, duration, "
-            + "project_phase.modify_date, "
-            + "phase_type_lu.phase_type_id, phase_type_lu.name phase_type_name, "
-            + "phase_status_lu.phase_status_id, phase_status_lu.name phase_status_name "
-            + "FROM project_phase JOIN phase_type_lu ON phase_type_lu.phase_type_id = project_phase.phase_type_id "
-            + "JOIN phase_status_lu ON phase_status_lu.phase_status_id = "
-            + "project_phase.phase_status_id WHERE project_id IN ";
+    private static final String SELECT_PHASE_FOR_PROJECT = "SELECT project_phase_id, project_id, fixed_start_time, "
+        + "scheduled_start_time, scheduled_end_time, actual_start_time, actual_end_time, duration, "
+        + "project_phase.modify_date, "
+        + "phase_type_lu.phase_type_id, phase_type_lu.name phase_type_name, "
+        + "phase_status_lu.phase_status_id, phase_status_lu.name phase_status_name "
+        + "FROM project_phase JOIN phase_type_lu ON phase_type_lu.phase_type_id = project_phase.phase_type_id "
+        + "JOIN phase_status_lu ON phase_status_lu.phase_status_id = "
+        + "project_phase.phase_status_id WHERE project_id = ?";
+
+    /**
+     * Selects phase data.
+     */
+    private static final String SELECT_PHASE_FOR_PROJECTS = "SELECT pp.project_phase_id, pp.project_id, pp.fixed_start_time,"
+            + "pp.scheduled_start_time, pp.scheduled_end_time, pp.actual_start_time, pp.actual_end_time, pp.duration,"
+            + "pp.phase_type_id, pp.phase_status_id, pp.modify_date,"
+            + "d.dependency_phase_id, d.dependent_phase_id, d.dependency_start, d.dependent_start, d.lag_time"
+            + " FROM project_phase pp"
+            + " LEFT JOIN phase_dependency d ON pp.project_phase_id = d.dependent_phase_id"
+            + " WHERE pp.project_id IN ";
 
     /**
      * Inserts data into phase depedencies.
@@ -242,11 +253,6 @@ public class InformixPhasePersistence implements PhasePersistence {
      */
     private static final String SELECT_PHASE_TYPES = "SELECT phase_type_id, name phase_type_name FROM phase_type_lu";
 
-    /**
-     * Selects all projects - checks if all exists in database.
-     */
-    private static final String SELECT_PROJECT_IDS = "SELECT project_id FROM project WHERE project_id IN ";
-    
     /**
      * <p>
      * Represents the audit creation type.
@@ -470,7 +476,14 @@ public class InformixPhasePersistence implements PhasePersistence {
      * @throws PhasePersistenceException if any database error happen.
      */
     public Project getProjectPhases(long projectId) throws PhasePersistenceException {
-        return getProjectPhases(new long[] {projectId})[0];
+        Connection conn = createConnection(false);
+        try {
+            return getProjectPhasesImpl(conn, projectId);
+        } catch (SQLException ex) {
+            throw new PhasePersistenceException("Error occurs while retrieving the projects.", ex);
+        } finally {
+            close(conn);
+        }
     }
 
     /**
@@ -509,6 +522,65 @@ public class InformixPhasePersistence implements PhasePersistence {
     }
 
     /**
+     * This the current implementation of the {@link #getProjectPhases(long)} method. It will first check which
+     * project for the given ids exists and which have no phases. The it selects all the phases for the project,
+     * create them and return.
+     *
+     * @param conn the database connection to use.
+     * @param projectIds the ids of the projects to retrieve.
+     * @return the array of projects with one to one mapping between project and it id.
+     *
+     * @throws SQLException if any database error occurs.
+     * @throws PhasePersistenceException if other error happen.
+     */
+    private Project getProjectPhasesImpl(Connection conn, long projectId) throws SQLException,
+        PhasePersistenceException {
+
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+
+        // create workdays to be used to create the project
+        Workdays workdays = new DefaultWorkdaysFactory().createWorkdaysInstance();
+        Project project = new Project(new Date(Long.MAX_VALUE), workdays);
+        project.setId(projectId);
+        try {
+            Map phasesMap = new HashMap();
+            // prepare the query to retrieve the phases .
+            pstmt = conn.prepareStatement(SELECT_PHASE_FOR_PROJECT);
+            pstmt.setLong(1, projectId);
+
+            rs = pstmt.executeQuery();
+
+            // for each phase in the response create the Phase object and add it to the internal list
+            while (rs.next()) {
+                Phase phase = populatePhase(rs, project);
+                phasesMap.put(new Long(phase.getId()), phase);
+            }
+
+            // fill the phases depedencies and criteria for them
+            if (phasesMap.size() > 0) {
+                fillDependencies(conn, phasesMap, new long[] {projectId});
+                fillCriteria(conn, phasesMap, new long[] {projectId});
+            }
+
+            // this comparator is used to get the lowest start date
+            Comparator phasesComparator = new PhaseStartDateComparator();
+            // set the correct date for project
+            Phase[] phases = project.getAllPhases(phasesComparator);
+            // if project has any phases - get the first one
+            if (phases.length > 0) {
+                project.setStartDate(phases[0].getScheduledStartDate());
+            }
+
+            // create the result array
+            return project;
+        } finally {
+            close(rs);
+            close(pstmt);
+        }
+    }
+
+    /**
      * This the current implementation of the {@link #getProjectPhases(long[])} method. It will first check which
      * project for the given ids exists and which have no phases. The it selects all the phases for the projects,
      * create them and return. If any project from the givenlist not exists, null will be returned in that place.
@@ -527,6 +599,12 @@ public class InformixPhasePersistence implements PhasePersistence {
             return new Project[0];
         }
 
+        Map<Long, PhaseStatus> statusesMap = buildPhaseStatusesLookupMap(getAllPhaseStatuses());
+        Map<Long, PhaseType> typesMap = buildPhaseTypesLookupMap(getAllPhaseTypes());
+        Map<Long, Phase> cachedPhases = new HashMap<Long, Phase>();
+        Map<Long, List<Object[]>> deferredDependencies = new HashMap<Long, List<Object[]>>();
+        List<Project> phProjects = new ArrayList<>();
+
         PreparedStatement pstmt = null;
         ResultSet rs = null;
 
@@ -534,28 +612,6 @@ public class InformixPhasePersistence implements PhasePersistence {
         Workdays workdays = new DefaultWorkdaysFactory().createWorkdaysInstance();
 
         try {
-            pstmt = conn.prepareStatement(SELECT_PROJECT_IDS + createQuestionMarks(projectIds.length));
-            for (int i = 0; i < projectIds.length; i++) {
-                pstmt.setLong(i + 1, projectIds[i]);
-            }
-
-            rs = pstmt.executeQuery();
-
-            Map projectsMap = new HashMap();
-
-            // create all the projects that exists and store them in helper map
-            while (rs.next()) {
-                long projectId = rs.getLong(1);
-                Project project = new Project(new Date(Long.MAX_VALUE), workdays);
-                project.setId(projectId);
-                projectsMap.put(new Long(projectId), project);
-            }
-
-            // closes resources
-            close(rs);
-            close(pstmt);
-
-            Map phasesMap = new HashMap();
 
             // prepare the query to retrieve the phases .
             pstmt = conn.prepareStatement(SELECT_PHASE_FOR_PROJECTS + createQuestionMarks(projectIds.length));
@@ -564,46 +620,218 @@ public class InformixPhasePersistence implements PhasePersistence {
             }
 
             rs = pstmt.executeQuery();
-
+            Project currentPhProject = null;
+            Phase currentPhase = null;
             // for each phase in the response create the Phase object and add it to the internal list
             while (rs.next()) {
                 long projectId = rs.getLong("project_id");
+                if ((currentPhProject == null) || (currentPhProject.getId() != projectId)) {
+                    currentPhProject = new Project(new Date(Long.MAX_VALUE), workdays);
+                    currentPhProject.setId(projectId);
+                    phProjects.add(currentPhProject);
+                }
 
-                Project project = (Project) projectsMap.get(new Long(projectId));
+                long phaseId = rs.getLong("project_phase_id");
+                if ((currentPhase == null) || (currentPhase.getId() != phaseId)) {
+                    currentPhase = new Phase(currentPhProject, rs.getLong("duration"));
+                    currentPhase.setId(phaseId);
+                    currentPhase.setActualEndDate(rs.getTimestamp("actual_end_time"));
+                    currentPhase.setActualStartDate(rs.getTimestamp("actual_start_time"));
+                    currentPhase.setFixedStartDate(rs.getTimestamp("fixed_start_time"));
+                    currentPhase.setScheduledEndDate(rs.getTimestamp("scheduled_end_time"));
+                    currentPhase.setScheduledStartDate(rs.getTimestamp("scheduled_start_time"));
+                    currentPhase.setPhaseStatus(statusesMap.get(rs.getLong("phase_status_id")));
+                    currentPhase.setPhaseType(typesMap.get(rs.getLong("phase_type_id")));
+                    currentPhase.setModifyDate(rs.getTimestamp("modify_date"));
+                    cachedPhases.put(phaseId, currentPhase);
+                    Date currentPhaseStartDate = currentPhase.getScheduledStartDate();
+                    Date currentProjectStartDate = currentPhProject.getStartDate();
+                    if (currentProjectStartDate.compareTo(currentPhaseStartDate) > 0) {
+                        currentPhProject.setStartDate(currentPhaseStartDate);
+                    }
+                }
 
-                Phase phase = populatePhase(rs, project);
-                phasesMap.put(new Long(phase.getId()), phase);
-            }
-
-            // fill the phases depedencies and criteria for them
-            if (phasesMap.size() > 0) {
-                fillDependencies(conn, phasesMap, projectIds);
-                fillCriteria(conn, phasesMap, projectIds);
-            }
-
-            // this comparator is used to get the lowest start date
-            Comparator phasesComparator = new PhaseStartDateComparator();
-            // set the correct date for each project
-            for (Iterator it = projectsMap.values().iterator(); it.hasNext();) {
-                Project project = (Project) it.next();
-                Phase[] phases = project.getAllPhases(phasesComparator);
-                // if project has any phases - get the first one
-                if (phases.length > 0) {
-                    project.setStartDate(phases[0].getScheduledStartDate());
+                long dependencyId = rs.getLong("dependency_phase_id");
+                if (!rs.wasNull()) {
+                    long dependentId = rs.getLong("dependent_phase_id");
+                    long lagTime = rs.getLong("lag_time");
+                    boolean dependencyStart = (rs.getInt("dependency_start") == 1);
+                    boolean dependentStart = (rs.getInt("dependent_start") == 1);
+                    if (cachedPhases.containsKey(dependencyId)) {
+                        Dependency dependency = new Dependency(cachedPhases.get(dependencyId), currentPhase,
+                                                            dependencyStart, dependentStart, lagTime);
+                        currentPhase.addDependency(dependency);
+                    } else {
+                        if (!deferredDependencies.containsKey(dependencyId)) {
+                            deferredDependencies.put(dependencyId, new ArrayList<Object[]>());
+                        }
+                        deferredDependencies.get(dependencyId).add(
+                            new Object[] {dependentId, lagTime, dependencyStart, dependentStart});
+                    }
                 }
             }
 
-            // create the result array
-            Project[] result = new Project[projectIds.length];
-            for (int i = 0; i < projectIds.length; i++) {
-                result[i] = (Project) projectsMap.get(new Long(projectIds[i]));
+            // Resolve deferred dependencies
+            for (Long dependencyId : deferredDependencies.keySet()) {
+                List<Object[]> dependencies = deferredDependencies.get(dependencyId);
+                for (Object[] dependency : dependencies) {
+                    long dependentId = (Long) dependency[0];
+                    long lagTime = (Long) dependency[1];
+                    boolean dependencyStart = (Boolean) dependency[2];
+                    boolean dependentStart = (Boolean) dependency[3];
+                    Phase dependentPhase = cachedPhases.get(dependentId);
+                    Dependency dep = new Dependency(cachedPhases.get(dependencyId), dependentPhase,
+                            dependencyStart, dependentStart, lagTime);
+                    dependentPhase.addDependency(dep);
+                }
             }
 
-            return result;
+            deferredDependencies.clear();
+            cachedPhases.clear();
+            statusesMap.clear();
+            typesMap.clear();
+
+            return phProjects.toArray(new Project[phProjects.size()]);
         } finally {
             close(rs);
             close(pstmt);
         }
+    }
+
+    /**
+     * This method set the phase criteria into the phases from the given map.
+     *
+     * @param conn the database connection to be used.
+     * @param phases the Phases to which criteria will ba add. Key should be Long phase id, value - Phase object.
+     * @param projectIds all the project ids.
+     *
+     * @throws SQLException if any database error occurs.
+     */
+    private void fillCriteria(Connection conn, Map phases, long[] projectIds) throws SQLException {
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+
+        try {
+            // create the statement
+            pstmt = conn.prepareStatement(SELECT_PHASE_CRITERIA_FOR_PROJECTS + createQuestionMarks(projectIds.length));
+
+            // set the id to the statement
+            for (int i = 0; i < projectIds.length; ++i) {
+                pstmt.setLong(i + 1, projectIds[i]);
+            }
+
+            // execute query
+            rs = pstmt.executeQuery();
+
+            // create the phase criteria
+            while (rs.next()) {
+                // get the phase id
+                Long id = new Long(rs.getLong("project_phase_id"));
+                // get criteria name and parameter
+                String name = rs.getString("name");
+                String parameter = rs.getString("parameter");
+
+                // get the phase and add criteria
+                Phase phase = (Phase) phases.get(id);
+                phase.setAttribute(name, parameter);
+            }
+        } finally {
+            close(rs);
+            close(pstmt);
+        }
+    }
+
+    /**
+     * This method selects all the depedencies for phases.
+     *
+     * @param conn the database connection.
+     * @param phases the map of already retrieved phases.
+     * @param projectIds all the project ids.
+     *
+     * @throws SQLException if database error occures.
+     * @throws PhasePersistenceException if the phase depedencies cannot be filled.
+     */
+    private void fillDependencies(Connection conn, Map phases, long[] projectIds) throws SQLException,
+        PhasePersistenceException {
+        // get the phase
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+
+        try {
+            // create the statement
+            pstmt = conn.prepareStatement(SELECT_DEPENDENCY_FOR_PROJECTS + createQuestionMarks(projectIds.length));
+
+            // set the id to the statement
+            for (int i = 0; i < projectIds.length; ++i) {
+                pstmt.setLong(i + 1, projectIds[i]);
+            }
+
+            // execte the query
+            rs = pstmt.executeQuery();
+
+            while (rs.next()) {
+                // get the depedency
+                Long dependentId = new Long(rs.getLong("dependent_phase_id"));
+                Long dependencyId = new Long(rs.getLong("dependency_phase_id"));
+                // if the phase exists - create dependecy
+                if (phases.containsKey(dependentId) && phases.containsKey(dependencyId)) {
+                    Phase phase = (Phase) phases.get(dependentId);
+                    Dependency dependency = createDependency(rs, phases, phase);
+                    phase.addDependency(dependency);
+                } else {
+                    // because we have retrieved all the phases for project before, this should never happen
+                    throw new PhasePersistenceException("Missing dependecy: " + dependencyId
+                            + " for phase: " + dependentId);
+                }
+            }
+
+        } finally {
+            close(rs);
+            close(pstmt);
+        }
+    }
+
+    /**
+     * Create the Dependency instance from given result set.
+     *
+     * @param rs the source result set.
+     * @param phases the retrieved phases.
+     * @param dependantPhase the dependant phase.
+     * @return the Dependency instance.
+     *
+     * @throws SQLException if database error occures.
+     */
+    private static Dependency createDependency(ResultSet rs, Map phases, Phase dependantPhase) throws SQLException {
+        Phase dependencyPhase = (Phase) phases.get(new Long(rs.getLong("dependency_phase_id")));
+        long lagTime = rs.getLong("lag_time");
+
+        return new Dependency(dependencyPhase, dependantPhase, rs.getBoolean("dependency_start"), rs
+                .getBoolean("dependent_start"), lagTime);
+    }
+
+    /**
+     * Creates the Phase instance from the given ResultSet.
+     *
+     * @param rs the source result set.
+     * @param project the project for phase.
+     * @return the Phase instance.
+     * @throws SQLException if database error occurs.
+     */
+    private static Phase populatePhase(ResultSet rs, Project project) throws SQLException {
+        long duration = rs.getLong("duration");
+        Phase phase = new Phase(project, duration);
+        phase.setActualEndDate(rs.getTimestamp("actual_end_time"));
+        phase.setActualStartDate(rs.getTimestamp("actual_start_time"));
+        phase.setFixedStartDate(rs.getTimestamp("fixed_start_time"));
+        phase.setId(rs.getLong("project_phase_id"));
+
+        phase.setPhaseStatus(populatePhaseStatus(rs));
+        phase.setPhaseType(populatePhaseType(rs));
+        phase.setScheduledEndDate(rs.getTimestamp("scheduled_end_time"));
+        phase.setScheduledStartDate(rs.getTimestamp("scheduled_start_time"));
+        phase.setModifyDate(rs.getTimestamp("modify_date"));
+
+        return phase;
     }
 
     /**
@@ -642,6 +870,20 @@ public class InformixPhasePersistence implements PhasePersistence {
             close(conn);
         }
 
+    }
+
+    /**
+     * <p>Builds the map to be used for looking up the phase types by IDs.</p>
+     *
+     * @param phaseTypes a <code>PhaseType</code> array listing existing phase types.
+     * @return a <code>Map</code> mapping the type IDs to phase types.
+     */
+    private Map<Long, PhaseType> buildPhaseTypesLookupMap(PhaseType[] phaseTypes) {
+        Map<Long, PhaseType> typesMap = new HashMap<Long, PhaseType>(phaseTypes.length);
+        for (PhaseType type : phaseTypes) {
+            typesMap.put(type.getId(), type);
+        }
+        return typesMap;
     }
 
     /**
@@ -720,6 +962,20 @@ public class InformixPhasePersistence implements PhasePersistence {
             close(conn);
         }
 
+    }
+
+    /**
+     * <p>Builds the map to be used for looking up the phase statuses by IDs.</p>
+     *
+     * @param phaseStatuses a <code>PhaseType</code> array listing existing phase statuses.
+     * @return a <code>Map</code> mapping the status IDs to phase statuses.
+     */
+    private Map<Long, PhaseStatus> buildPhaseStatusesLookupMap(PhaseStatus[] phaseStatuses) {
+        Map<Long, PhaseStatus> statusesMap = new HashMap<Long, PhaseStatus>(phaseStatuses.length);
+        for (PhaseStatus phaseStatus : phaseStatuses) {
+            statusesMap.put(phaseStatus.getId(), phaseStatus);
+        }
+        return statusesMap;
     }
 
     /**
@@ -1167,142 +1423,6 @@ public class InformixPhasePersistence implements PhasePersistence {
     }
 
     /**
-     * This method set the phase criteria into the phases from the given map.
-     *
-     * @param conn the database connection to be used.
-     * @param phases the Phases to which criteria will ba add. Key should be Long phase id, value - Phase object.
-     * @param projectIds all the project ids.
-     *
-     * @throws SQLException if any database error occurs.
-     */
-    private void fillCriteria(Connection conn, Map phases, long[] projectIds) throws SQLException {
-        PreparedStatement pstmt = null;
-        ResultSet rs = null;
-
-        try {
-            // create the statement
-            pstmt = conn.prepareStatement(SELECT_PHASE_CRITERIA_FOR_PROJECTS + createQuestionMarks(projectIds.length));
-
-            // set the id to the statement
-            for (int i = 0; i < projectIds.length; ++i) {
-                pstmt.setLong(i + 1, projectIds[i]);
-            }
-
-            // execute query
-            rs = pstmt.executeQuery();
-
-            // create the phase criteria
-            while (rs.next()) {
-                // get the phase id
-                Long id = new Long(rs.getLong("project_phase_id"));
-                // get criteria name and parameter
-                String name = rs.getString("name");
-                String parameter = rs.getString("parameter");
-
-                // get the phase and add criteria
-                Phase phase = (Phase) phases.get(id);
-                phase.setAttribute(name, parameter);
-            }
-        } finally {
-            close(rs);
-            close(pstmt);
-        }
-    }
-
-    /**
-     * This method selects all the depedencies for phases.
-     *
-     * @param conn the database connection.
-     * @param phases the map of already retrieved phases.
-     * @param projectIds all the project ids.
-     *
-     * @throws SQLException if database error occures.
-     * @throws PhasePersistenceException if the phase depedencies cannot be filled.
-     */
-    private void fillDependencies(Connection conn, Map phases, long[] projectIds) throws SQLException,
-        PhasePersistenceException {
-        // get the phase
-        PreparedStatement pstmt = null;
-        ResultSet rs = null;
-
-        try {
-            // create the statement
-            pstmt = conn.prepareStatement(SELECT_DEPENDENCY_FOR_PROJECTS + createQuestionMarks(projectIds.length));
-
-            // set the id to the statement
-            for (int i = 0; i < projectIds.length; ++i) {
-                pstmt.setLong(i + 1, projectIds[i]);
-            }
-
-            // execte the query
-            rs = pstmt.executeQuery();
-
-            while (rs.next()) {
-                // get the depedency
-                Long dependentId = new Long(rs.getLong("dependent_phase_id"));
-                Long dependencyId = new Long(rs.getLong("dependency_phase_id"));
-                // if the phase exists - create dependecy
-                if (phases.containsKey(dependentId) && phases.containsKey(dependencyId)) {
-                    Phase phase = (Phase) phases.get(dependentId);
-                    Dependency dependency = createDependency(rs, phases, phase);
-                    phase.addDependency(dependency);
-                } else {
-                    // because we have retrieved all the phases for project before, this should never happen
-                    throw new PhasePersistenceException("Missing dependecy: " + dependencyId
-                            + " for phase: " + dependentId);
-                }
-            }
-
-        } finally {
-            close(rs);
-            close(pstmt);
-        }
-    }
-
-    /**
-     * Create the Dependency instance from given result set.
-     *
-     * @param rs the source result set.
-     * @param phases the retrieved phases.
-     * @param dependantPhase the dependant phase.
-     * @return the Dependency instance.
-     *
-     * @throws SQLException if database error occures.
-     */
-    private static Dependency createDependency(ResultSet rs, Map phases, Phase dependantPhase) throws SQLException {
-        Phase dependencyPhase = (Phase) phases.get(new Long(rs.getLong("dependency_phase_id")));
-        long lagTime = rs.getLong("lag_time");
-
-        return new Dependency(dependencyPhase, dependantPhase, rs.getBoolean("dependency_start"), rs
-                .getBoolean("dependent_start"), lagTime);
-    }
-
-    /**
-     * Creates the Phase instance from the given ResultSet.
-     *
-     * @param rs the source result set.
-     * @param project the project for phase.
-     * @return the Phase instance.
-     * @throws SQLException if database error occurs.
-     */
-    private static Phase populatePhase(ResultSet rs, Project project) throws SQLException {
-        long duration = rs.getLong("duration");
-        Phase phase = new Phase(project, duration);
-        phase.setActualEndDate(rs.getTimestamp("actual_end_time"));
-        phase.setActualStartDate(rs.getTimestamp("actual_start_time"));
-        phase.setFixedStartDate(rs.getTimestamp("fixed_start_time"));
-        phase.setId(rs.getLong("project_phase_id"));
-
-        phase.setPhaseStatus(populatePhaseStatus(rs));
-        phase.setPhaseType(populatePhaseType(rs));
-        phase.setScheduledEndDate(rs.getTimestamp("scheduled_end_time"));
-        phase.setScheduledStartDate(rs.getTimestamp("scheduled_start_time"));
-        phase.setModifyDate(rs.getTimestamp("modify_date"));
-
-        return phase;
-    }
-
-    /**
      * <p>
      * Update the provided phase in persistence. All the phases depedencies will be updated as well.
      * </p>
@@ -1651,7 +1771,7 @@ public class InformixPhasePersistence implements PhasePersistence {
                         + createQuestionMarks(oldCriteria.size()));
                 deleteStatement.setLong(1, phase.getId());
 
-                int i = 1;
+                int i = 2;
                 for (Iterator it = oldCriteria.keySet().iterator(); it.hasNext();) {
                     String name = (String) it.next();
                     deleteStatement.setLong(i++, ((Long) lookUp.get(name)).longValue());

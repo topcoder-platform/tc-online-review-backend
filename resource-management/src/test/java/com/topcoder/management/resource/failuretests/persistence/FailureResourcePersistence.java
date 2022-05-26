@@ -3,6 +3,8 @@
  */
 package com.topcoder.management.resource.failuretests.persistence;
 
+import java.util.Map;
+
 import com.topcoder.management.resource.Notification;
 import com.topcoder.management.resource.NotificationType;
 import com.topcoder.management.resource.Resource;
@@ -36,6 +38,23 @@ public class FailureResourcePersistence implements ResourcePersistence {
      */
     public void addResource(Resource resource) throws ResourcePersistenceException {
         throw new ResourcePersistenceException("addResource(Resource)");
+    }
+
+    
+    /**
+     * <p>
+     * Get resources by given project ids
+     * </p>
+     *
+     * @return The resources array
+     *
+     * @param projectIds The project ids
+     * @param roles The resource prole map
+     *
+     * @throws ResourcePersistenceException If there is an error reading the persistence store
+     */
+    public Resource[] getResourcesByProjects(Long[] projectIds, long userId, Map<Long, ResourceRole> roles) throws ResourcePersistenceException {
+        return null;
     }
 
     /**
