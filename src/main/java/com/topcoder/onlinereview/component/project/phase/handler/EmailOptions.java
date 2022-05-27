@@ -119,8 +119,8 @@ public class EmailOptions {
      *
      * @return the send
      */
-    public Boolean isSend() {
-        return send;
+    public boolean isSend() {
+        return send == null && send;
     }
 
     /**
