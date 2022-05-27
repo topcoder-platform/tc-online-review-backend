@@ -52,20 +52,6 @@ import java.util.Map;
  * @version 1.1
  */
 public final class AjaxSupportServlet extends HttpServlet {
-	/**
-     * Represents the property name of handlers.
-     */
-    private static final String HANDLERS_PROPERTY = "Handlers";
-
-    /**
-     * Represents the property name for SSO Cookie Service object factory key.
-     */
-    private static final String SSO_COOKIE_SERVICE_KEY_PROPERTY = "SSOCookieServiceKey";
-
-    /**
-     * Represents the namespace to retrieve the properties.
-     */
-    private static final String NAMESPACE = "com.cronos.onlinereview.ajax";
     /**
      * The logger.
      */
@@ -111,7 +97,7 @@ public final class AjaxSupportServlet extends HttpServlet {
      * @throws ServletException if an exception was caught
      */
     public void init(ServletConfig config) throws ServletException {
-    	logger.debug("Init Ajax Support Servlet from namespace:" + NAMESPACE);
+    	logger.debug("Init Ajax Support Servlet");
         super.init(config);
         handlers.put("SetScorecardStatus", new SetScorecardStatusHandler());
         handlers.put("LoadTimelineTemplate", new LoadTimelineTemplateHandler());
