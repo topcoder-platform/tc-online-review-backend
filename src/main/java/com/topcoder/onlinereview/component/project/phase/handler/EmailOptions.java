@@ -120,7 +120,7 @@ public class EmailOptions {
      * @return the send
      */
     public boolean isSend() {
-        return send == null && send;
+        return send == null || send;
     }
 
     /**
