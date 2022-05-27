@@ -13,10 +13,7 @@ import com.topcoder.onlinereview.component.login.Util;
 import com.topcoder.onlinereview.component.security.GeneralSecurityException;
 import com.topcoder.onlinereview.component.security.TCSubject;
 import com.topcoder.onlinereview.component.security.login.AuthenticationException;
-import com.topcoder.onlinereview.component.security.login.LoginRemote;
-import com.topcoder.onlinereview.component.security.login.LoginRemoteHome;
-
-import javax.ejb.CreateException;
+import com.topcoder.onlinereview.component.security.login.LoginInterface;
 
 /**
  * This class is used to authenticate user.
@@ -45,10 +42,10 @@ public class SecurityManagerAuthenticator extends AbstractAuthenticator {
      * This variable is set in the constructor, non-null.
      * </p>
      */
-    private LoginRemoteHome loginRemoteHome;
+    private LoginInterface loginInterface;
 
-    public void setLoginRemoteHome(LoginRemoteHome loginRemoteHome) {
-        this.loginRemoteHome = loginRemoteHome;
+    public void setLoginInterface(LoginInterface loginInterface) {
+        this.loginInterface = loginInterface;
     }
 
     /**
@@ -80,14 +77,11 @@ public class SecurityManagerAuthenticator extends AbstractAuthenticator {
             String password = getPrincipalValue(principal, Util.PASSWORD);
 
             // try to log in with user name and password.
-            LoginRemote loginRemote = loginRemoteHome.create();
-            TCSubject tcSubject = loginRemote.login(userName, password);
+            TCSubject tcSubject = loginInterface.login(userName, password);
 
             return new Response(true, "Succeeded", tcSubject);
         } catch (AuthenticationException e) {
             return new Response(false, "Can't Authenticate");
-        } catch (CreateException e) {
-            throw new AuthenticateException("Can't create loginRemote instance.", e);
         } catch (GeneralSecurityException e) {
             throw new AuthenticateException("Can't login the user.", e);
         } catch (Exception e) {

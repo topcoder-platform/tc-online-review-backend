@@ -5,11 +5,11 @@ import com.topcoder.onlinereview.component.security.TCSubject;
 
 import java.rmi.RemoteException;
 
-public interface LoginRemote extends javax.ejb.EJBObject {
+public interface LoginInterface {
 
-    public TCSubject login(String username, String password)
+    TCSubject login(String username, String password)
             throws RemoteException, GeneralSecurityException;
-    public TCSubject login(String username, String password, String dataSource)
+    TCSubject login(String username, String password, String dataSource)
             throws RemoteException, GeneralSecurityException;
 
     /**
