@@ -3,7 +3,6 @@
  */
 package com.topcoder.onlinereview.component.security.login;
 
-import com.topcoder.onlinereview.component.security.BaseEJB;
 import com.topcoder.onlinereview.component.security.GeneralSecurityException;
 import com.topcoder.onlinereview.component.security.RolePrincipal;
 import com.topcoder.onlinereview.component.security.SecurityDB;
@@ -51,7 +50,7 @@ import static com.topcoder.onlinereview.component.util.SpringUtils.getTcsJdbcTem
  * @author Heather Van Aelst, isv, KeSyren
  * @version 2.2
  */
-public class LoginBean extends BaseEJB {
+public class LoginBean {
 
     /**
      * <p>A <code>Logger</code> to be used for logging the events encountered during user authentication.</p>
@@ -191,7 +190,9 @@ public class LoginBean extends BaseEJB {
         if (param.trim().length() == 0) {
             throw new GeneralSecurityException("Parameter <" + param + "> is empty.");
         }
-        super.checkLength(param, maxLength);
+        if (param.length() > maxLength) {
+            throw new GeneralSecurityException("Parameter <" + param + "> is too long.  Should be <= " + maxLength);
+        }
     }
 
     /**
