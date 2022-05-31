@@ -365,6 +365,10 @@ public class UploadManager {
   public void postRun() throws IDGenerationException {
     uploadSearchBundle = searchBundleManager.getSearchBundle(UPLOAD_SEARCH_BUNDLE_NAME);
     submissionSearchBundle = searchBundleManager.getSearchBundle(SUBMISSION_SEARCH_BUNDLE_NAME);
+    DeliverableHelper.setSearchableFields(
+            uploadSearchBundle, DeliverableHelper.UPLOAD_SEARCH_BUNDLE);
+    DeliverableHelper.setSearchableFields(
+            submissionSearchBundle, DeliverableHelper.SUBMISSION_SEARCH_BUNDLE);
     uploadIdGenerator = new IDGenerator(UPLOAD_ID_GENERATOR_NAME, dbHelper);
     uploadTypeIdGenerator = new IDGenerator(UPLOAD_TYPE_ID_GENERATOR_NAME, dbHelper);
     uploadStatusIdGenerator = new IDGenerator(UPLOAD_STATUS_ID_GENERATOR_NAME, dbHelper);
