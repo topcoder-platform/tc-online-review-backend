@@ -57,7 +57,7 @@ import java.util.concurrent.Executors;
  * <p>
  * Sample configuration file (for CheckpointSubmissionPhaseHandler) is given below:
  * <pre>
- *     &lt;Config name="com.cronos.onlinereview.phases.AbstractPhaseHandler"&gt;    
+ *     &lt;Config name="com.cronos.onlinereview.phases.AbstractPhaseHandler"&gt;
  *         &lt;Property name="DefaultStartPhaseEmail"&gt;
  *             &lt;Property name="EmailSubject"&gt;
  *                 &lt;Value&gt;%PHASE_TYPE% Start\\: %PROJECT_NAME%&lt;/Value&gt;
@@ -74,7 +74,7 @@ import java.util.concurrent.Executors;
  *                 &lt;Value&gt;&notificationEmailFromAddress;&lt;/Value&gt;
  *             &lt;/Property&gt;
  *         &lt;/Property&gt;
- *     &lt;/Config&gt;    
+ *     &lt;/Config&gt;
  *     &lt;Config name="com.cronos.onlinereview.phases.CheckpointSubmissionPhaseHandler"&gt;
  *         &lt;Property name="ManagerHelperNamespace"&gt;
  *             &lt;Value&gt;com.cronos.onlinereview.phases.ManagerHelper&lt;/Value&gt;
@@ -188,7 +188,7 @@ import java.util.concurrent.Executors;
  * </li>
  * </ul>
  * </p>
- * 
+ *
  * <p>
  * Version 1.6.2 changes note:
  * <ul>
@@ -347,9 +347,42 @@ public abstract class AbstractPhaseHandler implements PhaseHandler {
         this.defaultStartEmailOption = defaultStartEmailOption;
         this.defaultEndEmailOption =  defaultEndEmailOption;
         // load the 'Schemes' property
-        this.emailSchemes = emailSchemes;
+        this.emailSchemes = getEmailSchemes(emailSchemes, defaultStartEmailOption, defaultEndEmailOption);
         // load the Scheme for review feedback emails
-        this.reviewFeedbackEmailScheme = reviewFeedbackEmailScheme;
+        this.reviewFeedbackEmailScheme = getEmailScheme(reviewFeedbackEmailScheme, defaultStartEmailOption, defaultEndEmailOption);
+    }
+
+    private static List<EmailScheme> getEmailSchemes(List<EmailScheme> emailSchemes,
+                                                     EmailOptions defaultStartEmailOption,
+                                                     EmailOptions defaultEndEmailOption) {
+        for(EmailScheme es: emailSchemes) {
+            getEmailScheme(es, defaultStartEmailOption, defaultEndEmailOption);
+        }
+        return emailSchemes;
+    }
+
+    private static EmailScheme getEmailScheme(EmailScheme es,
+                                              EmailOptions defaultStartEmailOption,
+                                              EmailOptions defaultEndEmailOption) {
+        if (es.getStartEmailOptions() != null) {
+            fillEmailOptions(es.getStartEmailOptions(), defaultStartEmailOption);
+        }
+        if (es.getEndEmailOptions() != null) {
+            fillEmailOptions(es.getEndEmailOptions(), defaultEndEmailOption);
+        }
+        return es;
+    }
+
+    private static void fillEmailOptions(EmailOptions emailOptions, EmailOptions defaultEmailOption) {
+        if (emailOptions.getTemplateName() == null) {
+            emailOptions.setTemplateName(defaultEmailOption.getTemplateName());
+        }
+        if (emailOptions.getSubject() == null) {
+            emailOptions.setSubject(defaultEmailOption.getSubject());
+        }
+        if (emailOptions.getFromAddress() == null) {
+            emailOptions.setFromAddress(defaultEmailOption.getFromAddress());
+        }
     }
 
     /**
@@ -479,12 +512,12 @@ public abstract class AbstractPhaseHandler implements PhaseHandler {
                 if (!contains(externalIds, externalId)) {
                     continue;
                 }
-                
+
                 EmailScheme emailScheme = getEmailSchemeForResource(resource, project.getProjectCategory());
                 if (emailScheme == null) {
                     continue;
                 }
-                
+
                 // since one user could have more than one role in project, we only need to set out
                 // one email for all the roles of the same user,
                 // we need to find the email scheme with largest priority here
@@ -544,7 +577,7 @@ public abstract class AbstractPhaseHandler implements PhaseHandler {
         } else {
             return;
         }
-        
+
         EmailOptions emailOptions = bStart ? reviewFeedbackEmailScheme.getStartEmailOptions() :
                 reviewFeedbackEmailScheme.getEndEmailOptions();
         if (emailOptions == null || !emailOptions.isSend()) {
@@ -554,7 +587,7 @@ public abstract class AbstractPhaseHandler implements PhaseHandler {
         try {
             long projectId = phase.getProject().getId();
             Project project = managerHelper.getProjectManager().getProject(projectId);
-            
+
             boolean containsProjectType = reviewFeedbackEmailScheme.getProjectTypes().contains("*") ||
                     reviewFeedbackEmailScheme.getProjectTypes().contains(""+project.getProjectCategory().getProjectType().getId());
             boolean containsProjectCategory = reviewFeedbackEmailScheme.getProjectCategories().contains("*") ||
@@ -673,7 +706,7 @@ public abstract class AbstractPhaseHandler implements PhaseHandler {
             throw new PhaseHandlingException("Problem with sending email", e);
         }
     }
-    
+
     /**
     * Finds email scheme for passed resource.
     *
@@ -693,17 +726,17 @@ public abstract class AbstractPhaseHandler implements PhaseHandler {
                 emailScheme.getProjectCategories().contains(""+projectCategory.getId());
             boolean containsRole = emailScheme.getRoles().contains("*") ||
                 emailScheme.getRoles().contains(resource.getResourceRole().getName());
-                
+
             if (containsProjectType && containsProjectCategory && containsRole) {
                 if (priorityEmailScheme == null || priorityEmailScheme.getPriority() < emailScheme.getPriority()) {
                     priorityEmailScheme = emailScheme;
                 }
             }
         }
-        
+
         return priorityEmailScheme;
     }
-    
+
     /**
      * This method sets the values of the template fields with user, project information and lookup values
      * based on bStart variable which is true if phase is to start, false if phase is to end.
@@ -869,7 +902,7 @@ public abstract class AbstractPhaseHandler implements PhaseHandler {
     private String getPhaseName(Phase phase) {
         String phaseType = phase.getPhaseType().getName();
         int index = 1;
-        
+
         Phase allPhases[] = phase.getProject().getAllPhases();
         for (Phase otherPhase : allPhases) {
             if (otherPhase.getPhaseType().getName().equals(phaseType) &&
@@ -880,7 +913,7 @@ public abstract class AbstractPhaseHandler implements PhaseHandler {
 
         return phaseType + (index>1 ? " #"+index : "");
     }
-    
+
     /**
      * <p>
      * Creates the Empty EmailOptions with Not Send email.
