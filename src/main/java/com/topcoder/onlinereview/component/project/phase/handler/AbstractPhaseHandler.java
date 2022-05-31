@@ -364,6 +364,9 @@ public abstract class AbstractPhaseHandler implements PhaseHandler {
     private static EmailScheme getEmailScheme(EmailScheme es,
                                               EmailOptions defaultStartEmailOption,
                                               EmailOptions defaultEndEmailOption) {
+        if (es == null) {
+            return null;
+        }
         if (es.getStartEmailOptions() != null) {
             fillEmailOptions(es.getStartEmailOptions(), defaultStartEmailOption);
         }
