@@ -73,18 +73,18 @@ public class CommonUtils {
   }
 
   public static SqlRowSet queryForRowSet(JdbcTemplate jdbcTemplate, String sql) {
-    log.info("execute sql '{}'", sql);
+    log.debug("execute sql '{}'", sql);
     return jdbcTemplate.queryForRowSet(sql);
   }
 
   public static List<Map<String, Object>> executeSql(JdbcTemplate jdbcTemplate, String sql) {
-    log.info("execute sql '{}'", sql);
+    log.debug("execute sql '{}'", sql);
     return jdbcTemplate.queryForList(sql);
   }
 
   public static List<Map<String, Object>> executeSqlWithParam(
       JdbcTemplate jdbcTemplate, String sql, List<Object> parameters) {
-    log.info(
+    log.debug(
         "execute sql '{}', with params '{}'",
         sql,
         parameters.stream()
@@ -95,7 +95,7 @@ public class CommonUtils {
 
   public static int executeUpdateSql(
       JdbcTemplate jdbcTemplate, String sql, List<Object> parameters) {
-    log.info(
+    log.debug(
         "execute update sql '{}', with params '{}'",
         sql,
         parameters.stream()
@@ -106,7 +106,7 @@ public class CommonUtils {
 
   public static long executeUpdateSqlWithReturn(
       JdbcTemplate jdbcTemplate, String sql, List<Object> parameters) {
-    log.info(
+    log.debug(
         "execute insert sql '{}' with params '{}'",
         sql,
         parameters.stream()
