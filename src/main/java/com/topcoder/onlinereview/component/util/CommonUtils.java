@@ -7,9 +7,9 @@ import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.jdbc.support.rowset.SqlRowSet;
 
-import java.sql.Blob;
 import java.sql.PreparedStatement;
 import java.sql.Statement;
+import java.sql.Timestamp;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -117,7 +117,11 @@ public class CommonUtils {
         connection -> {
           PreparedStatement ps = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
           for (int i = 0; i < parameters.size(); i++) {
-            ps.setObject(i + 1, parameters.get(i));
+              if (parameters.get(i) instanceof Date) {
+                  ps.setObject(i + 1, new Timestamp(((Date) parameters.get(i)).getTime()));
+              } else {
+                  ps.setObject(i + 1, parameters.get(i));
+              }
           }
           return ps;
         },
