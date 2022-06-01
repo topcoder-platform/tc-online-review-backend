@@ -125,8 +125,8 @@ public class ProjectPaymentPersistence {
     try {
       // Check project payment integrity
       checkProjectPaymentIntegrity(projectPayment);
-      List<Map<String, Object>> result =
-          executeSqlWithParam(
+      int result =
+          executeUpdateSql(
               jdbcTemplate,
               SQL_UPDATE_PAYMENT,
               newArrayList(
@@ -140,7 +140,7 @@ public class ProjectPaymentPersistence {
                   projectPayment.getProjectPaymentId()));
 
       // UPDATE
-      if (result.isEmpty()) {
+      if (result == 0) {
         // Log exception
         log.error("The project payment doesn't exist.");
         throw new ProjectPaymentNotFoundException("The project payment doesn't exist.");
