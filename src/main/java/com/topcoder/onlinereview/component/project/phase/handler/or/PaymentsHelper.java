@@ -275,8 +275,8 @@ public final class PaymentsHelper {
             List<ProjectPayment> payments = createProjectPaymentManager().search(
                     ProjectPaymentFilterBuilder.createProjectIdFilter(projectId));
 
-            List<Object> params = new ArrayList<>();
             for (Resource resource : submitterResources) {
+                List<Object> params = new ArrayList<>();
                 double totalPayment = 0;
                 for (ProjectPayment payment : payments) {
                     if (payment.getResourceId().equals(resource.getId())) {
