@@ -121,7 +121,7 @@ public class LoginBean {
 
         // Authenticate user against LDAP server and map user to user ID
         long userId = loginToLDAPDirectory(username, password);
-        Set<RolePrincipal> userRoles = getUserRoles(dataSource, userId);
+        Set<RolePrincipal> userRoles = getUserRoles(userId);
         if (impersonationUsed) {
             boolean canPerformImpersonatedLogins = false;
 
@@ -143,7 +143,7 @@ public class LoginBean {
 
             if (canPerformImpersonatedLogins) {
                 long impersonatedUserId = loginToLDAPDirectory(impersonatedUsername);
-                Set<RolePrincipal> impersonatedUserRoles = getUserRoles(dataSource, impersonatedUserId);
+                Set<RolePrincipal> impersonatedUserRoles = getUserRoles(impersonatedUserId);
                 TCSubject impersonatedTCSubject = new TCSubject(impersonatedUserRoles, impersonatedUserId);
                 impersonatedTCSubject.setImpersonatedByUserId(userId);
                 impersonatedTCSubject.setImpersonatedByUsername(username);
@@ -198,14 +198,13 @@ public class LoginBean {
     /**
      * <p>Gets the roles assigned to user mapped to specified user ID.</p>
      *
-     * @param dataSource a <code>String</code> providing the name for the data source in JNDI context.
      * @param userId a <code>long</code> providing the ID of a user to gather roles for.
      * @return a <code>Set</code> of roles assigned to specified user.
      * @throws GeneralSecurityException if an unexpected error occurs while getting user roles from persistent data
      *         store.
      * @since 2.1
      */
-    private Set<RolePrincipal> getUserRoles(String dataSource, long userId) throws GeneralSecurityException {
+    public static Set<RolePrincipal> getUserRoles(long userId) throws GeneralSecurityException {
         // Collect user's roles from database
         Set<RolePrincipal> userRoles = new HashSet<RolePrincipal>();
         try {
