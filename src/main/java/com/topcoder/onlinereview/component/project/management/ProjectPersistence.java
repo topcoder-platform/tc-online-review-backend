@@ -1963,22 +1963,22 @@ public class ProjectPersistence {
       for (int i = 0; i < size; i++) {
         Map<String, Object> row = result.get(i);
         // create the ProjectStatus object
-        ProjectStatus status = new ProjectStatus(getLong(row, "2"), getString(row, "3"));
+        ProjectStatus status = new ProjectStatus(getLong(row, "project_status_id"), getString(row, "project_status_name"));
         // create the ProjectType object
-        ProjectType type = new ProjectType(getLong(row, "6"), getString(row, "7"));
+        ProjectType type = new ProjectType(getLong(row, "project_type_id"), getString(row, "project_type_name"));
         // create the ProjectCategory object
         ProjectCategory category =
-            new ProjectCategory(getLong(row, "4"), getString(row, "5"), type);
+            new ProjectCategory(getLong(row, "project_category_id"), getString(row, "project_category_name"), type);
         // create a new instance of ProjectType class
-        projects[i] = new Project(getLong(row, "1"), category, status);
+        projects[i] = new Project(getLong(row, "project_id"), category, status);
         // assign the audit information
-        projects[i].setCreationUser(getString(row, "8"));
-        projects[i].setCreationTimestamp(getDate(row, "9"));
-        projects[i].setModificationUser(getString(row, "10"));
-        projects[i].setModificationTimestamp(getDate(row, "11"));
+        projects[i].setCreationUser(getString(row, "create_user"));
+        projects[i].setCreationTimestamp(getDate(row, "create_date"));
+        projects[i].setModificationUser(getString(row, "modify_user"));
+        projects[i].setModificationTimestamp(getDate(row, "modify_date"));
         List<Map<String, Object>> pp =
             executeSqlWithParam(
-                jdbcTemplate, QUERY_ONE_PROJECT_PROPERTIES_SQL, newArrayList(getLong(row, "1")));
+                jdbcTemplate, QUERY_ONE_PROJECT_PROPERTIES_SQL, newArrayList(getLong(row, "project_id")));
         for (Map<String, Object> pRow : pp) {
           projects[i].setProperty(getString(pRow, "name"), getString(pRow, "value"));
         }
