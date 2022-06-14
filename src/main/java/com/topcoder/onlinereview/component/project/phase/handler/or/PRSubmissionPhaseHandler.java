@@ -3,9 +3,6 @@
  */
 package com.topcoder.onlinereview.component.project.phase.handler.or;
 
-import com.topcoder.onlinereview.component.project.management.PersistenceException;
-import com.topcoder.onlinereview.component.project.management.Project;
-import com.topcoder.onlinereview.component.project.management.ProjectManager;
 import com.topcoder.onlinereview.component.project.phase.ManagerHelper;
 import com.topcoder.onlinereview.component.project.phase.OperationCheckResult;
 import com.topcoder.onlinereview.component.project.phase.Phase;
@@ -74,15 +71,6 @@ public class PRSubmissionPhaseHandler extends SubmissionPhaseHandler {
     public void perform(Phase phase, String operator) throws PhaseHandlingException {
         super.perform(phase, operator);
         boolean toStart = PhasesHelper.checkPhaseStatus(phase.getPhaseStatus());
-
         prHelper.processSubmissionPR(phase.getProject().getId(), toStart);
-
-        try {
-            ProjectManager projectManager = getManagerHelper().getProjectManager();
-            Project project = projectManager.getProject(phase.getProject().getId());
-            AmazonSNSHelper.publishProjectUpdateEvent(project);
-        } catch (PersistenceException e) {
-            throw new PhaseHandlingException("Problem when retrieving project", e);
-        }
     }
 }

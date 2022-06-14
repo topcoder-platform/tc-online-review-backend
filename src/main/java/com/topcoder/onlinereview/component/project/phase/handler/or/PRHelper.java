@@ -550,8 +550,6 @@ public class PRHelper {
             ProjectStatus completedStatus = PRHelper.findProjectStatusByName(projectManager, "Completed");
             project.setProjectStatus(completedStatus);
             projectManager.updateProject(project, "Setting the project status to Completed automatically", operator);
-
-            AmazonSNSHelper.publishProjectUpdateEvent(project);
         } catch (PersistenceException e) {
             throw new PhaseHandlingException("Problem when updating project", e);
         } catch (ValidationException e) {

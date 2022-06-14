@@ -14,25 +14,10 @@ import com.topcoder.onlinereview.component.project.phase.handler.EmailOptions;
 import com.topcoder.onlinereview.component.project.phase.handler.EmailScheme;
 import com.topcoder.onlinereview.component.project.phase.handler.FinalReviewPhaseHandler;
 import com.topcoder.onlinereview.component.project.phase.handler.PhasesHelper;
-import com.topcoder.onlinereview.component.resource.Resource;
-import com.topcoder.onlinereview.component.resource.ResourceFilterBuilder;
-import com.topcoder.onlinereview.component.resource.ResourceManager;
-import com.topcoder.onlinereview.component.resource.ResourcePersistenceException;
 import com.topcoder.onlinereview.component.review.Comment;
 import com.topcoder.onlinereview.component.review.Review;
-import com.topcoder.onlinereview.component.search.SearchBuilderException;
-import com.topcoder.onlinereview.component.search.filter.AndFilter;
-import com.topcoder.onlinereview.component.search.filter.Filter;
-import com.topcoder.onlinereview.component.search.filter.OrFilter;
-import org.tmatesoft.svn.core.SVNException;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-
-import static com.topcoder.onlinereview.component.util.SpringUtils.getPropertyValue;
 
 /**
  * The extend from FinalReviewPhaseHandler to add on the logic to push data to project_result.
@@ -51,12 +36,6 @@ public class PRFinalReviewPhaseHandler extends FinalReviewPhaseHandler {
     */
     private final PRHelper prHelper = new PRHelper();
     
-    /**
-     * <p>A <code>String</code> providing the name of resource property providing the flag indicating whether the
-     * resource has permission for accessing the project's SVN module set or not.</p>
-     */
-    private static final String SVN_PERMISSION_ADDED_RESOURCE_INFO = "SVN Permission Added";
-
     /**
      * Create a new instance of FinalReviewPhaseHandler using the given namespace for loading configuration settings.
      *
@@ -87,12 +66,6 @@ public class PRFinalReviewPhaseHandler extends FinalReviewPhaseHandler {
      */
     public void perform(Phase phase, String operator) throws PhaseHandlingException {
         boolean toStart = PhasesHelper.checkPhaseStatus(phase.getPhaseStatus());
-
-        // If phase is to be open then create SVN repository and grant access to it to appropriate project resources
-        if (toStart) {
-            prepareSVNModule(phase, operator);
-        }
-
         super.perform(phase, operator);
 
         prHelper.processFinalReviewPR(phase.getProject().getId(), toStart, operator);
@@ -117,93 +90,6 @@ public class PRFinalReviewPhaseHandler extends FinalReviewPhaseHandler {
                     throw new PhaseHandlingException("Problem when retrieving project", e);
                 }
             }
-        }
-    }
-
-    /**
-     * <p>Prepares the SVN module for the project associated with the specified phase if settings for such a project
-     * require SVN module initialization.</p>
-     *
-     * @param phase a <code>Phase</code> providing the details for <code>Final Review</code> phase which is going to be
-     *        started.
-     * @param operator a <code>String</code> referencing the operator attempting to advance the phase.
-     * @throws PhaseHandlingException if an unexpected error occurs.
-     */
-    private void prepareSVNModule(Phase phase, String operator) throws PhaseHandlingException {
-        try {
-            long projectId = phase.getProject().getId();
-            ProjectManager projectManager = getManagerHelper().getProjectManager();
-            Project project = projectManager.getProject(projectId);
-            String svnModule = (String) project.getProperty("SVN Module");
-            if ((svnModule != null) && (svnModule.trim().length() > 0)) {
-                // Create SVN Module
-                SVNHelper.createSVNDirectory(svnModule);
-
-                // Find the resources which are to be granted permission for accessing SVN module
-                String[] allowedRoles = getPropertyValue("SVNPermissionGrantResourceRoles").split(",");
-
-                List<Filter> resourceRoleFilters = new ArrayList<Filter>();
-                for (String roleId : allowedRoles) {
-                    resourceRoleFilters.add(ResourceFilterBuilder.createResourceRoleIdFilter(Long.parseLong(roleId)));
-                }
-                Filter resourceRolesFilter = new OrFilter(resourceRoleFilters);
-                Filter projectIdFilter = ResourceFilterBuilder.createProjectIdFilter(projectId);
-                Filter filter = new AndFilter(resourceRolesFilter, projectIdFilter);
-                ResourceManager resourceManager = getManagerHelper().getResourceManager();
-                Resource[] resources = resourceManager.searchResources(filter);
-
-                // Collect the list of resources which indeed need to have permission granted
-                Long winnerId;
-                try {
-                    winnerId = Long.parseLong((String) project.getProperty("Winner External Reference ID"));
-                } catch (NumberFormatException nfe) {
-                    winnerId = null;
-                }
-
-                Map<String, List<Resource>> candidates = new HashMap<String, List<Resource>>();
-                for (Resource resource : resources) {
-                    // Of resources with Submitter role only a winning Submitter is to be granted a permission
-                    if (resource.getResourceRole().getId() == 1) {
-                        if (winnerId == null || !winnerId.equals(resource.getUserId())) {
-                            continue;
-                        }
-                    }
-
-                    String svnPermissionAddedProperty
-                            = (String) resource.getProperty(SVN_PERMISSION_ADDED_RESOURCE_INFO);
-                    if (!"true".equals(svnPermissionAddedProperty)) {
-                        String handle = (String) resource.getProperty(PhasesHelper.HANDLE);
-                        if (!candidates.containsKey(handle)) {
-                            candidates.put(handle, new ArrayList<Resource>());
-                        }
-                        List<Resource> userResources = candidates.get(handle);
-                        userResources.add(resource);
-                    }
-                }
-
-                // Grant permissions for accessing project's SVN module to intended resources
-                if (!candidates.isEmpty()) {
-                    String[] handles = candidates.keySet().toArray(new String[candidates.size()]);
-                    SVNHelper.grantSVNPermission(svnModule, handles, "rw");
-                    for (Map.Entry<String, List<Resource>> entry : candidates.entrySet()) {
-                        List<Resource> userResources = entry.getValue();
-                        for (Resource resource : userResources) {
-                            resource.setProperty(SVN_PERMISSION_ADDED_RESOURCE_INFO, "true");
-                            resourceManager.updateResource(resource, operator);
-                        }
-                    }
-                }
-            }
-        } catch (PersistenceException e) {
-            throw new PhaseHandlingException("Failed to access resources", e);
-        } catch (ResourcePersistenceException e) {
-            throw new PhaseHandlingException("Failed to access resources", e);
-        } catch (SearchBuilderException e) {
-            throw new PhaseHandlingException("Failed to access resources", e);
-        } catch (SVNException e) {
-            throw new PhaseHandlingException("Failed to access SVN repository", e);
-        } catch (IOException e) {
-            throw new PhaseHandlingException("Failed to access SVN repository", e);
         }
     }
 
