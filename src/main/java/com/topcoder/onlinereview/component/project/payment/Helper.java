@@ -35,7 +35,7 @@ public class Helper {
     DateFormat format = new SimpleDateFormat(DEFAULT_LOGDATE_FORMAT);
 
     // Log return value
-    String output = "Output: " + value[0];
+    String output = "Output: " + value == null || value.length == 0 ? "" : value[0].toString();
 
     log.debug(String.format(MESSAGE_EXIT, format.format(new Date()), signature, output));
   }
