@@ -118,6 +118,10 @@ public class JWTTokenGenerator {
                     postMap.put("grant_type", "client_credentials");
                     postMap.put("audience", audience);
                     postMap.put("auth0_url", auth0Url);
+                    // chore
+                    StringBuilder rBody = new StringBuilder();
+                    Entity.json(postMap).getEntity().forEach((key, value) -> rBody.append("," + key + ":" + value));
+                    LOGGER.info(rBody.toString());
                     Response response = target.request(new String[]{"application/json"}).post(Entity.json(postMap));
                     if (response.getStatusInfo().getStatusCode() != 200) {
                         LOGGER.error("Unable to get token: {}", response);

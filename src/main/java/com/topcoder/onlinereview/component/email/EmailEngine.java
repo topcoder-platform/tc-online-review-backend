@@ -493,7 +493,7 @@ public class EmailEngine {
             log.info(buffer.substring(0, buffer.length()-1));
 
             // Send the email
-            Transport.send(eMailMessage);
+            eMailTransport.sendMessage(eMailMessage, eMailMessage.getAllRecipients());
         } catch (NoSuchProviderException e) {
             log.error("SMTP transport type not accepted", e);
             throw new SendingException("Internal configuration error. SMTP transport not accepted." + props, e);
