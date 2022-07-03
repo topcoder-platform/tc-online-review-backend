@@ -335,6 +335,9 @@ public class ManagerHelper {
     @Value("${managerHelper.DirectProjectURL}")
     private String directProjectBaseURL;
 
+    @Value("${managerHelper.V5ChallengeURL:#{null}}")
+    private String v5ChallengeURL;
+
     /**
      * <p>A <code>ReviewFeedbackManager</code> providing the interface to review feedback management system.</p>
      * @since 1.7.6
@@ -577,5 +580,9 @@ public class ManagerHelper {
 
     public ProjectPaymentCalculator getProjectPaymentAdjustmentCalculator() {
         return projectPaymentAdjustmentCalculator;
+    }
+
+    public String getV5ChallengeURL() {
+        return v5ChallengeURL;
     }
 }

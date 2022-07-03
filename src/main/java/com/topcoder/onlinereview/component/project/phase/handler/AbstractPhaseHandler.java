@@ -3,6 +3,8 @@
  */
 package com.topcoder.onlinereview.component.project.phase.handler;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.topcoder.onlinereview.component.document.DocumentGenerator;
 import com.topcoder.onlinereview.component.document.Template;
 import com.topcoder.onlinereview.component.document.TemplateDataFormatException;
@@ -34,9 +36,13 @@ import com.topcoder.onlinereview.component.resource.ResourceManager;
 import com.topcoder.onlinereview.component.resource.ResourcePersistenceException;
 import com.topcoder.onlinereview.component.reviewfeedback.ReviewFeedbackManager;
 import com.topcoder.onlinereview.component.search.SearchBuilderException;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.httpclient.HttpClient;
+import org.apache.commons.httpclient.methods.GetMethod;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
@@ -539,12 +545,13 @@ public abstract class AbstractPhaseHandler implements PhaseHandler {
             throw new PhaseHandlingException("Problem with retrieving information.", e);
         }
 
+        Map<Long, String> challengeIdCache = new HashMap<>();
         for (long userID : userEmailSchemes.keySet()) {
             EmailScheme emailScheme = userEmailSchemes.get(userID);
             EmailOptions emailOptions = bStart ? emailScheme.getStartEmailOptions() : emailScheme.getEndEmailOptions();
             if (emailOptions != null && emailOptions.isSend()) {
                 try {
-                    sendEmail(userID, emailOptions, project, phase, values, bStart);
+                    sendEmail(userID, emailOptions, project, phase, values, bStart, challengeIdCache);
                 } catch(PhaseHandlingException e) {
                     // If any error happens when sending email, log the error and let the logic continue.
                     log.error("Error when sending email.", e);
@@ -632,9 +639,10 @@ public abstract class AbstractPhaseHandler implements PhaseHandler {
                     }
                 }
             }
+            Map<Long, String> challengeIdCache = new HashMap<>();
             for (Long userID : userIDs) {
                 try {
-                    sendEmail(userID, emailOptions, project, phase, values, bStart);
+                    sendEmail(userID, emailOptions, project, phase, values, bStart, challengeIdCache);
                 } catch(PhaseHandlingException e) {
                     // If any error happens when sending email, log the error and let the logic continue.
                     log.error("Error when sending email.", e);
@@ -665,7 +673,8 @@ public abstract class AbstractPhaseHandler implements PhaseHandler {
      * @throws PhaseHandlingException if there was an error retrieving information or sending email.
      */
     private void sendEmail(long userID, EmailOptions emailOptions, Project project,
-                           Phase phase, Map<String, Object> values, boolean bStart) throws PhaseHandlingException {
+                           Phase phase, Map<String, Object> values, boolean bStart,
+                           Map<Long, String> challengeIdCache) throws PhaseHandlingException {
         try {
             // instantiate document generator instance
             DocumentGenerator docGenerator = new DocumentGenerator();
@@ -677,9 +686,9 @@ public abstract class AbstractPhaseHandler implements PhaseHandler {
 
             // set all field values
             TemplateFields bodyRoot = setTemplateFieldValues(docGenerator.getFields(bodyTemplate), user, project,
-                    phase, values, bStart);
+                    phase, values, bStart, challengeIdCache);
             TemplateFields subjectRoot = setTemplateFieldValues(docGenerator.getFields(subjectTemplate), user, project,
-                    phase, values, bStart);
+                    phase, values, bStart, challengeIdCache);
 
             final TCSEmailMessage message = new TCSEmailMessage();
             message.setSubject(docGenerator.applyTemplate(subjectRoot));
@@ -755,8 +764,9 @@ public abstract class AbstractPhaseHandler implements PhaseHandler {
      * @throws PhaseHandlingException if the values element for the loop is invalid
      */
     private TemplateFields setTemplateFieldValues(TemplateFields root, ExternalUser user, Project project, Phase phase,
-                                                  Map<String, Object> values, boolean bStart) throws PhaseHandlingException {
-        setNodes(root.getNodes(), user, project, phase, values, bStart);
+                                                  Map<String, Object> values, boolean bStart,
+                                                  Map<Long, String> challengeIdCache) throws PhaseHandlingException {
+        setNodes(root.getNodes(), user, project, phase, values, bStart, challengeIdCache);
 
         return root;
     }
@@ -774,12 +784,13 @@ public abstract class AbstractPhaseHandler implements PhaseHandler {
      * @throws PhaseHandlingException if the values element for the loop is invalid
      */
     private void setNodes(Node[] nodes, ExternalUser user, Project project,
-                          Phase phase, Map<String, Object> values, boolean bStart) throws PhaseHandlingException {
+                          Phase phase, Map<String, Object> values, boolean bStart,
+                          Map<Long, String> challengeIdCache) throws PhaseHandlingException {
         for (Node node : nodes) {
             if (node instanceof Field) {
-                setField((Field) node, user, project, phase, values, bStart);
+                setField((Field) node, user, project, phase, values, bStart, challengeIdCache);
             } else if (node instanceof Loop) {
-                setLoopItems((Loop) node, user, project, phase, values, bStart);
+                setLoopItems((Loop) node, user, project, phase, values, bStart, challengeIdCache);
             } else if (node instanceof Condition) {
                 Condition condition = ((Condition) node);
 
@@ -787,7 +798,7 @@ public abstract class AbstractPhaseHandler implements PhaseHandler {
                     condition.setValue(values.get(condition.getName()).toString());
                 }
 
-                setNodes(condition.getSubNodes().getNodes(), user, project, phase, values, bStart);
+                setNodes(condition.getSubNodes().getNodes(), user, project, phase, values, bStart, challengeIdCache);
             }
         }
     }
@@ -805,7 +816,8 @@ public abstract class AbstractPhaseHandler implements PhaseHandler {
      */
     @SuppressWarnings("unchecked")
     private void setLoopItems(Loop loop, ExternalUser user, Project project,
-        Phase phase, Map<String, Object> values, boolean bStart) throws PhaseHandlingException {
+        Phase phase, Map<String, Object> values, boolean bStart,
+                              Map<Long, String> challengeIdCache) throws PhaseHandlingException {
         try {
             List<?> loopItems = (List<?>) values.get(loop.getLoopElement());
             if (loopItems == null) {
@@ -814,7 +826,7 @@ public abstract class AbstractPhaseHandler implements PhaseHandler {
             }
             for (int t = 0; t < loopItems.size(); t++) {
                 NodeList item = loop.insertLoopItem(t);
-                setNodes(item.getNodes(), user, project, phase, (Map<String, Object>) loopItems.get(t), bStart);
+                setNodes(item.getNodes(), user, project, phase, (Map<String, Object>) loopItems.get(t), bStart, challengeIdCache);
             }
         } catch (ClassCastException cce) {
             throw new PhaseHandlingException("For loop :" + loop.getLoopElement()
@@ -838,7 +850,7 @@ public abstract class AbstractPhaseHandler implements PhaseHandler {
      * @param bStart true if phase is to start, false if phase is to end.
      */
     private void setField(Field field, ExternalUser user, Project project,
-        Phase phase, Map<String, Object> values, boolean bStart) {
+        Phase phase, Map<String, Object> values, boolean bStart, Map<Long, String> challengeIdCache) {
         if ("PHASE_TIMESTAMP".equals(field.getName())) {
             field.setValue(formatDate(new Date()));
         } else if ("USER_FIRST_NAME".equals(field.getName())) {
@@ -888,6 +900,8 @@ public abstract class AbstractPhaseHandler implements PhaseHandler {
             long userId = user.getId();
             String projectWinnerId = (String) project.getProperty("Winner External Reference ID");
             field.setValue(projectWinnerId.equals(String.valueOf(userId)) ? "1" : "0");
+        } else if ("CHALLENGE_ID".equals(field.getName())) {
+            field.setValue(getChallengeId(project.getId(), challengeIdCache));
         } else if (values.containsKey(field.getName())) {
             if (values.get(field.getName()) != null) {
                 field.setValue(values.get(field.getName()).toString());
@@ -958,5 +972,40 @@ public abstract class AbstractPhaseHandler implements PhaseHandler {
         }
 
         return false;
+    }
+
+    /**
+     * Get challenge id.
+     *
+     * @param legacyId
+     * @return
+     */
+    private String getChallengeId(Long legacyId, Map<Long, String> challengeIdCache) {
+        if (challengeIdCache.containsKey(legacyId)) {
+            return challengeIdCache.get(legacyId);
+        }
+        String challengeUrl = managerHelper.getV5ChallengeURL();
+        if (challengeUrl == null) {
+            log.error("'managerHelper.V5ChallengeURL' doesn't config");
+            return "";
+        }
+        GetMethod getMethod = new GetMethod(challengeUrl + legacyId);
+        getMethod.addRequestHeader("accept", "application/json");
+        try {
+            int statusCode = new HttpClient().executeMethod(getMethod);
+            if (statusCode == 200) {
+                List<Map<String, Object>> res = new ObjectMapper().readValue(getMethod.getResponseBodyAsString(), new TypeReference<List<Map<String, Object>>>(){});
+                if (res.size() > 0) {
+                    String challengeId = res.get(0).get("id").toString();
+                    challengeIdCache.put(legacyId, challengeId);
+                    return challengeId;
+                }
+            } else {
+                log.error("Get challenge Id error with statusCode: " + statusCode);
+            }
+        } catch (IOException e) {
+            log.error("parse challenge error: ", e);
+        }
+        return "";
     }
 }
