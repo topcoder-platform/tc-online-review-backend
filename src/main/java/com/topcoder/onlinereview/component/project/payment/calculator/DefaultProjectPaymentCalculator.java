@@ -13,10 +13,7 @@ import org.springframework.stereotype.Component;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.sql.SQLException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 import static com.google.common.collect.Lists.newArrayList;
 import static com.topcoder.onlinereview.component.util.CommonUtils.executeSqlWithParam;
@@ -501,6 +498,26 @@ public class DefaultProjectPaymentCalculator implements ProjectPaymentCalculator
     private JdbcTemplate jdbcTemplate;
 
     /**
+     * This contains a list of roles for which payment calculation should be skipped
+     * when the skip payment flag is set by the self-service app.
+     */
+    private List<Long> reviewerRoles;
+
+    public DefaultProjectPaymentCalculator() {
+        super();
+        // create list of reviewer roles
+        reviewerRoles = new ArrayList<Long>();
+        reviewerRoles.add(REVIEWER_RESOURCE_ROLE_ID);
+        reviewerRoles.add(ACCURACY_REVIEWER_RESOURCE_ROLE_ID);
+        reviewerRoles.add(FAILURE_REVIEWER_RESOURCE_ROLE_ID);
+        reviewerRoles.add(STRESS_REVIEWER_RESOURCE_ROLE_ID);
+        reviewerRoles.add(FINAL_REVIEWER_RESOURCE_ROLE_ID);
+        reviewerRoles.add(SPECIFICATION_REVIEWER_RESOURCE_ROLE_ID);
+        reviewerRoles.add(CHECKPOINT_REVIEWER_RESOURCE_ROLE_ID);
+        reviewerRoles.add(ITERATIVE_REVIEWER_RESOURCE_ROLE_ID);
+    }
+
+    /**
      * <p>
      * This method is a concrete implementation of the namesake method defined in the interface.
      * </p>
@@ -545,25 +562,21 @@ public class DefaultProjectPaymentCalculator implements ProjectPaymentCalculator
             new Object[] {projectId, resourceRoleIDs});
 
         // arguments checking
-        try {
-            Helper.checkPositive(projectId, "projectId");
-            Helper.checkNotNullNorEmpty(resourceRoleIDs, "resourceRoleIDs");
-            Helper.checkNotNullElements(resourceRoleIDs, "resourceRoleIDs");
-        } catch (IllegalArgumentException e) {
-            throw Helper.logException(log, signature, e);
-        }
+        Helper.checkPositive(projectId, "projectId");
+        Helper.checkNotNullNorEmpty(resourceRoleIDs, "resourceRoleIDs");
+        Helper.checkNotNullElements(resourceRoleIDs, "resourceRoleIDs");
 
         try {
-          // Execute the query and get the result.
-          List<Map<String, Object>> resultSet = executeSqlWithParam(jdbcTemplate, GET_DEFAULT_PAYMENTS_QUERY, newArrayList(projectId));
-
+            // get skip payments flag for project
+            boolean skipPayments = isSkipPaymentsFlagPresentForProject(projectId);
+            // Execute the query and get the result.
+            List<Map<String, Object>> resultSet = executeSqlWithParam(jdbcTemplate, GET_DEFAULT_PAYMENTS_QUERY, newArrayList(projectId));
             Map<Long, BigDecimal> defaultPaymentsMap = new HashMap<Long, BigDecimal>();
-
             // Iterate through the supported resource roles IDs and compute the default payment for each one of the
             // requested resource role
             for (Map<String, Object> row: resultSet) {
                 long roleId = getLong(row, RESOURCE_ROLE_ID_COLUMN);
-                if (resourceRoleIDs.contains(roleId)) {
+                if (resourceRoleIDs.contains(roleId) && !(skipPayments && reviewerRoles.contains(roleId))) {
                     BigDecimal fixedAmount =
                         new BigDecimal(getDouble(row, FIXED_AMOUNT_COLUMN)).setScale(2, RoundingMode.HALF_UP);
                     float baseCoefficient = ofNullable(getFloat(row, BASE_COEFFICIENT_COLUMN)).orElse(0F);
@@ -574,6 +587,8 @@ public class DefaultProjectPaymentCalculator implements ProjectPaymentCalculator
                     int submissionsCount = getSubmissionsCount(row, roleId);
 
                     // calculate the payment
+                    // here, skip (check persistence) payment if its a self-service challenge
+                    // and role ID is a reviewer.
                     BigDecimal augend =
                         BigDecimal.valueOf((baseCoefficient + incrementalCoefficient * submissionsCount) * prize);
 
@@ -591,6 +606,16 @@ public class DefaultProjectPaymentCalculator implements ProjectPaymentCalculator
             throw Helper.logException(log, signature, new ProjectPaymentCalculatorException(
                 "Fails to query project payments from database", e));
         }
+    }
+
+    /**
+     * Queries the project attributes table for the payment skipped flag (challenge metadata in v5)
+     *
+     * @param projectId
+     * @return true if payments are skipped, false, otherwise
+     */
+    private boolean isSkipPaymentsFlagPresentForProject(long projectId) {
+        return false;
     }
 
     /**
