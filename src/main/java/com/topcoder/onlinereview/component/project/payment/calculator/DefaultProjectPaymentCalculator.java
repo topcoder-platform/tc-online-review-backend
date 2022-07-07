@@ -472,6 +472,7 @@ public class DefaultProjectPaymentCalculator implements ProjectPaymentCalculator
      * for calculating project payment.
      * </p>
      */
+    // TODO: add get of skip payments property
     private static final String GET_DEFAULT_PAYMENTS_QUERY =
         "SELECT dpp.resource_role_id, dpp.fixed_amount, dpp.base_coefficient, dpp.incremental_coefficient,"
             + "max(pr.prize_amount) as prize,"
