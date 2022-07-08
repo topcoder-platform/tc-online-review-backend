@@ -468,11 +468,18 @@ public class DefaultProjectPaymentCalculator implements ProjectPaymentCalculator
 
     /**
      * <p>
+     * The SQL query to retrieve metadata for a challenge to determine if it should skip payments calc
+     * </p>
+     */
+    private static final String GET_METADATA_QUERY =
+        "SELECT pi.value skip_payments FROM project_info pi WHERE pi.project_id=? AND pi.project_info_type_id='skip_OR_payment_calcs'";
+
+    /**
+     * <p>
      * The SQL query to retrieve all necessary data (fixed amount, base coefficient and incremental coefficient)
      * for calculating project payment.
      * </p>
      */
-    // TODO: add get of skip payments property
     private static final String GET_DEFAULT_PAYMENTS_QUERY =
         "SELECT dpp.resource_role_id, dpp.fixed_amount, dpp.base_coefficient, dpp.incremental_coefficient,"
             + "max(pr.prize_amount) as prize,"
@@ -616,6 +623,19 @@ public class DefaultProjectPaymentCalculator implements ProjectPaymentCalculator
      * @return true if payments are skipped, false, otherwise
      */
     private boolean isSkipPaymentsFlagPresentForProject(long projectId) {
+        List<Map<String, Object>> resultSet = executeSqlWithParam(jdbcTemplate, GET_METADATA_QUERY, newArrayList(projectId));
+        if (resultSet == null || resultSet.size() == 0) { return false; }
+        String skipPayments = resultSet.get(0).get("skip_payments").toString();
+        if (skipPayments == null) { return false; }
+        // assumed format
+        if ("true".equalsIgnoreCase(skipPayments.trim())) { return true; }
+        // maybe not in assumed format, try to parseBool
+        try {
+            Boolean b = Boolean.parseBoolean(skipPayments);
+            return b;
+        } catch (Throwable t) {
+            // don't care, return false;
+        }
         return false;
     }
 
