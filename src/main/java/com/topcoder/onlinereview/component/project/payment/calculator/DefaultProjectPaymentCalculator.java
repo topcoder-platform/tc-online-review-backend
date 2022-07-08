@@ -471,8 +471,10 @@ public class DefaultProjectPaymentCalculator implements ProjectPaymentCalculator
      * The SQL query to retrieve metadata for a challenge to determine if it should skip payments calc
      * </p>
      */
+    private static final String SKIP_PAYMENTS_FIELD = "skip_payments";
+    private static final String SKIP_PAYMENTS_METADATA_TYPE_ID = "skip_OR_payment_calcs"; // shared with challenge-api
     private static final String GET_METADATA_QUERY =
-        "SELECT pi.value skip_payments FROM project_info pi WHERE pi.project_id=? AND pi.project_info_type_id='skip_OR_payment_calcs'";
+        "SELECT pi.value " + SKIP_PAYMENTS_FIELD + " FROM project_info pi WHERE pi.project_id=? AND pi.project_info_type_id='" + SKIP_PAYMENTS_METADATA_TYPE_ID + "'";
 
     /**
      * <p>
@@ -595,20 +597,15 @@ public class DefaultProjectPaymentCalculator implements ProjectPaymentCalculator
                     int submissionsCount = getSubmissionsCount(row, roleId);
 
                     // calculate the payment
-                    // here, skip (check persistence) payment if its a self-service challenge
-                    // and role ID is a reviewer.
                     BigDecimal augend =
                         BigDecimal.valueOf((baseCoefficient + incrementalCoefficient * submissionsCount) * prize);
-
                     BigDecimal payment = fixedAmount.add(augend.setScale(2, RoundingMode.HALF_UP));
 
                     // put into the map
                     defaultPaymentsMap.put(roleId, payment);
                 }
             }
-
             Helper.logExit(log, signature, new Object[] {defaultPaymentsMap});
-
             return defaultPaymentsMap;
         } catch (SQLException e) {
             throw Helper.logException(log, signature, new ProjectPaymentCalculatorException(
@@ -625,7 +622,7 @@ public class DefaultProjectPaymentCalculator implements ProjectPaymentCalculator
     private boolean isSkipPaymentsFlagPresentForProject(long projectId) {
         List<Map<String, Object>> resultSet = executeSqlWithParam(jdbcTemplate, GET_METADATA_QUERY, newArrayList(projectId));
         if (resultSet == null || resultSet.size() == 0) { return false; }
-        String skipPayments = resultSet.get(0).get("skip_payments").toString();
+        String skipPayments = resultSet.get(0).get(SKIP_PAYMENTS_FIELD).toString();
         if (skipPayments == null) { return false; }
         // assumed format
         if ("true".equalsIgnoreCase(skipPayments.trim())) { return true; }
