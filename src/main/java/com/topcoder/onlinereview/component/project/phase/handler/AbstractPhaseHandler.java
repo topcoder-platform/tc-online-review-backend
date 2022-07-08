@@ -43,6 +43,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -318,6 +319,13 @@ public abstract class AbstractPhaseHandler implements PhaseHandler {
      * @since 1.8.1
      */
     private EmailOptions defaultEndEmailOption;
+
+    /**
+     * Contains emails to send. Since the perform is called before update phase status.
+     * But email should be send after updated success, so collect email message before update
+     * and send it after update
+     */
+    private Map<String, List<TCSEmailMessage>> emailToSend = new HashMap<>();
 
     /**
      * The log instance used by this handler.
@@ -695,16 +703,9 @@ public abstract class AbstractPhaseHandler implements PhaseHandler {
             message.setFromAddress(emailOptions.getFromAddress());
             message.setToAddress(user.getEmail(), TCSEmailMessage.TO);
             message.setContentType("text/html");
-            THREAD_POOL.execute(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        EmailEngine.send(message);
-                    } catch (SendingException e) {
-                        log.error("Problem with sending email.", e);
-                    }
-                }
-            });
+            String emailKey = String.join(":", String.valueOf(phase.getId()), phase.getPhaseStatus().getName());
+            emailToSend.putIfAbsent(emailKey, new ArrayList<>());
+            emailToSend.get(emailKey).add(message);
         } catch (TemplateSourceException e) {
             throw new PhaseHandlingException("Problem with template source", e);
         } catch (TemplateFormatException e) {
@@ -1010,5 +1011,27 @@ public abstract class AbstractPhaseHandler implements PhaseHandler {
             log.error("parse challenge error: ", e);
         }
         return "";
+    }
+
+    /**
+     * Send or delete phase related emails.
+     *
+     * @param phaseId the phase id
+     * @param phaseStatus the phase status
+     * @param send send or delete
+     */
+    public void sendEmailAfterUpdatePhase(Long phaseId, String phaseStatus, boolean send) {
+        List<TCSEmailMessage> emailMessages = emailToSend.remove(String.join(":", phaseId.toString(), phaseStatus));
+        if (send) {
+            for (TCSEmailMessage message: emailMessages) {
+                THREAD_POOL.execute(() -> {
+                    try {
+                        EmailEngine.send(message);
+                    } catch (SendingException e) {
+                        log.error("Problem with sending email.", e);
+                    }
+                });
+            }
+        }
     }
 }
