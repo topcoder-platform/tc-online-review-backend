@@ -5,6 +5,7 @@ package com.topcoder.onlinereview.component.project.phase;
 
 import com.topcoder.onlinereview.component.id.IDGenerationException;
 import com.topcoder.onlinereview.component.id.IDGenerator;
+import com.topcoder.onlinereview.component.project.phase.handler.AbstractPhaseHandler;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -424,21 +425,39 @@ public class PhaseManager {
     if (operator.trim().length() == 0) {
       throw new IllegalArgumentException("operator must be non-empty");
     }
+    PhaseHandler handler = null;
     if (phase.getPhaseType() != null) {
-      PhaseHandler handler = getPhaseHandler(phase, PhaseOperationEnum.START);
+      handler = getPhaseHandler(phase, PhaseOperationEnum.START);
       if (handler != null) {
         handler.perform(phase, operator);
       }
     }
+    String oldStatus = phase.getPhaseStatus().getName();
     phase.setPhaseStatus(
         new PhaseStatus(PhaseStatusEnum.OPEN.getId(), PhaseStatusEnum.OPEN.getName()));
     phase.setActualStartDate(new Date());
-    Phase[] allPhases = phase.getProject().getAllPhases();
-    recalculateScheduledDates(allPhases);
     try {
+      Phase[] allPhases = phase.getProject().getAllPhases();
+      recalculateScheduledDates(allPhases);
       persistence.updatePhases(allPhases, operator);
+      sendEmail(handler, phase.getId(), oldStatus, true);
     } catch (PhasePersistenceException ex) {
+      sendEmail(handler, phase.getId(), oldStatus, false);
       throw new PhaseManagementException("phase persistence error", ex);
+    }
+  }
+
+  /**
+   * Send phase updated email.
+   *
+   * @param handler
+   * @param phaseId
+   * @param phaseStatus
+   * @param send
+   */
+  private void sendEmail(PhaseHandler handler, Long phaseId, String phaseStatus, boolean send) {
+    if (handler != null && handler instanceof AbstractPhaseHandler) {
+      ((AbstractPhaseHandler) handler).sendEmailAfterUpdatePhase(phaseId, phaseStatus, send);
     }
   }
 
@@ -499,20 +518,24 @@ public class PhaseManager {
     if (operator.trim().length() == 0) {
       throw new IllegalArgumentException("operator must be non-empty");
     }
+    PhaseHandler handler = null;
     if (phase.getPhaseType() != null) {
-      PhaseHandler handler = getPhaseHandler(phase, PhaseOperationEnum.END);
+      handler = getPhaseHandler(phase, PhaseOperationEnum.END);
       if (handler != null) {
         handler.perform(phase, operator);
       }
     }
+    String oldStatus = phase.getPhaseStatus().getName();
     phase.setPhaseStatus(
         new PhaseStatus(PhaseStatusEnum.CLOSED.getId(), PhaseStatusEnum.CLOSED.getName()));
     phase.setActualEndDate(new Date());
-    Phase[] allPhases = phase.getProject().getAllPhases();
-    recalculateScheduledDates(allPhases);
     try {
+      Phase[] allPhases = phase.getProject().getAllPhases();
+      recalculateScheduledDates(allPhases);
       persistence.updatePhases(allPhases, operator);
+      sendEmail(handler, phase.getId(), oldStatus, true);
     } catch (PhasePersistenceException ex) {
+      sendEmail(handler, phase.getId(), oldStatus, false);
       throw new PhaseManagementException("phase persistence error", ex);
     }
   }
