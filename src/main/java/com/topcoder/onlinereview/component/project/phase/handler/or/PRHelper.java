@@ -217,7 +217,7 @@ public class PRHelper {
 
                     for (Map<String, Object> r: rs) {
                         // Update all raw score
-                        double rawScore = getDouble(r, "raw_score");
+                        Double rawScore = getDouble(r, "raw_score");
                         long userId = getLong(r, "user_id");
                         executeUpdateSql(getTcsJdbcTemplate(), REVIEW_UPDATE_PROJECT_RESULT_STMT, newArrayList(rawScore, projectId, userId));
                     }

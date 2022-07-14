@@ -485,6 +485,9 @@ public final class PaymentsHelper {
 
         for (ProjectPayment payment : payments) {
             Resource resource = resourceLookup.get(payment.getResourceId());
+            if (resource == null) {
+                continue;
+            }
             String resourceRoleName = resource.getResourceRole().getName();
             Domain domain = null;
             if (SUBMISSION_DOMAIN.contains(resourceRoleName)) {
