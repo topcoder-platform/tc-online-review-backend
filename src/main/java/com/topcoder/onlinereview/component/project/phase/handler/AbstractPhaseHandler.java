@@ -1022,7 +1022,7 @@ public abstract class AbstractPhaseHandler implements PhaseHandler {
      */
     public void sendEmailAfterUpdatePhase(Long phaseId, String phaseStatus, boolean send) {
         List<TCSEmailMessage> emailMessages = emailToSend.remove(String.join(":", phaseId.toString(), phaseStatus));
-        if (send) {
+        if (send && emailMessages != null) {
             for (TCSEmailMessage message: emailMessages) {
                 THREAD_POOL.execute(() -> {
                     try {
