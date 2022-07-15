@@ -338,6 +338,19 @@ public class ManagerHelper {
     @Value("${managerHelper.V5ChallengeURL:#{null}}")
     private String v5ChallengeURL;
 
+    @Value("${managerHelper.authClientId:#{null}}")
+    private String authClientId;
+    @Value("${managerHelper.authClientSecret:#{null}}")
+    private String authClientSecret;
+    @Value("${managerHelper.authAudience:#{null}}")
+    private String authAudience;
+    @Value("${managerHelper.authDomain:#{null}}")
+    private String authDomain;
+    @Value("${managerHelper.authExpirationTime:#{null}}")
+    private String authExpirationTime;
+    @Value("${managerHelper.authProxyURL:#{null}}")
+    private String authProxyURL;
+
     /**
      * <p>A <code>ReviewFeedbackManager</code> providing the interface to review feedback management system.</p>
      * @since 1.7.6
@@ -584,5 +597,29 @@ public class ManagerHelper {
 
     public String getV5ChallengeURL() {
         return v5ChallengeURL;
+    }
+
+    public String getAuthClientId() {
+        return authClientId;
+    }
+
+    public String getAuthClientSecret() {
+        return authClientSecret;
+    }
+
+    public String getAuthAudience() {
+        return authAudience;
+    }
+
+    public String getAuthDomain() {
+        return authDomain;
+    }
+
+    public String getAuthExpirationTime() {
+        return authExpirationTime;
+    }
+
+    public String getAuthProxyURL() {
+        return authProxyURL;
     }
 }

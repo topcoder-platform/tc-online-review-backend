@@ -22,6 +22,7 @@ import com.topcoder.onlinereview.component.email.SendingException;
 import com.topcoder.onlinereview.component.email.TCSEmailMessage;
 import com.topcoder.onlinereview.component.external.ExternalUser;
 import com.topcoder.onlinereview.component.external.RetrievalException;
+import com.topcoder.onlinereview.component.jwt.JWTTokenGenerator;
 import com.topcoder.onlinereview.component.project.management.PersistenceException;
 import com.topcoder.onlinereview.component.project.management.Project;
 import com.topcoder.onlinereview.component.project.management.ProjectCategory;
@@ -38,6 +39,7 @@ import com.topcoder.onlinereview.component.reviewfeedback.ReviewFeedbackManager;
 import com.topcoder.onlinereview.component.search.SearchBuilderException;
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.methods.GetMethod;
+import org.apache.http.HttpHeaders;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -994,6 +996,7 @@ public abstract class AbstractPhaseHandler implements PhaseHandler {
         GetMethod getMethod = new GetMethod(challengeUrl + legacyId);
         getMethod.addRequestHeader("accept", "application/json");
         try {
+            setM2AuthToken(getMethod);
             int statusCode = new HttpClient().executeMethod(getMethod);
             if (statusCode == 200) {
                 List<Map<String, Object>> res = new ObjectMapper().readValue(getMethod.getResponseBodyAsString(), new TypeReference<List<Map<String, Object>>>(){});
@@ -1007,10 +1010,27 @@ public abstract class AbstractPhaseHandler implements PhaseHandler {
             } else {
                 log.error("Get challenge Id error with statusCode: " + statusCode);
             }
-        } catch (IOException e) {
+        } catch (Exception e) {
             log.error("parse challenge error: ", e);
         }
         return "";
+    }
+
+    /**
+     * Set token header
+     *
+     * @param getMethod request method
+     */
+    public void setM2AuthToken(GetMethod getMethod) throws Exception {
+        if (managerHelper.getAuthClientId() != null) {
+            String token = JWTTokenGenerator.getInstance(managerHelper.getAuthClientId(),
+                    managerHelper.getAuthClientSecret(),
+                    managerHelper.getAuthAudience(),
+                    managerHelper.getAuthDomain(),
+                    Integer.parseInt(managerHelper.getAuthExpirationTime()),
+                    managerHelper.getAuthProxyURL()).getMachineToken();
+            getMethod.addRequestHeader(HttpHeaders.AUTHORIZATION, "Bearer " + token);
+        }
     }
 
     /**
