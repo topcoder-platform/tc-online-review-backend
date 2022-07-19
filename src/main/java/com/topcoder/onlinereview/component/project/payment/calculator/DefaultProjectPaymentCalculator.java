@@ -13,10 +13,7 @@ import org.springframework.stereotype.Component;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.sql.SQLException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 import static com.google.common.collect.Lists.newArrayList;
 import static com.topcoder.onlinereview.component.util.CommonUtils.executeSqlWithParam;
@@ -471,6 +468,16 @@ public class DefaultProjectPaymentCalculator implements ProjectPaymentCalculator
 
     /**
      * <p>
+     * The SQL query to retrieve metadata for a challenge to determine if it should skip payments calc
+     * </p>
+     */
+    private static final String SKIP_PAYMENTS_FIELD = "skip_payments";
+    private static final String SKIP_PAYMENTS_METADATA_TYPE_ID = "skip_OR_payment_calcs"; // shared with challenge-api
+    private static final String GET_METADATA_QUERY =
+        "SELECT pi.value " + SKIP_PAYMENTS_FIELD + " FROM project_info pi WHERE pi.project_id=? AND pi.project_info_type_id='" + SKIP_PAYMENTS_METADATA_TYPE_ID + "'";
+
+    /**
+     * <p>
      * The SQL query to retrieve all necessary data (fixed amount, base coefficient and incremental coefficient)
      * for calculating project payment.
      * </p>
@@ -499,6 +506,26 @@ public class DefaultProjectPaymentCalculator implements ProjectPaymentCalculator
     @Autowired
     @Qualifier("tcsJdbcTemplate")
     private JdbcTemplate jdbcTemplate;
+
+    /**
+     * This contains a list of roles for which payment calculation should be skipped
+     * when the skip payment flag is set by the self-service app.
+     */
+    private List<Long> reviewerRoles;
+
+    public DefaultProjectPaymentCalculator() {
+        super();
+        // create list of reviewer roles
+        reviewerRoles = new ArrayList<Long>();
+        reviewerRoles.add(REVIEWER_RESOURCE_ROLE_ID);
+        reviewerRoles.add(ACCURACY_REVIEWER_RESOURCE_ROLE_ID);
+        reviewerRoles.add(FAILURE_REVIEWER_RESOURCE_ROLE_ID);
+        reviewerRoles.add(STRESS_REVIEWER_RESOURCE_ROLE_ID);
+        reviewerRoles.add(FINAL_REVIEWER_RESOURCE_ROLE_ID);
+        reviewerRoles.add(SPECIFICATION_REVIEWER_RESOURCE_ROLE_ID);
+        reviewerRoles.add(CHECKPOINT_REVIEWER_RESOURCE_ROLE_ID);
+        reviewerRoles.add(ITERATIVE_REVIEWER_RESOURCE_ROLE_ID);
+    }
 
     /**
      * <p>
@@ -545,25 +572,21 @@ public class DefaultProjectPaymentCalculator implements ProjectPaymentCalculator
             new Object[] {projectId, resourceRoleIDs});
 
         // arguments checking
-        try {
-            Helper.checkPositive(projectId, "projectId");
-            Helper.checkNotNullNorEmpty(resourceRoleIDs, "resourceRoleIDs");
-            Helper.checkNotNullElements(resourceRoleIDs, "resourceRoleIDs");
-        } catch (IllegalArgumentException e) {
-            throw Helper.logException(log, signature, e);
-        }
+        Helper.checkPositive(projectId, "projectId");
+        Helper.checkNotNullNorEmpty(resourceRoleIDs, "resourceRoleIDs");
+        Helper.checkNotNullElements(resourceRoleIDs, "resourceRoleIDs");
 
         try {
-          // Execute the query and get the result.
-          List<Map<String, Object>> resultSet = executeSqlWithParam(jdbcTemplate, GET_DEFAULT_PAYMENTS_QUERY, newArrayList(projectId));
-
+            // get skip payments flag for project
+            boolean skipPayments = isSkipPaymentsFlagPresentForProject(projectId);
+            // Execute the query and get the result.
+            List<Map<String, Object>> resultSet = executeSqlWithParam(jdbcTemplate, GET_DEFAULT_PAYMENTS_QUERY, newArrayList(projectId));
             Map<Long, BigDecimal> defaultPaymentsMap = new HashMap<Long, BigDecimal>();
-
             // Iterate through the supported resource roles IDs and compute the default payment for each one of the
             // requested resource role
             for (Map<String, Object> row: resultSet) {
                 long roleId = getLong(row, RESOURCE_ROLE_ID_COLUMN);
-                if (resourceRoleIDs.contains(roleId)) {
+                if (resourceRoleIDs.contains(roleId) && !(skipPayments && reviewerRoles.contains(roleId))) {
                     BigDecimal fixedAmount =
                         new BigDecimal(getDouble(row, FIXED_AMOUNT_COLUMN)).setScale(2, RoundingMode.HALF_UP);
                     float baseCoefficient = ofNullable(getFloat(row, BASE_COEFFICIENT_COLUMN)).orElse(0F);
@@ -576,21 +599,41 @@ public class DefaultProjectPaymentCalculator implements ProjectPaymentCalculator
                     // calculate the payment
                     BigDecimal augend =
                         BigDecimal.valueOf((baseCoefficient + incrementalCoefficient * submissionsCount) * prize);
-
                     BigDecimal payment = fixedAmount.add(augend.setScale(2, RoundingMode.HALF_UP));
 
                     // put into the map
                     defaultPaymentsMap.put(roleId, payment);
                 }
             }
-
             Helper.logExit(log, signature, new Object[] {defaultPaymentsMap});
-
             return defaultPaymentsMap;
         } catch (SQLException e) {
             throw Helper.logException(log, signature, new ProjectPaymentCalculatorException(
                 "Fails to query project payments from database", e));
         }
+    }
+
+    /**
+     * Queries the project attributes table for the payment skipped flag (challenge metadata in v5)
+     *
+     * @param projectId
+     * @return true if payments are skipped, false, otherwise
+     */
+    private boolean isSkipPaymentsFlagPresentForProject(long projectId) {
+        List<Map<String, Object>> resultSet = executeSqlWithParam(jdbcTemplate, GET_METADATA_QUERY, newArrayList(projectId));
+        if (resultSet == null || resultSet.size() == 0) { return false; }
+        String skipPayments = resultSet.get(0).get(SKIP_PAYMENTS_FIELD).toString();
+        if (skipPayments == null) { return false; }
+        // assumed format
+        if ("true".equalsIgnoreCase(skipPayments.trim())) { return true; }
+        // maybe not in assumed format, try to parseBool
+        try {
+            Boolean b = Boolean.parseBoolean(skipPayments);
+            return b;
+        } catch (Throwable t) {
+            // don't care, return false;
+        }
+        return false;
     }
 
     /**

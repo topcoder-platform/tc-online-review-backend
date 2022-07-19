@@ -1,8 +1,8 @@
 package com.topcoder.onlinereview.component.webcommon.model.language;
 
-import com.sun.org.apache.xerces.internal.parsers.DOMParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -11,6 +11,8 @@ import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import org.xml.sax.SAXParseException;
 
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
@@ -98,8 +100,40 @@ public class ProblemComponentFactory
         stmt = new ProblemComponent(unsafe);
         try {
             ResourceBundle bundle = ResourceBundle.getBundle("ProblemParser");
-            DOMParser parser = new DOMParser();
+            DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+            dbf.setFeature("http://xml.org/sax/features/validation", true);
+            dbf.setFeature("http://apache.org/xml/features/validation/schema", true);
+            dbf.setFeature("http://apache.org/xml/features/validation/schema-full-checking", true);
+            dbf.setAttribute("http://apache.org/xml/properties/schema/external-schemaLocation", bundle.getString("schema"));
+            DocumentBuilder db = dbf.newDocumentBuilder();
+            db.setErrorHandler(this);
+            Document doc = db.parse(new InputSource(reader));
+            Node root = getChildByName(doc.getChildNodes(), "problem");
+            if (root.hasAttributes() && root.getAttributes().getNamedItem("code_length_limit") != null) {
+                // No need to verify if it is an integer, since the schema enforced it.
+                stmt.setCodeLengthLimit(Integer.parseInt(root.getAttributes().getNamedItem("code_length_limit").getNodeValue()));
+            }
+            sections = root.getChildNodes();
+            checkTypes(root);
+            if(!stmt.isValid()) {
+                trace.error("checkTypes failed! Error messages: " + stmt.getMessages().toString());
+                return stmt;
+            }
 
+            parseSignature();
+            parseIntro();
+            parseSpec();
+            parseNotes();
+            parseConstraints();
+            parseTestCases();
+            parseMemLimit();
+            parseStackLimit();
+            parseRoundType();
+
+            if(!unsafe)
+                removeNonExampleTestCases();
+
+ /* OLD CODE
             trace.debug("getting schema from " + bundle.getString("schema"));
             parser.setErrorHandler(this);
             parser.setFeature("http://xml.org/sax/features/validation", true);
@@ -109,6 +143,7 @@ public class ProblemComponentFactory
             parser.parse(new InputSource(reader));
             doc = parser.getDocument();
             root = getChildByName(doc.getChildNodes(), "problem");
+
             if (root.hasAttributes() && root.getAttributes().getNamedItem("code_length_limit") != null) {
                 // No need to verify if it is an integer, since the schema enforced it.
                 stmt.setCodeLengthLimit(Integer.parseInt(root.getAttributes().getNamedItem("code_length_limit").getNodeValue()));
@@ -155,7 +190,7 @@ public class ProblemComponentFactory
             parseRoundType();
 
             if(!unsafe)
-                removeNonExampleTestCases();
+                removeNonExampleTestCases();*/
         } catch(Exception ex) {
             System.out.println("Exception while parsing statement: " + ex);
             ex.printStackTrace();
