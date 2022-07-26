@@ -13,7 +13,10 @@ import org.springframework.stereotype.Component;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.sql.SQLException;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 import static com.google.common.collect.Lists.newArrayList;
 import static com.topcoder.onlinereview.component.util.CommonUtils.executeSqlWithParam;
@@ -291,7 +294,7 @@ public class DefaultProjectPaymentCalculator implements ProjectPaymentCalculator
      * </p>
      */
     public static final String DEFAULT_CONFIG_NAMESPACE =
-            "com.topcoder.management.payment.calculator.impl.DefaultProjectPaymentCalculator";
+        "com.topcoder.management.payment.calculator.impl.DefaultProjectPaymentCalculator";
 
     /**
      * <p>
@@ -463,18 +466,8 @@ public class DefaultProjectPaymentCalculator implements ProjectPaymentCalculator
      * </p>
      */
     private static final String GET_DEFAULT_PAYMENT_QUERY =
-            "SELECT fixed_amount, base_coefficient, incremental_coefficient " + "FROM default_project_payment "
-                    + "WHERE project_category_id = ? and resource_role_id = ?";
-
-    /**
-     * <p>
-     * The SQL query to retrieve metadata for a challenge to determine if it should skip payments calc
-     * </p>
-     */
-    private static final String SKIP_PAYMENTS_FIELD = "skip_payments";
-    private static final String SKIP_PAYMENTS_METADATA_TYPE_ID = "skip_OR_payment_calcs"; // shared with challenge-api
-    private static final String GET_METADATA_QUERY =
-            "SELECT pi.value " + SKIP_PAYMENTS_FIELD + " FROM project_info pi WHERE pi.project_id=? AND pi.project_info_type_id='" + SKIP_PAYMENTS_METADATA_TYPE_ID + "'";
+        "SELECT fixed_amount, base_coefficient, incremental_coefficient " + "FROM default_project_payment "
+            + "WHERE project_category_id = ? and resource_role_id = ?";
 
     /**
      * <p>
@@ -483,49 +476,29 @@ public class DefaultProjectPaymentCalculator implements ProjectPaymentCalculator
      * </p>
      */
     private static final String GET_DEFAULT_PAYMENTS_QUERY =
-            "SELECT dpp.resource_role_id, dpp.fixed_amount, dpp.base_coefficient, dpp.incremental_coefficient,"
-                    + "max(pr.prize_amount) as prize,"
-                    + "sum(case when s.submission_type_id = 1 then 1 else 0 end) as total_contest_submissions,"
-                    + "sum(case when s.submission_type_id = 1 and s.submission_status_id != 2 then 1 else 0 end) "
-                    + "as passed_contest_submissions,"
-                    + "sum(case when s.submission_type_id = 3 then 1 else 0 end) as total_checkpoint_submissions,"
-                    + "sum(case when s.submission_type_id = 3 and s.submission_status_id != 6 then 1 else 0 end) "
-                    + "as passed_checkpoint_submissions, "
-                    + "sum(case when s.submission_type_id = 1 and exists (select 1 from review r "
-                    + "where r.submission_id = s.submission_id and r.committed = 1) then 1 else 0 end) "
-                    + "as total_reviewed_contest_submissions "
-                    + "FROM default_project_payment dpp "
-                    + "INNER JOIN project p ON dpp.project_category_id = p.project_category_id and p.project_id=? "
-                    + "LEFT OUTER JOIN prize pr ON pr.project_id=p.project_id and pr.prize_type_id=15 and pr.place=1 "
-                    + "LEFT OUTER JOIN upload u ON u.project_id = p.project_id and u.upload_type_id = 1 "
-                    + "LEFT OUTER JOIN submission s ON s.submission_type_id in (1,3) and s.upload_id = u.upload_id "
-                    + "and s.submission_status_id in (1,2,3,4,6,7) "
-                    + "WHERE dpp.resource_role_id in (2,4,5,6,7,8,9,14,18,19,20,21) "
-                    + "GROUP BY dpp.resource_role_id, dpp.fixed_amount, dpp.base_coefficient, dpp.incremental_coefficient";
+        "SELECT dpp.resource_role_id, dpp.fixed_amount, dpp.base_coefficient, dpp.incremental_coefficient,"
+            + "max(pr.prize_amount) as prize,"
+            + "sum(case when s.submission_type_id = 1 then 1 else 0 end) as total_contest_submissions,"
+            + "sum(case when s.submission_type_id = 1 and s.submission_status_id != 2 then 1 else 0 end) "
+            + "as passed_contest_submissions,"
+            + "sum(case when s.submission_type_id = 3 then 1 else 0 end) as total_checkpoint_submissions,"
+            + "sum(case when s.submission_type_id = 3 and s.submission_status_id != 6 then 1 else 0 end) "
+            + "as passed_checkpoint_submissions, "
+            + "sum(case when s.submission_type_id = 1 and exists (select 1 from review r "
+            + "where r.submission_id = s.submission_id and r.committed = 1) then 1 else 0 end) "
+            + "as total_reviewed_contest_submissions "
+            + "FROM default_project_payment dpp "
+            + "INNER JOIN project p ON dpp.project_category_id = p.project_category_id and p.project_id=? "
+            + "LEFT OUTER JOIN prize pr ON pr.project_id=p.project_id and pr.prize_type_id=15 and pr.place=1 "
+            + "LEFT OUTER JOIN upload u ON u.project_id = p.project_id and u.upload_type_id = 1 "
+            + "LEFT OUTER JOIN submission s ON s.submission_type_id in (1,3) and s.upload_id = u.upload_id "
+            + "and s.submission_status_id in (1,2,3,4,6,7) "
+            + "WHERE dpp.resource_role_id in (2,4,5,6,7,8,9,14,18,19,20,21) "
+            + "GROUP BY dpp.resource_role_id, dpp.fixed_amount, dpp.base_coefficient, dpp.incremental_coefficient";
 
     @Autowired
     @Qualifier("tcsJdbcTemplate")
     private JdbcTemplate jdbcTemplate;
-
-    /**
-     * This contains a list of roles for which payment calculation should be skipped
-     * when the skip payment flag is set by the self-service app.
-     */
-    private List<Long> reviewerRoles;
-
-    public DefaultProjectPaymentCalculator() {
-        super();
-        // create list of reviewer roles
-        reviewerRoles = new ArrayList<Long>();
-        reviewerRoles.add(REVIEWER_RESOURCE_ROLE_ID);
-        reviewerRoles.add(ACCURACY_REVIEWER_RESOURCE_ROLE_ID);
-        reviewerRoles.add(FAILURE_REVIEWER_RESOURCE_ROLE_ID);
-        reviewerRoles.add(STRESS_REVIEWER_RESOURCE_ROLE_ID);
-        reviewerRoles.add(FINAL_REVIEWER_RESOURCE_ROLE_ID);
-        reviewerRoles.add(SPECIFICATION_REVIEWER_RESOURCE_ROLE_ID);
-        reviewerRoles.add(CHECKPOINT_REVIEWER_RESOURCE_ROLE_ID);
-        reviewerRoles.add(ITERATIVE_REVIEWER_RESOURCE_ROLE_ID);
-    }
 
     /**
      * <p>
@@ -566,29 +539,33 @@ public class DefaultProjectPaymentCalculator implements ProjectPaymentCalculator
      *             If any error occurred during the operation.
      */
     public Map<Long, BigDecimal> getDefaultPayments(long projectId, List<Long> resourceRoleIDs)
-            throws ProjectPaymentCalculatorException {
+        throws ProjectPaymentCalculatorException {
         String signature = DEFAULT_CONFIG_NAMESPACE + "#getDefaultPayments(long, List<Long>)";
         Helper.logEntrance(log, signature, new String[] {"projectId", "resourceRoleIDs"},
-                new Object[] {projectId, resourceRoleIDs});
+            new Object[] {projectId, resourceRoleIDs});
 
         // arguments checking
-        Helper.checkPositive(projectId, "projectId");
-        Helper.checkNotNullNorEmpty(resourceRoleIDs, "resourceRoleIDs");
-        Helper.checkNotNullElements(resourceRoleIDs, "resourceRoleIDs");
+        try {
+            Helper.checkPositive(projectId, "projectId");
+            Helper.checkNotNullNorEmpty(resourceRoleIDs, "resourceRoleIDs");
+            Helper.checkNotNullElements(resourceRoleIDs, "resourceRoleIDs");
+        } catch (IllegalArgumentException e) {
+            throw Helper.logException(log, signature, e);
+        }
 
         try {
-            // get skip payments flag for project
-            boolean skipPayments = isSkipPaymentsFlagPresentForProject(projectId);
-            // Execute the query and get the result.
-            List<Map<String, Object>> resultSet = executeSqlWithParam(jdbcTemplate, GET_DEFAULT_PAYMENTS_QUERY, newArrayList(projectId));
+          // Execute the query and get the result.
+          List<Map<String, Object>> resultSet = executeSqlWithParam(jdbcTemplate, GET_DEFAULT_PAYMENTS_QUERY, newArrayList(projectId));
+
             Map<Long, BigDecimal> defaultPaymentsMap = new HashMap<Long, BigDecimal>();
+
             // Iterate through the supported resource roles IDs and compute the default payment for each one of the
             // requested resource role
             for (Map<String, Object> row: resultSet) {
                 long roleId = getLong(row, RESOURCE_ROLE_ID_COLUMN);
-                if (resourceRoleIDs.contains(roleId) && !(skipPayments && reviewerRoles.contains(roleId))) {
+                if (resourceRoleIDs.contains(roleId)) {
                     BigDecimal fixedAmount =
-                            new BigDecimal(getDouble(row, FIXED_AMOUNT_COLUMN)).setScale(2, RoundingMode.HALF_UP);
+                        new BigDecimal(getDouble(row, FIXED_AMOUNT_COLUMN)).setScale(2, RoundingMode.HALF_UP);
                     float baseCoefficient = ofNullable(getFloat(row, BASE_COEFFICIENT_COLUMN)).orElse(0F);
                     float incrementalCoefficient = ofNullable(getFloat(row, INCREMENTAL_COEFFICIENT_COLUMN)).orElse(0F);
                     float prize = ofNullable(getFloat(row, PRIZE_COLUMN)).orElse(0F);
@@ -598,42 +575,22 @@ public class DefaultProjectPaymentCalculator implements ProjectPaymentCalculator
 
                     // calculate the payment
                     BigDecimal augend =
-                            BigDecimal.valueOf((baseCoefficient + incrementalCoefficient * submissionsCount) * prize);
+                        BigDecimal.valueOf((baseCoefficient + incrementalCoefficient * submissionsCount) * prize);
+
                     BigDecimal payment = fixedAmount.add(augend.setScale(2, RoundingMode.HALF_UP));
 
                     // put into the map
                     defaultPaymentsMap.put(roleId, payment);
                 }
             }
+
             Helper.logExit(log, signature, new Object[] {defaultPaymentsMap});
+
             return defaultPaymentsMap;
         } catch (SQLException e) {
             throw Helper.logException(log, signature, new ProjectPaymentCalculatorException(
-                    "Fails to query project payments from database", e));
+                "Fails to query project payments from database", e));
         }
-    }
-
-    /**
-     * Queries the project attributes table for the payment skipped flag (challenge metadata in v5)
-     *
-     * @param projectId
-     * @return true if payments are skipped, false, otherwise
-     */
-    private boolean isSkipPaymentsFlagPresentForProject(long projectId) {
-        List<Map<String, Object>> resultSet = executeSqlWithParam(jdbcTemplate, GET_METADATA_QUERY, newArrayList(projectId));
-        if (resultSet == null || resultSet.size() == 0) { return false; }
-        String skipPayments = resultSet.get(0).get(SKIP_PAYMENTS_FIELD).toString();
-        if (skipPayments == null) { return false; }
-        // assumed format
-        if ("true".equalsIgnoreCase(skipPayments.trim())) { return true; }
-        // maybe not in assumed format, try to parseBool
-        try {
-            Boolean b = Boolean.parseBoolean(skipPayments);
-            return b;
-        } catch (Throwable t) {
-            // don't care, return false;
-        }
-        return false;
     }
 
     /**
@@ -676,11 +633,11 @@ public class DefaultProjectPaymentCalculator implements ProjectPaymentCalculator
      *             If any error occurred during the operation.
      */
     public BigDecimal getDefaultPayment(long projectCategoryId, long resourceRoleId, BigDecimal prize,
-                                        int submissionsCount) throws ProjectPaymentCalculatorException {
+        int submissionsCount) throws ProjectPaymentCalculatorException {
         String signature = DEFAULT_CONFIG_NAMESPACE + "#getDefaultPayment(long, long, BigDecimal, int)";
         Helper.logEntrance(log, signature, new String[] {"projectCategoryId", "resourceRoleId",
-                        PRIZE_COLUMN, "submissionsCount"},
-                new Object[] {projectCategoryId, resourceRoleId, prize, submissionsCount});
+            PRIZE_COLUMN, "submissionsCount"},
+            new Object[] {projectCategoryId, resourceRoleId, prize, submissionsCount});
 
         // arguments checking
         try {
@@ -711,9 +668,9 @@ public class DefaultProjectPaymentCalculator implements ProjectPaymentCalculator
 
             BigDecimal scaledPrize = prize.setScale(2, RoundingMode.HALF_UP);
             BigDecimal multiplicandCoefficient =
-                    BigDecimal.valueOf(baseCoefficient + incrementalCoefficient * count);
+                BigDecimal.valueOf(baseCoefficient + incrementalCoefficient * count);
             payment =
-                    fixedAmount.add(scaledPrize.multiply(multiplicandCoefficient)).setScale(2, RoundingMode.HALF_UP);
+                fixedAmount.add(scaledPrize.multiply(multiplicandCoefficient)).setScale(2, RoundingMode.HALF_UP);
         }
         Helper.logExit(log, signature, new Object[] {payment});
 
@@ -744,8 +701,8 @@ public class DefaultProjectPaymentCalculator implements ProjectPaymentCalculator
         }
 
         if (resourceRoleId == REVIEWER_RESOURCE_ROLE_ID || resourceRoleId == ACCURACY_REVIEWER_RESOURCE_ROLE_ID
-                || resourceRoleId == FAILURE_REVIEWER_RESOURCE_ROLE_ID
-                || resourceRoleId == STRESS_REVIEWER_RESOURCE_ROLE_ID) {
+            || resourceRoleId == FAILURE_REVIEWER_RESOURCE_ROLE_ID
+            || resourceRoleId == STRESS_REVIEWER_RESOURCE_ROLE_ID) {
             submissionsCount = getInt(resultSet, "passed_contest_submissions");
         }
 
@@ -783,12 +740,12 @@ public class DefaultProjectPaymentCalculator implements ProjectPaymentCalculator
      */
     private static boolean isSubmissionRequired(long resourceRoleId) {
         return (resourceRoleId == PRIMARY_SCREENER_RESOURCE_ROLE_ID || resourceRoleId == REVIEWER_RESOURCE_ROLE_ID
-                || resourceRoleId == ACCURACY_REVIEWER_RESOURCE_ROLE_ID
-                || resourceRoleId == FAILURE_REVIEWER_RESOURCE_ROLE_ID
-                || resourceRoleId == STRESS_REVIEWER_RESOURCE_ROLE_ID
-                || resourceRoleId == CHECKPOINT_SCREENER_RESOURCE_ROLE_ID
-                || resourceRoleId == CHECKPOINT_REVIEWER_RESOURCE_ROLE_ID
-                || resourceRoleId == ITERATIVE_REVIEWER_RESOURCE_ROLE_ID);
+            || resourceRoleId == ACCURACY_REVIEWER_RESOURCE_ROLE_ID
+            || resourceRoleId == FAILURE_REVIEWER_RESOURCE_ROLE_ID
+            || resourceRoleId == STRESS_REVIEWER_RESOURCE_ROLE_ID
+            || resourceRoleId == CHECKPOINT_SCREENER_RESOURCE_ROLE_ID
+            || resourceRoleId == CHECKPOINT_REVIEWER_RESOURCE_ROLE_ID
+            || resourceRoleId == ITERATIVE_REVIEWER_RESOURCE_ROLE_ID);
     }
 
 
