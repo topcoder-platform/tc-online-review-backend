@@ -3,7 +3,7 @@
 All components for tc online review
 
 ### prerequisites
-- java 7
+- java 8
 - maven
 
 ### install libs
