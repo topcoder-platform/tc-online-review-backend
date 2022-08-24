@@ -357,43 +357,28 @@ public class AppealsResponsePhaseHandler extends AbstractPhaseHandler {
 
         // for each review
         for (Review review : reviews) {
-            int appealCount = 0;
-            int responseCount = 0;
-
-            Comment[] comments = review.getAllComments();
-
-            for (Comment comment : comments) {
-                String commentType = comment.getCommentType().getName();
-
-                if (Constants.COMMENT_TYPE_APPEAL.equals(commentType)) {
-                    appealCount++;
-                } else if (Constants.COMMENT_TYPE_APPEAL_RESPONSE.equals(commentType)) {
-                    responseCount++;
-                }
-            }
 
             Item[] items = review.getAllItems();
 
             for (Item item : items) {
-                comments = item.getAllComments();
+                boolean appeal = false;
+                boolean response = false;
+                Comment[] comments = item.getAllComments();
 
                 for (Comment comment : comments) {
                     String commentType = comment.getCommentType().getName();
 
                     if (Constants.COMMENT_TYPE_APPEAL.equals(commentType)) {
-                        appealCount++;
+                        appeal = true;
                     } else if (Constants.COMMENT_TYPE_APPEAL_RESPONSE.equals(commentType)) {
-                        responseCount++;
+                        response = true;
                     }
                 }
-            }
-
-            // if appeals count does not match response count, return false.
-            if (appealCount != responseCount) {
-                return false;
+                if (appeal && !response) {
+                    return false;
+                }
             }
         }
-
         return true;
     }
 }
