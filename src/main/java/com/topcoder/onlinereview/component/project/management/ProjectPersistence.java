@@ -2590,6 +2590,27 @@ public class ProjectPersistence {
     return projects;
   }
 
+  /**
+   * Gets projects ids.
+   *
+   * @return the id array
+   */
+  public long[] searchProjectsForIds(String query) {
+    try {
+      List<Map<String, Object>> result = executeSql(jdbcTemplate, query);
+      // create the PrizeType array.
+      long[] projectIds = new long[result.size()];
+
+      for (int i = 0; i < result.size(); ++i) {
+        Map<String, Object> row = result.get(i);
+        projectIds[i] = getLong(row, "project_id");
+      }
+      return projectIds;
+    } catch (Exception e) {
+      throw new PersistenceException("error occurs when trying to get ids.");
+    }
+  }
+
   private Project[] getProjectsList(String query, List<Object> args, ProjectStatus status)
       throws PersistenceException {
     // find projects in the table.
