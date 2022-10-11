@@ -52,6 +52,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -327,7 +328,7 @@ public abstract class AbstractPhaseHandler implements PhaseHandler {
      * But email should be send after updated success, so collect email message before update
      * and send it after update
      */
-    private Map<String, List<TCSEmailMessage>> emailToSend = new HashMap<>();
+    private Map<String, List<TCSEmailMessage>> emailToSend = new ConcurrentHashMap<>();
 
     /**
      * The log instance used by this handler.
@@ -555,6 +556,7 @@ public abstract class AbstractPhaseHandler implements PhaseHandler {
         }
 
         Map<Long, Map<String, String>> challengeIdCache = new HashMap<>();
+        emailToSend.remove(String.join(":", String.valueOf(phase.getId()), phase.getPhaseStatus().getName()));
         for (long userID : userEmailSchemes.keySet()) {
             EmailScheme emailScheme = userEmailSchemes.get(userID);
             EmailOptions emailOptions = bStart ? emailScheme.getStartEmailOptions() : emailScheme.getEndEmailOptions();
