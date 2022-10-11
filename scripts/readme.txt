@@ -1,9 +1,3 @@
-The last commit: f295e53
-0001-reskin-viewprojectdetail.patch
-
-I resubmit to update avatar and remove late deliverables button.
-
-
 # How to insert sql file to database
 
 - Setup the app: Run `docker-compose up -d`
@@ -94,8 +88,8 @@ Editing date by hand is cumbersome. We can just edit duration of how long the ph
 The random time handle by this code.
 
 ```
-random_hours = random.randint(0, 90) # Random time from now to 90 hours ago to cover various active phase
+random_hours = random.randint(0, 168) # Random time from now to 168 hours (7 days) ago to cover various active phase
 ```
 
-To make projects have various active phase, edit 90 to total duration of phases.
+To make projects have various active phase, edit 168 to total duration of phases.
 The registration and submission begin at same time. So for QA here, 48 + 24 = 72. Other track may have more than that.

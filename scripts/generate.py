@@ -22,11 +22,11 @@ project_details = {
 				'criteria': [[5, 'No'], [1, '30000413']] 
 				}, # Review
 			5: {
-				'duration': 12,
+				'duration': 24,
 				'criteria': [[5, 'No'], [4, 'No']]
 				}, # Appeal
 			6: {
-				'duration': 6,
+				'duration': 12,
 				'criteria': [[5, 'No']]
 				} # Appeal Response
 		}
@@ -44,17 +44,71 @@ project_details = {
 				'criteria': [[3, '0'], [5, 'No']]
 				}, # Submission
 			3: {
+				'duration': 12,
+				'criteria': [[1, '30000410']]
+				}, # Screening
+			4: {
 				'duration': 24,
+				'criteria': [[5, 'No'], [1, '30000411']]
+				}, # Review
+			11: {
+				'duration': 12,
+				'criteria': [[1, '30000720']]
+				}, # Approval
+		}
+	},
+	'design-2round': {
+		'name': 'Design 2 Round',
+		'project_category_id': 17, # Web Design
+		'project_phases': {
+			13: {
+				'duration': 0, # in hour
+				'criteria': [[3, '0'], [5, 'No']]
+				}, # Specification Submission
+			14: {
+				'duration': 1,
+				'criteria': [[1, '30000722'], [6, 3]]
+				}, # Specification Review
+			1: {
+				'duration': 48, # in hour
+				'criteria': [[2, '0'], [5, 'No']]
+				}, # Register
+			15: {
+				'duration': 48,
+				'criteria': [[3, '0'], [5, 'No']]
+				}, # Checkpoint Submission
+			16: {
+				'duration': 6,
+				'criteria': [[1, '30000416']]
+				}, # Checkpoint Screening
+			17: {
+				'duration': 24,
+				'criteria': [[1, '30000417'], [6, 3]]
+				}, # Checkpoint Review
+			2: {
+				'duration': 96,
+				'criteria': [[3, '0'], [5, 'No']]
+				}, # Submission
+			3: {
+				'duration': 12,
 				'criteria': [[1, '30000410']]
 				}, # Screening
 			4: {
 				'duration': 12,
-				'criteria': [[5, 'No'], [1, '30000411']]
-				},
+				'criteria': [[5, 'No'], [1, '30000411'], [6, 3]]
+				}, # Review
 			11: {
-				'duration': 6,
+				'duration': 12,
 				'criteria': [[1, '30000720']]
 				}, # Approval
+			9: {
+				'duration': 24,
+				'criteria': [[5, 'No']]
+				}, # Final Fix
+			10: {
+				'duration': 6,
+				'criteria': [[5, 'No']]
+				}, # Final Review
 		}
 	},
 	'qa': {
@@ -106,7 +160,7 @@ project_details = {
 				'criteria': [[3, '0'], [5, 'No']]
 				}, # Submission
 			18: {
-				'duration': 21,
+				'duration': 24,
 				'criteria': [[1, '30000419']]
 				}, # Iterative Review
 		}
@@ -124,7 +178,7 @@ project_details = {
 				'criteria': [[3, '0'], [5, 'No']]
 				}, # Submission
 			18: {
-				'duration': 21,
+				'duration': 24,
 				'criteria': [[1, '30000419']]
 				},
 		}
@@ -132,14 +186,14 @@ project_details = {
 }
 
 user_id = 132456
-user_name = 'user'
+user_name = 'dok'
 
 project_status_id = 1 	# Status: Active
 
 print("database tcs_catalog;")
 
 for x in range(total):
-	random_hours = random.randint(0, 90) # Random time from now to 90 hours ago to cover various active phase
+	random_hours = random.randint(0, 168) # Random time from now to 168 hours (7 days) ago to cover various active phase
 	real_now = datetime.now().replace(microsecond=0) # real time of now
 	current = real_now - timedelta(hours=random_hours) # time of project created
 	
@@ -193,16 +247,25 @@ for x in range(total):
 
 
 	print("--  Data for project_phase")
+	first_phase = True
 	for phase_type_id, v in project_phases.items():
 		duration_hours = v['duration']
 		delta = timedelta(hours=duration_hours)
 
-		if phase_type_id == 1 or phase_type_id == 2: # Registration & Submission
+		if first_phase:
 			start_time = current
-			end_time = current + delta
-		elif project_category_id == 38 or project_category_id == 40: # First2Finish Iterative Review
-			start_time = current + delta
-			end_time = start_time + delta + delta
+			end_time = current
+			first_phase = False
+
+		if phase_type_id == 1: # Registration
+			registration_time = end_time
+		
+		if phase_type_id == 2 or phase_type_id == 15: # Submission & Checkpoint Submission
+			start_time = registration_time
+			end_time = start_time + delta
+		elif phase_type_id == 18 and (project_category_id == 38 or project_category_id == 40): # First2Finish Iterative Review
+			start_time = registration_time + delta
+			end_time = start_time + delta
 		else:
 			start_time = end_time
 			end_time = start_time + delta
