@@ -8057,3 +8057,9 @@ INSERT INTO resource_info (resource_id, resource_info_type_id, value, create_use
 INSERT INTO resource_info (resource_id, resource_info_type_id, value, create_user, create_date, modify_user, modify_date)
 	VALUES ('2099', '2', 'dok', '132456', '2022-10-09 12:45:22', '132456', '2022-10-09 12:45:22');
 
+INSERT INTO upload (upload_id, project_id, project_phase_id, resource_id, upload_type_id, upload_status_id, parameter, create_user, create_date, modify_user, modify_date)
+VALUES ("1", "2000", "20001", "1", 1, 1, 'no_file.txt', "132456", '2022-10-13 14:00:10', "132456", '2022-10-13 14:00:10');
+INSERT INTO submission (submission_id, upload_id, submission_status_id, screening_score, initial_score, final_score, placement, submission_type_id, create_user, create_date, modify_user, modify_date)
+VALUES ("10000", "1", 1, NULL, NULL, NULL, NULL, "1", "132456", '2022-10-13 14:00:10', "132456", '2022-10-13 14:00:10');
+INSERT INTO resource_submission (resource_id, submission_id, create_user, create_date, modify_user, modify_date)
+VALUES ("1", "10000", "132456", '2022-10-13 14:00:10', "132456", '2022-10-13 14:00:10');
