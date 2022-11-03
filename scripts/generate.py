@@ -19,7 +19,7 @@ project_details = {
 				}, # Submission
 			4: {
 				'duration': 24,
-				'criteria': [[5, 'No'], [1, '30000413']] 
+				'criteria': [[5, 'No'], [1, '30000413']]
 				}, # Review
 			5: {
 				'duration': 24,
@@ -196,7 +196,7 @@ for x in range(total):
 	random_hours = random.randint(0, 168) # Random time from now to 168 hours (7 days) ago to cover various active phase
 	real_now = datetime.now().replace(microsecond=0) # real time of now
 	current = real_now - timedelta(hours=random_hours) # time of project created
-	
+
 	project_id = init_project_id + x
 
 	select_type = random.choice(list(project_details.values())) # choice track/catogery randomly
@@ -259,7 +259,7 @@ for x in range(total):
 
 		if phase_type_id == 1: # Registration
 			registration_time = end_time
-		
+
 		if phase_type_id == 2 or phase_type_id == 15: # Submission & Checkpoint Submission
 			start_time = registration_time
 			end_time = start_time + delta
@@ -275,7 +275,7 @@ for x in range(total):
 		if start_time <= real_now < end_time:
 			phase_status_id = 2 # Open
 		elif real_now >= end_time:
-			phase_status_id = 3 # Closed 
+			phase_status_id = 3 # Closed
 		else:
 			phase_status_id = 1 # Scheduled
 

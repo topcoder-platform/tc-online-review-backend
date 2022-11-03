@@ -2469,7 +2469,7 @@ INSERT INTO resource_info (resource_id, resource_info_type_id, value, create_use
 
 -- Data for project
 INSERT INTO project (project_id, project_status_id, project_category_id, create_user, create_date, modify_user, modify_date)
-	VALUES ('2029', '1', '17', '132456', '2022-10-04 14:45:22', '132456', '2022-10-04 14:45:22');
+	VALUES ('2029', '7', '17', '132456', '2022-10-04 14:45:22', '132456', '2022-10-04 14:45:22');
 -- Data for project_info
 INSERT INTO project_info (project_id, project_info_type_id, value, create_user, create_date, modify_user, modify_date)
 	VALUES ('2029', '3', '1', '132456', '2022-10-04 14:45:22', '132456', '2022-10-04 14:45:22');
@@ -2523,9 +2523,9 @@ INSERT INTO project_phase (project_phase_id, project_id, phase_type_id, phase_st
 INSERT INTO project_phase (project_phase_id, project_id, phase_type_id, phase_status_id, fixed_start_time, scheduled_start_time, scheduled_end_time, actual_start_time, actual_end_time, duration, create_user, create_date, modify_user, modify_date)
 	VALUES ('202911', '2029', '11', '3', '2022-10-09 15:45:22', '2022-10-09 15:45:22', '2022-10-10 03:45:22', NULL, NULL, '43200000.0', '132456', '2022-10-04 14:45:22', '132456', '2022-10-04 14:45:22');
 INSERT INTO project_phase (project_phase_id, project_id, phase_type_id, phase_status_id, fixed_start_time, scheduled_start_time, scheduled_end_time, actual_start_time, actual_end_time, duration, create_user, create_date, modify_user, modify_date)
-	VALUES ('20299', '2029', '9', '2', '2022-10-10 03:45:22', '2022-10-10 03:45:22', '2022-10-11 03:45:22', NULL, NULL, '86400000.0', '132456', '2022-10-04 14:45:22', '132456', '2022-10-04 14:45:22');
+	VALUES ('20299', '2029', '9', '3', '2022-10-10 03:45:22', '2022-10-10 03:45:22', '2022-10-11 03:45:22', NULL, NULL, '86400000.0', '132456', '2022-10-04 14:45:22', '132456', '2022-10-04 14:45:22');
 INSERT INTO project_phase (project_phase_id, project_id, phase_type_id, phase_status_id, fixed_start_time, scheduled_start_time, scheduled_end_time, actual_start_time, actual_end_time, duration, create_user, create_date, modify_user, modify_date)
-	VALUES ('202910', '2029', '10', '1', '2022-10-11 03:45:22', '2022-10-11 03:45:22', '2022-10-11 09:45:22', NULL, NULL, '21600000.0', '132456', '2022-10-04 14:45:22', '132456', '2022-10-04 14:45:22');
+	VALUES ('202910', '2029', '10', '3', '2022-10-11 03:45:22', '2022-10-11 03:45:22', '2022-10-11 09:45:22', NULL, NULL, '21600000.0', '132456', '2022-10-04 14:45:22', '132456', '2022-10-04 14:45:22');
 --  Data for phase_criteria
 INSERT INTO phase_criteria (project_phase_id, phase_criteria_type_id, parameter, create_user, create_date, modify_user, modify_date)
 	VALUES ('202913', '3', '0', '132456', '2022-10-04 14:45:22', '132456', '2022-10-04 14:45:22');
@@ -8061,8 +8061,6 @@ INSERT INTO upload (upload_id, project_id, project_phase_id, resource_id, upload
 VALUES ("1", "2000", "20001", "1", 1, 1, 'no_file.txt', "132456", '2022-10-13 14:00:10', "132456", '2022-10-13 14:00:10');
 INSERT INTO submission (submission_id, upload_id, submission_status_id, screening_score, initial_score, final_score, placement, submission_type_id, create_user, create_date, modify_user, modify_date)
 VALUES ("10000", "1", 1, NULL, NULL, NULL, NULL, "1", "132456", '2022-10-13 14:00:10', "132456", '2022-10-13 14:00:10');
-INSERT INTO resource_submission (resource_id, submission_id, create_user, create_date, modify_user, modify_date)
-VALUES ("1", "10000", "132456", '2022-10-13 14:00:10', "132456", '2022-10-13 14:00:10');
 
 INSERT INTO tcs_catalog:informix.prize (prize_id, project_id, place, prize_amount, prize_type_id, number_of_submissions, create_user, create_date, modify_user, modify_date) VALUES(1, 2099, 1, 50.0, 14, 1, 'dok', '2022-10-12 12:14:40.000', 'dok', '2022-10-12 12:14:40.000'); INSERT INTO tcs_catalog:informix.prize (prize_id, project_id, place, prize_amount, prize_type_id, number_of_submissions, create_user, create_date, modify_user, modify_date) VALUES(2, 2099, 1, 1000.0, 15, 1, 'dok', '2022-10-12 12:14:40.000', 'dok', '2022-10-12 12:14:40.000'); INSERT INTO tcs_catalog:informix.prize (prize_id, project_id, place, prize_amount, prize_type_id, number_of_submissions, create_user, create_date, modify_user, modify_date) VALUES(3, 2099, 2, 500.0, 15, 1, 'dok', '2022-10-13 12:14:40.000', 'dok', '2022-10-13 12:14:40.000'); INSERT INTO tcs_catalog:informix.prize (prize_id, project_id, place, prize_amount, prize_type_id, number_of_submissions, create_user, create_date, modify_user, modify_date) VALUES(4, 2099, 3, 250.0, 15, 1, 'dok', '2022-10-13 12:14:40.000', 'dok', '2022-10-13 12:14:40.000'); INSERT INTO tcs_catalog:informix.prize (prize_id, project_id, place, prize_amount, prize_type_id, number_of_submissions, create_user, create_date, modify_user, modify_date) VALUES(5, 2099, 1, 50.0, 14, 1, 'dok', '2022-10-13 12:14:40.000', 'dok', '2022-10-13 12:14:40.000'); INSERT INTO tcs_catalog:informix.prize (prize_id, project_id, place, prize_amount, prize_type_id, number_of_submissions, create_user, create_date, modify_user, modify_date) VALUES(6, 2099, 1, 50.0, 14, 1, 'dok', '2022-10-13 12:14:40.000', 'dok', '2022-10-13 12:14:40.000'); INSERT INTO tcs_catalog:informix.prize (prize_id, project_id, place, prize_amount, prize_type_id, number_of_submissions, create_user, create_date, modify_user, modify_date) VALUES(7, 2099, 1, 50.0, 14, 1, 'dok', '2022-10-13 12:14:40.000', 'dok', '2022-10-13 12:14:40.000'); INSERT INTO tcs_catalog:informix.prize (prize_id, project_id, place, prize_amount, prize_type_id, number_of_submissions, create_user, create_date, modify_user, modify_date) VALUES(8, 2099, 1, 50.0, 14, 1, 'dok', '2022-10-13 12:14:40.000', 'dok', '2022-10-13 12:14:40.000');
 
@@ -8088,18 +8086,19 @@ INSERT INTO resource_info (resource_id, resource_info_type_id, value, create_use
 VALUES ('20291', '1', '124764', '124764', '2022-10-16 08:03:51', '124764', '2022-10-16 08:03:51');
 INSERT INTO resource_info (resource_id, resource_info_type_id, value, create_user, create_date, modify_user, modify_date)
 VALUES ('20291', '2', 'Hung', '124764', '2022-10-16 08:03:51', '124764', '2022-10-16 08:03:51');
+-- Contest Submission submission_type_id=1
 INSERT INTO upload (upload_id, project_id, project_phase_id, resource_id, upload_type_id, upload_status_id, parameter, create_user, create_date, modify_user, modify_date)
 VALUES ("20291", "2029", "20292", "20291", 1, 1, 'no_file.txt', "124764", '2022-10-16 08:03:51', "124764", '2022-10-16 08:03:51');
+-- Final Fix
+INSERT INTO upload (upload_id, project_id, project_phase_id, resource_id, upload_type_id, upload_status_id, parameter, create_user, create_date, modify_user, modify_date)
+VALUES ("20306", "2029", "20299", "20291", 3, 1, 'no_file.txt', "124764", '2022-10-16 08:03:51', "124764", '2022-10-16 08:03:51');
 INSERT INTO submission (submission_id, upload_id, submission_status_id, screening_score, initial_score, final_score, placement, submission_type_id, create_user, create_date, modify_user, modify_date)
-VALUES ("20291", "20291", 1, NULL, NULL, 100, 1, "1", "124764", '2022-10-16 08:03:51', "124764", '2022-10-16 08:03:51');
-INSERT INTO resource_submission (resource_id, submission_id, create_user, create_date, modify_user, modify_date)
-VALUES ("20291", "20291", "124764", '2022-10-16 08:03:51', "124764", '2022-10-16 08:03:51');
+VALUES ("20291", "20291", 1, 100, 100, 100, 1, "1", "124764", '2022-10-10 04:12:10', "124764", '2022-10-10 04:12:10');
+-- Checkpoint Submission submission_type_id = 3
 INSERT INTO upload (upload_id, project_id, project_phase_id, resource_id, upload_type_id, upload_status_id, parameter, create_user, create_date, modify_user, modify_date)
 VALUES ("20292", "2029", "202915", "20291", 1, 1, 'no_file.txt', "124764", '2022-10-16 08:03:51', "124764", '2022-10-16 08:03:51');
 INSERT INTO submission (submission_id, upload_id, submission_status_id, screening_score, initial_score, final_score, placement, submission_type_id, create_user, create_date, modify_user, modify_date)
-VALUES ("20292", "20292", 1, NULL, NULL, 100, 1, "3", "124764", '2022-10-16 08:03:51', "124764", '2022-10-16 08:03:51');
-INSERT INTO resource_submission (resource_id, submission_id, create_user, create_date, modify_user, modify_date)
-VALUES ("20291", "20292", "124764", '2022-10-16 08:03:51', "124764", '2022-10-16 08:03:51');
+VALUES ("20292", "20292", 1, 100, 100, 100, 1, "3", "124764", '2022-10-16 08:03:51', "124764", '2022-10-16 08:03:51');
 INSERT INTO resource (resource_id, resource_role_id, project_id, project_phase_id, user_id, create_user, create_date, modify_user, modify_date)
 VALUES ('20292', '1', '2029', NULL, 124772, '124772', '2022-10-16 08:03:51', '124772', '2022-10-16 08:03:51');
 INSERT INTO resource_info (resource_id, resource_info_type_id, value, create_user, create_date, modify_user, modify_date)
@@ -8110,14 +8109,10 @@ INSERT INTO upload (upload_id, project_id, project_phase_id, resource_id, upload
 VALUES ("20293", "2029", "20292", "20292", 1, 1, 'no_file.txt', "124772", '2022-10-16 08:03:51', "124772", '2022-10-16 08:03:51');
 INSERT INTO submission (submission_id, upload_id, submission_status_id, screening_score, initial_score, final_score, placement, submission_type_id, create_user, create_date, modify_user, modify_date)
 VALUES ("20293", "20293", 1, NULL, NULL, 100, 2, "1", "124772", '2022-10-16 08:03:51', "124772", '2022-10-16 08:03:51');
-INSERT INTO resource_submission (resource_id, submission_id, create_user, create_date, modify_user, modify_date)
-VALUES ("20292", "20293", "124772", '2022-10-16 08:03:51', "124772", '2022-10-16 08:03:51');
 INSERT INTO upload (upload_id, project_id, project_phase_id, resource_id, upload_type_id, upload_status_id, parameter, create_user, create_date, modify_user, modify_date)
 VALUES ("20294", "2029", "202915", "20292", 1, 1, 'no_file.txt', "124772", '2022-10-16 08:03:51', "124772", '2022-10-16 08:03:51');
 INSERT INTO submission (submission_id, upload_id, submission_status_id, screening_score, initial_score, final_score, placement, submission_type_id, create_user, create_date, modify_user, modify_date)
 VALUES ("20294", "20294", 1, NULL, NULL, 100, 2, "3", "124772", '2022-10-16 08:03:51', "124772", '2022-10-16 08:03:51');
-INSERT INTO resource_submission (resource_id, submission_id, create_user, create_date, modify_user, modify_date)
-VALUES ("20292", "20294", "124772", '2022-10-16 08:03:51', "124772", '2022-10-16 08:03:51');
 INSERT INTO resource (resource_id, resource_role_id, project_id, project_phase_id, user_id, create_user, create_date, modify_user, modify_date)
 VALUES ('20293', '1', '2029', NULL, 124834, '124834', '2022-10-16 08:03:51', '124834', '2022-10-16 08:03:51');
 INSERT INTO resource_info (resource_id, resource_info_type_id, value, create_user, create_date, modify_user, modify_date)
@@ -8128,14 +8123,10 @@ INSERT INTO upload (upload_id, project_id, project_phase_id, resource_id, upload
 VALUES ("20295", "2029", "20292", "20293", 1, 1, 'no_file.txt', "124834", '2022-10-16 08:03:51', "124834", '2022-10-16 08:03:51');
 INSERT INTO submission (submission_id, upload_id, submission_status_id, screening_score, initial_score, final_score, placement, submission_type_id, create_user, create_date, modify_user, modify_date)
 VALUES ("20295", "20295", 1, NULL, NULL, 100, 3, "1", "124834", '2022-10-16 08:03:51', "124834", '2022-10-16 08:03:51');
-INSERT INTO resource_submission (resource_id, submission_id, create_user, create_date, modify_user, modify_date)
-VALUES ("20293", "20295", "124834", '2022-10-16 08:03:51', "124834", '2022-10-16 08:03:51');
 INSERT INTO upload (upload_id, project_id, project_phase_id, resource_id, upload_type_id, upload_status_id, parameter, create_user, create_date, modify_user, modify_date)
 VALUES ("20296", "2029", "202915", "20293", 1, 1, 'no_file.txt', "124834", '2022-10-16 08:03:51', "124834", '2022-10-16 08:03:51');
 INSERT INTO submission (submission_id, upload_id, submission_status_id, screening_score, initial_score, final_score, placement, submission_type_id, create_user, create_date, modify_user, modify_date)
 VALUES ("20296", "20296", 1, NULL, NULL, 100, 3, "3", "124834", '2022-10-16 08:03:51', "124834", '2022-10-16 08:03:51');
-INSERT INTO resource_submission (resource_id, submission_id, create_user, create_date, modify_user, modify_date)
-VALUES ("20293", "20296", "124834", '2022-10-16 08:03:51', "124834", '2022-10-16 08:03:51');
 INSERT INTO resource (resource_id, resource_role_id, project_id, project_phase_id, user_id, create_user, create_date, modify_user, modify_date)
 VALUES ('20294', '1', '2029', NULL, 124836, '124836', '2022-10-16 08:03:51', '124836', '2022-10-16 08:03:51');
 INSERT INTO resource_info (resource_id, resource_info_type_id, value, create_user, create_date, modify_user, modify_date)
@@ -8146,14 +8137,10 @@ INSERT INTO upload (upload_id, project_id, project_phase_id, resource_id, upload
 VALUES ("20297", "2029", "20292", "20294", 1, 1, 'no_file.txt', "124836", '2022-10-16 08:03:51', "124836", '2022-10-16 08:03:51');
 INSERT INTO submission (submission_id, upload_id, submission_status_id, screening_score, initial_score, final_score, placement, submission_type_id, create_user, create_date, modify_user, modify_date)
 VALUES ("20297", "20297", 1, NULL, NULL, 90, 4, "1", "124836", '2022-10-16 08:03:51', "124836", '2022-10-16 08:03:51');
-INSERT INTO resource_submission (resource_id, submission_id, create_user, create_date, modify_user, modify_date)
-VALUES ("20294", "20297", "124836", '2022-10-16 08:03:51', "124836", '2022-10-16 08:03:51');
 INSERT INTO upload (upload_id, project_id, project_phase_id, resource_id, upload_type_id, upload_status_id, parameter, create_user, create_date, modify_user, modify_date)
 VALUES ("20298", "2029", "202915", "20294", 1, 1, 'no_file.txt', "124836", '2022-10-16 08:03:51', "124836", '2022-10-16 08:03:51');
 INSERT INTO submission (submission_id, upload_id, submission_status_id, screening_score, initial_score, final_score, placement, submission_type_id, create_user, create_date, modify_user, modify_date)
 VALUES ("20298", "20298", 1, NULL, NULL, 90, 4, "3", "124836", '2022-10-16 08:03:51', "124836", '2022-10-16 08:03:51');
-INSERT INTO resource_submission (resource_id, submission_id, create_user, create_date, modify_user, modify_date)
-VALUES ("20294", "20298", "124836", '2022-10-16 08:03:51', "124836", '2022-10-16 08:03:51');
 INSERT INTO resource (resource_id, resource_role_id, project_id, project_phase_id, user_id, create_user, create_date, modify_user, modify_date)
 VALUES ('20295', '1', '2029', NULL, 124852, '124852', '2022-10-16 08:03:51', '124852', '2022-10-16 08:03:51');
 INSERT INTO resource_info (resource_id, resource_info_type_id, value, create_user, create_date, modify_user, modify_date)
@@ -8164,14 +8151,10 @@ INSERT INTO upload (upload_id, project_id, project_phase_id, resource_id, upload
 VALUES ("20299", "2029", "20292", "20295", 1, 1, 'no_file.txt', "124852", '2022-10-16 08:03:51', "124852", '2022-10-16 08:03:51');
 INSERT INTO submission (submission_id, upload_id, submission_status_id, screening_score, initial_score, final_score, placement, submission_type_id, create_user, create_date, modify_user, modify_date)
 VALUES ("20299", "20299", 1, NULL, NULL, 80, 5, "1", "124852", '2022-10-16 08:03:51', "124852", '2022-10-16 08:03:51');
-INSERT INTO resource_submission (resource_id, submission_id, create_user, create_date, modify_user, modify_date)
-VALUES ("20295", "20299", "124852", '2022-10-16 08:03:51', "124852", '2022-10-16 08:03:51');
 INSERT INTO upload (upload_id, project_id, project_phase_id, resource_id, upload_type_id, upload_status_id, parameter, create_user, create_date, modify_user, modify_date)
 VALUES ("20300", "2029", "202915", "20295", 1, 1, 'no_file.txt', "124852", '2022-10-16 08:03:51', "124852", '2022-10-16 08:03:51');
 INSERT INTO submission (submission_id, upload_id, submission_status_id, screening_score, initial_score, final_score, placement, submission_type_id, create_user, create_date, modify_user, modify_date)
 VALUES ("20300", "20300", 1, NULL, NULL, 80, 5, "3", "124852", '2022-10-16 08:03:51', "124852", '2022-10-16 08:03:51');
-INSERT INTO resource_submission (resource_id, submission_id, create_user, create_date, modify_user, modify_date)
-VALUES ("20295", "20300", "124852", '2022-10-16 08:03:51', "124852", '2022-10-16 08:03:51');
 INSERT INTO resource (resource_id, resource_role_id, project_id, project_phase_id, user_id, create_user, create_date, modify_user, modify_date)
 VALUES ('20296', '1', '2029', NULL, 124856, '124856', '2022-10-16 08:03:51', '124856', '2022-10-16 08:03:51');
 INSERT INTO resource_info (resource_id, resource_info_type_id, value, create_user, create_date, modify_user, modify_date)
@@ -8182,14 +8165,10 @@ INSERT INTO upload (upload_id, project_id, project_phase_id, resource_id, upload
 VALUES ("20301", "2029", "20292", "20296", 1, 1, 'no_file.txt', "124856", '2022-10-16 08:03:51', "124856", '2022-10-16 08:03:51');
 INSERT INTO submission (submission_id, upload_id, submission_status_id, screening_score, initial_score, final_score, placement, submission_type_id, create_user, create_date, modify_user, modify_date)
 VALUES ("20301", "20301", 1, NULL, NULL, 80, 6, "1", "124856", '2022-10-16 08:03:51', "124856", '2022-10-16 08:03:51');
-INSERT INTO resource_submission (resource_id, submission_id, create_user, create_date, modify_user, modify_date)
-VALUES ("20296", "20301", "124856", '2022-10-16 08:03:51', "124856", '2022-10-16 08:03:51');
 INSERT INTO upload (upload_id, project_id, project_phase_id, resource_id, upload_type_id, upload_status_id, parameter, create_user, create_date, modify_user, modify_date)
 VALUES ("20302", "2029", "202915", "20296", 1, 1, 'no_file.txt', "124856", '2022-10-16 08:03:51', "124856", '2022-10-16 08:03:51');
 INSERT INTO submission (submission_id, upload_id, submission_status_id, screening_score, initial_score, final_score, placement, submission_type_id, create_user, create_date, modify_user, modify_date)
 VALUES ("20302", "20302", 1, NULL, NULL, 80, 6, "3", "124856", '2022-10-16 08:03:51', "124856", '2022-10-16 08:03:51');
-INSERT INTO resource_submission (resource_id, submission_id, create_user, create_date, modify_user, modify_date)
-VALUES ("20296", "20302", "124856", '2022-10-16 08:03:51', "124856", '2022-10-16 08:03:51');
 INSERT INTO resource (resource_id, resource_role_id, project_id, project_phase_id, user_id, create_user, create_date, modify_user, modify_date)
 VALUES ('20297', '1', '2029', NULL, 124916, '124916', '2022-10-16 08:03:51', '124916', '2022-10-16 08:03:51');
 INSERT INTO resource_info (resource_id, resource_info_type_id, value, create_user, create_date, modify_user, modify_date)
@@ -8200,11 +8179,162 @@ INSERT INTO upload (upload_id, project_id, project_phase_id, resource_id, upload
 VALUES ("20303", "2029", "20292", "20297", 1, 1, 'no_file.txt', "124916", '2022-10-16 08:03:51', "124916", '2022-10-16 08:03:51');
 INSERT INTO submission (submission_id, upload_id, submission_status_id, screening_score, initial_score, final_score, placement, submission_type_id, create_user, create_date, modify_user, modify_date)
 VALUES ("20303", "20303", 3, NULL, NULL, 60, 7, "1", "124916", '2022-10-16 08:03:51', "124916", '2022-10-16 08:03:51');
-INSERT INTO resource_submission (resource_id, submission_id, create_user, create_date, modify_user, modify_date)
-VALUES ("20297", "20303", "124916", '2022-10-16 08:03:51', "124916", '2022-10-16 08:03:51');
 INSERT INTO upload (upload_id, project_id, project_phase_id, resource_id, upload_type_id, upload_status_id, parameter, create_user, create_date, modify_user, modify_date)
 VALUES ("20304", "2029", "202915", "20297", 1, 1, 'no_file.txt', "124916", '2022-10-16 08:03:51', "124916", '2022-10-16 08:03:51');
 INSERT INTO submission (submission_id, upload_id, submission_status_id, screening_score, initial_score, final_score, placement, submission_type_id, create_user, create_date, modify_user, modify_date)
 VALUES ("20304", "20304", 3, NULL, NULL, 60, 7, "3", "124916", '2022-10-16 08:03:51', "124916", '2022-10-16 08:03:51');
-INSERT INTO resource_submission (resource_id, submission_id, create_user, create_date, modify_user, modify_date)
-VALUES ("20297", "20304", "124916", '2022-10-16 08:03:51', "124916", '2022-10-16 08:03:51');
+-- Reviewer
+INSERT INTO resource (resource_id, resource_role_id, project_id, project_phase_id, user_id, create_user, create_date, modify_user, modify_date)
+VALUES ('20298', '4', '2029', 20294, 20, '20', '2022-10-16 08:03:51', '20', '2022-10-16 08:03:51');
+INSERT INTO resource_info (resource_id, resource_info_type_id, value, create_user, create_date, modify_user, modify_date)
+VALUES ('20298', '1', '20', '20', '2022-10-16 08:03:51', '20', '2022-10-16 08:03:51');
+INSERT INTO resource_info (resource_id, resource_info_type_id, value, create_user, create_date, modify_user, modify_date)
+VALUES ('20298', '2', 'dok_tester', '20', '2022-10-16 08:03:51', '20', '2022-10-16 08:03:51');
+-- Specification Submitter
+INSERT INTO resource (resource_id, resource_role_id, project_id, project_phase_id, user_id, create_user, create_date, modify_user, modify_date)
+VALUES (20306, 17, 2029, 202913, 124764, '124857', '2022-10-16 08:03:51.0', '124857', '2022-10-16 08:03:51.0');
+INSERT INTO resource_info (resource_id,  resource_info_type_id, value, create_user, create_date, modify_user, modify_date)
+VALUES ('20306', '1', '124764', '124764', '2022-10-16 08:03:51', '124764', '2022-10-16 08:03:51');
+INSERT INTO resource_info (resource_id, resource_info_type_id, value, create_user, create_date, modify_user, modify_date)
+VALUES ('20306', '2', 'hung', '124764', '2022-10-16 08:03:51', '124764', '2022-10-16 08:03:51');
+--Specification Submission
+INSERT INTO upload (upload_id, project_id, project_phase_id, resource_id, upload_type_id, upload_status_id, parameter, create_user, create_date, modify_user, modify_date)
+VALUES ("20305", "2029", "202913", "20306", 1, 1, 'no_file.txt', "124764", '2022-10-04 04:12:10', "124764", '2022-10-04 04:12:10');
+INSERT INTO submission (submission_id, upload_id, submission_status_id, screening_score, initial_score, final_score, placement, submission_type_id, create_user, create_date, modify_user, modify_date)
+VALUES ("20305", "20305", 1, NULL, 100.00, 100.00, 1, "2", "124764", '2022-10-16 08:03:51', "124764", '2022-10-16 08:03:51');
+-- Specification Reviewer
+INSERT INTO resource (resource_id, resource_role_id, project_id, project_phase_id, user_id, create_user, create_date, modify_user, modify_date)
+VALUES (20307, 18, 2029, 202914, 124857, '124857', '2022-10-16 08:03:51.0', '124857', '2022-10-16 08:03:51.0');
+INSERT INTO resource_info (resource_id,  resource_info_type_id, value, create_user, create_date, modify_user, modify_date)
+VALUES ('20307', '1', '124857', '124857', '2022-10-16 08:03:51', '124857', '2022-10-16 08:03:51');
+INSERT INTO resource_info (resource_id, resource_info_type_id, value, create_user, create_date, modify_user, modify_date)
+VALUES ('20307', '2', 'cartajs', '124857', '2022-10-16 08:03:51', '124857', '2022-10-16 08:03:51');
+-- Primary Screener resource_role_id = 2
+INSERT INTO resource (resource_id, resource_role_id, project_id, project_phase_id, user_id, create_user, create_date, modify_user, modify_date)
+VALUES ('20300', '2', '2029', 20293, 124766, '124766', '2022-10-16 08:03:51', '124766', '2022-10-16 08:03:51');
+INSERT INTO resource_info (resource_id, resource_info_type_id, value, create_user, create_date, modify_user, modify_date)
+VALUES ('20300', '1', '124766', '124766', '2022-10-16 08:03:51', '124766', '2022-10-16 08:03:51');
+INSERT INTO resource_info (resource_id, resource_info_type_id, value, create_user, create_date, modify_user, modify_date)
+VALUES ('20300', '2', 'twight', '124766', '2022-10-16 08:03:51', '124766', '2022-10-16 08:03:51');
+-- Screener resource_role_id = 3
+INSERT INTO resource (resource_id, resource_role_id, project_id, project_phase_id, user_id, create_user, create_date, modify_user, modify_date)
+VALUES ('20301', '3', '2029', NULL, 124766, '124766', '2022-10-16 08:03:51', '124766', '2022-10-16 08:03:51');
+INSERT INTO resource_info (resource_id, resource_info_type_id, value, create_user, create_date, modify_user, modify_date)
+VALUES ('20301', '1', '124766', '124766', '2022-10-16 08:03:51', '124766', '2022-10-16 08:03:51');
+INSERT INTO resource_info (resource_id, resource_info_type_id, value, create_user, create_date, modify_user, modify_date)
+VALUES ('20301', '2', 'twight', '124766', '2022-10-16 08:03:51', '124766', '2022-10-16 08:03:51');
+-- Approver resource_role_id = 10
+INSERT INTO resource (resource_id, resource_role_id, project_id, project_phase_id, user_id, create_user, create_date, modify_user, modify_date)
+VALUES ('20302', '10', '2029', 202911, 124857, '124857', '2022-10-16 08:03:51', '124857', '2022-10-16 08:03:51');
+INSERT INTO resource_info (resource_id, resource_info_type_id, value, create_user, create_date, modify_user, modify_date)
+VALUES ('20302', '1', '124857', '124857', '2022-10-16 08:03:51', '124857', '2022-10-16 08:03:51');
+INSERT INTO resource_info (resource_id, resource_info_type_id, value, create_user, create_date, modify_user, modify_date)
+VALUES ('20302', '2', 'cartajs', '124857', '2022-10-16 08:03:51', '124857', '2022-10-16 08:03:51');
+-- Checkpoint Screener resource_role_id = 19
+INSERT INTO resource (resource_id, resource_role_id, project_id, project_phase_id, user_id, create_user, create_date, modify_user, modify_date)
+VALUES ('20303', '19', '2029', 202916, 124766, '124766', '2022-10-16 08:03:51', '124766', '2022-10-16 08:03:51');
+INSERT INTO resource_info (resource_id, resource_info_type_id, value, create_user, create_date, modify_user, modify_date)
+VALUES ('20303', '1', '124766', '124766', '2022-10-16 08:03:51', '124766', '2022-10-16 08:03:51');
+INSERT INTO resource_info (resource_id, resource_info_type_id, value, create_user, create_date, modify_user, modify_date)
+VALUES ('20303', '2', 'twight', '124766', '2022-10-16 08:03:51', '124766', '2022-10-16 08:03:51');
+-- Checkpoint Reviewer resource_role_id = 20
+INSERT INTO resource (resource_id, resource_role_id, project_id, project_phase_id, user_id, create_user, create_date, modify_user, modify_date)
+VALUES ('20304', '20', '2029', 202917, 124766, '124766', '2022-10-16 08:03:51', '124766', '2022-10-16 08:03:51');
+INSERT INTO resource_info (resource_id, resource_info_type_id, value, create_user, create_date, modify_user, modify_date)
+VALUES ('20304', '1', '124766', '124766', '2022-10-16 08:03:51', '124766', '2022-10-16 08:03:51');
+INSERT INTO resource_info (resource_id, resource_info_type_id, value, create_user, create_date, modify_user, modify_date)
+VALUES ('20304', '2', 'twight', '124766', '2022-10-16 08:03:51', '124766', '2022-10-16 08:03:51');
+-- Final Reviewer resource_role_id = 9
+INSERT INTO resource (resource_id, resource_role_id, project_id, project_phase_id, user_id, create_user, create_date, modify_user, modify_date)
+VALUES ('20305', '9', '2029', 202910, 124857, '124857', '2022-10-16 08:03:51', '124857', '2022-10-16 08:03:51');
+INSERT INTO resource_info (resource_id, resource_info_type_id, value, create_user, create_date, modify_user, modify_date)
+VALUES ('20305', '1', '124857', '124857', '2022-10-16 08:03:51', '124857', '2022-10-16 08:03:51');
+INSERT INTO resource_info (resource_id, resource_info_type_id, value, create_user, create_date, modify_user, modify_date)
+VALUES ('20305', '2', 'cartajs', '124857', '2022-10-16 08:03:51', '124857', '2022-10-16 08:03:51');
+-- Winner
+INSERT INTO project_info (project_id,project_info_type_id,value,create_user,create_date,modify_user,modify_date)
+VALUES (2029,23,'124764','132456','2022-10-04 14:45:22.0','132456','2022-10-04 14:45:22.0');
+-- Registration Date
+INSERT INTO resource_info (resource_id, resource_info_type_id, value, create_user, create_date, modify_user, modify_date)
+VALUES ('20291', '6', '10.04.2022 4:44 PM PST', '124766', '2022-10-16 08:03:51.0', '124766', '2022-10-16 08:03:51.0');
+INSERT INTO resource_info (resource_id, resource_info_type_id, value, create_user, create_date, modify_user, modify_date)
+VALUES ('20292', '6', '10.04.2022 5:44 PM PST', '124772', '2022-10-01 08:03:51.0', '124766', '2022-10-01 08:03:51.0');
+INSERT INTO resource_info (resource_id, resource_info_type_id, value, create_user, create_date, modify_user, modify_date)
+VALUES ('20293', '6', '10.04.2022 4:44 PM PST', '124766', '2022-10-16 08:03:51.0', '124766', '2022-10-16 08:03:51.0');
+INSERT INTO resource_info (resource_id, resource_info_type_id, value, create_user, create_date, modify_user, modify_date)
+VALUES ('20294', '6', '10.04.2022 6:44 PM PST', '124772', '2022-10-01 08:03:51.0', '124766', '2022-10-01 08:03:51.0');
+INSERT INTO resource_info (resource_id, resource_info_type_id, value, create_user, create_date, modify_user, modify_date)
+VALUES ('20295', '6', '10.05.2022 7:44 PM PST', '124772', '2022-10-01 08:03:51.0', '124766', '2022-10-01 08:03:51.0');
+INSERT INTO resource_info (resource_id, resource_info_type_id, value, create_user, create_date, modify_user, modify_date)
+VALUES ('20296', '6', '10.05.2022 7:54 PM PST', '124766', '2022-10-16 08:03:51.0', '124766', '2022-10-16 08:03:51.0');
+INSERT INTO resource_info (resource_id, resource_info_type_id, value, create_user, create_date, modify_user, modify_date)
+VALUES ('20297', '6', '10.04.2022 8:24 PM PST', '124772', '2022-10-01 08:03:51.0', '124766', '2022-10-01 08:03:51.0');
+-- Checkpoint Screening
+INSERT INTO review (review_id, resource_id, submission_id, project_phase_id, scorecard_id, committed, score, initial_score, create_user, create_date, modify_user, modify_date)
+VALUES ('30001', '20303', '20292', '202916', '30000416', '1', '100.0', '100.00', '124766', '2022-10-06 14:00:10.0', '124766', '2022-10-06 14:00:10.0');
+INSERT INTO review (review_id, resource_id, submission_id, project_phase_id, scorecard_id, committed, score, initial_score, create_user, create_date, modify_user, modify_date)
+VALUES ('30002', '20303', '20294', '202916', '30000416', '1', '100.0', '100.00', '124766', '2022-10-06 14:00:10.0', '124766', '2022-10-06 14:00:10.0');
+INSERT INTO review (review_id, resource_id, submission_id, project_phase_id, scorecard_id, committed, score, initial_score, create_user, create_date, modify_user, modify_date)
+VALUES ('30003', '20303', '20296', '202916', '30000416', '1', '100.0', '100.00', '124766', '2022-10-06 14:00:10.0', '124766', '2022-10-06 14:00:10.0');
+INSERT INTO review (review_id, resource_id, submission_id, project_phase_id, scorecard_id, committed, score, initial_score, create_user, create_date, modify_user, modify_date)
+VALUES ('30004', '20303', '20298', '202916', '30000416', '1', '90.0', '90.00', '124766', '2022-10-06 14:00:10.0', '124766', '2022-10-06 14:00:10.0');
+INSERT INTO review (review_id, resource_id, submission_id, project_phase_id, scorecard_id, committed, score, initial_score, create_user, create_date, modify_user, modify_date)
+VALUES ('30005', '20303', '20300', '202916', '30000416', '1', '90.0', '90.00', '124766', '2022-10-06 14:00:10.0', '124766', '2022-10-06 14:00:10.0');
+INSERT INTO review (review_id, resource_id, submission_id, project_phase_id, scorecard_id, committed, score, initial_score, create_user, create_date, modify_user, modify_date)
+VALUES ('30006', '20303', '20302', '202916', '30000416', '1', '80.0', '80.00', '124766', '2022-10-06 14:00:10.0', '124766', '2022-10-06 14:00:10.0');
+INSERT INTO review (review_id, resource_id, submission_id, project_phase_id, scorecard_id, committed, score, initial_score, create_user, create_date, modify_user, modify_date)
+VALUES ('30007', '20303', '20304', '202916', '30000416', '1', '80.0', '80.00', '124766', '2022-10-06 14:00:10.0', '124766', '2022-10-06 14:00:10.0');
+-- Checkpoint Review
+INSERT INTO review (review_id, resource_id, submission_id, project_phase_id, scorecard_id, committed, score, initial_score, create_user, create_date, modify_user, modify_date)
+VALUES ('30008', '20304', '20292', '202917', '30000417', '1', '100.0', '100.00', '124766', '2022-10-06 14:00:10.0', '124766', '2022-10-06 14:00:10.0');
+INSERT INTO review (review_id, resource_id, submission_id, project_phase_id, scorecard_id, committed, score, initial_score, create_user, create_date, modify_user, modify_date)
+VALUES ('30009', '20304', '20294', '202917', '30000417', '1', '100.0', '100.00', '124766', '2022-10-06 14:00:10.0', '124766', '2022-10-06 14:00:10.0');
+INSERT INTO review (review_id, resource_id, submission_id, project_phase_id, scorecard_id, committed, score, initial_score, create_user, create_date, modify_user, modify_date)
+VALUES ('30010', '20304', '20296', '202917', '30000417', '1', '100.0', '100.00', '124766', '2022-10-06 14:00:10.0', '124766', '2022-10-06 14:00:10.0');
+INSERT INTO review (review_id, resource_id, submission_id, project_phase_id, scorecard_id, committed, score, initial_score, create_user, create_date, modify_user, modify_date)
+VALUES ('30011', '20304', '20298', '202917', '30000417', '1', '90.0', '90.00', '124766', '2022-10-06 14:00:10.0', '124766', '2022-10-06 14:00:10.0');
+INSERT INTO review (review_id, resource_id, submission_id, project_phase_id, scorecard_id, committed, score, initial_score, create_user, create_date, modify_user, modify_date)
+VALUES ('30012', '20304', '20300', '202917', '30000417', '1', '90.0', '90.00', '124766', '2022-10-06 14:00:10.0', '124766', '2022-10-06 14:00:10.0');
+INSERT INTO review (review_id, resource_id, submission_id, project_phase_id, scorecard_id, committed, score, initial_score, create_user, create_date, modify_user, modify_date)
+VALUES ('30013', '20304', '20302', '202917', '30000417', '1', '80.0', '80.00', '124766', '2022-10-06 14:00:10.0', '124766', '2022-10-06 14:00:10.0');
+INSERT INTO review (review_id, resource_id, submission_id, project_phase_id, scorecard_id, committed, score, initial_score, create_user, create_date, modify_user, modify_date)
+VALUES ('30014', '20304', '20304', '202917', '30000417', '1', '80.0', '80.00', '124766', '2022-10-06 14:00:10.0', '124766', '2022-10-06 14:00:10.0');
+-- Screening
+INSERT INTO review (review_id, resource_id, submission_id, project_phase_id, scorecard_id, committed, score, initial_score, create_user, create_date, modify_user, modify_date)
+VALUES ('30015', '20300', '20291', '20293', '30000412', '1', '100.0', '100.00', '124766', '2022-10-06 14:00:10.0', '124766', '2022-10-06 14:00:10.0');
+INSERT INTO review (review_id, resource_id, submission_id, project_phase_id, scorecard_id, committed, score, initial_score, create_user, create_date, modify_user, modify_date)
+VALUES ('30016', '20300', '20293', '20293', '30000412', '1', '100.0', '100.00', '124766', '2022-10-06 14:00:10.0', '124766', '2022-10-06 14:00:10.0');
+INSERT INTO review (review_id, resource_id, submission_id, project_phase_id, scorecard_id, committed, score, initial_score, create_user, create_date, modify_user, modify_date)
+VALUES ('30017', '20300', '20295', '20293', '30000412', '1', '100.0', '100.00', '124766', '2022-10-06 14:00:10.0', '124766', '2022-10-06 14:00:10.0');
+INSERT INTO review (review_id, resource_id, submission_id, project_phase_id, scorecard_id, committed, score, initial_score, create_user, create_date, modify_user, modify_date)
+VALUES ('30018', '20300', '20297', '20293', '30000412', '1', '90.0', '90.00', '124766', '2022-10-06 14:00:10.0', '124766', '2022-10-06 14:00:10.0');
+INSERT INTO review (review_id, resource_id, submission_id, project_phase_id, scorecard_id, committed, score, initial_score, create_user, create_date, modify_user, modify_date)
+VALUES ('30019', '20300', '20299', '20293', '30000412', '1', '90.0', '90.00', '124766', '2022-10-06 14:00:10.0', '124766', '2022-10-06 14:00:10.0');
+INSERT INTO review (review_id, resource_id, submission_id, project_phase_id, scorecard_id, committed, score, initial_score, create_user, create_date, modify_user, modify_date)
+VALUES ('30020', '20300', '20301', '20293', '30000412', '1', '80.0', '80.00', '124766', '2022-10-06 14:00:10.0', '124766', '2022-10-06 14:00:10.0');
+INSERT INTO review (review_id, resource_id, submission_id, project_phase_id, scorecard_id, committed, score, initial_score, create_user, create_date, modify_user, modify_date)
+VALUES ('30021', '20300', '20303', '20293', '30000412', '1', '80.0', '80.00', '124766', '2022-10-06 14:00:10.0', '124766', '2022-10-06 14:00:10.0');
+-- Review
+INSERT INTO review (review_id, resource_id, submission_id, project_phase_id, scorecard_id, committed, score, initial_score, create_user, create_date, modify_user, modify_date)
+VALUES ('30022', '20298', '20291', '20294', '30000411', '1', '100.0', '100.00', '20', '2022-10-09 14:00:10.0', '20', '2022-10-09 14:00:10.0');
+INSERT INTO review (review_id, resource_id, submission_id, project_phase_id, scorecard_id, committed, score, initial_score, create_user, create_date, modify_user, modify_date)
+VALUES ('30023', '20298', '20293', '20294', '30000411', '1', '100.0', '100.00', '20', '2022-10-09 14:00:10.0', '20', '2022-10-09 14:00:10.0');
+INSERT INTO review (review_id, resource_id, submission_id, project_phase_id, scorecard_id, committed, score, initial_score, create_user, create_date, modify_user, modify_date)
+VALUES ('30024', '20298', '20295', '20294', '30000411', '1', '100.0', '100.00', '20', '2022-10-09 14:00:10.0', '20', '2022-10-09 14:00:10.0');
+INSERT INTO review (review_id, resource_id, submission_id, project_phase_id, scorecard_id, committed, score, initial_score, create_user, create_date, modify_user, modify_date)
+VALUES ('30025', '20298', '20297', '20294', '30000411', '1', '90.0', '90.00', '20', '2022-10-09 14:00:10.0', '20', '2022-10-09 14:00:10.0');
+INSERT INTO review (review_id, resource_id, submission_id, project_phase_id, scorecard_id, committed, score, initial_score, create_user, create_date, modify_user, modify_date)
+VALUES ('30026', '20298', '20299', '20294', '30000411', '1', '80.0', '80.00', '20', '2022-10-09 14:00:10.0', '20', '2022-10-09 14:00:10.0');
+INSERT INTO review (review_id, resource_id, submission_id, project_phase_id, scorecard_id, committed, score, initial_score, create_user, create_date, modify_user, modify_date)
+VALUES ('30027', '20298', '20301', '20294', '30000411', '1', '80.0', '80.00', '20', '2022-10-09 14:00:10.0', '20', '2022-10-09 14:00:10.0');
+INSERT INTO review (review_id, resource_id, submission_id, project_phase_id, scorecard_id, committed, score, initial_score, create_user, create_date, modify_user, modify_date)
+VALUES ('30028', '20298', '20303', '20294', '30000411', '1', '60.0', '60.00', '20', '2022-10-09 14:00:10.0', '20', '2022-10-09 14:00:10.0');
+-- Approval
+INSERT INTO review (review_id, resource_id, submission_id, project_phase_id, scorecard_id, committed, score, initial_score, create_user, create_date, modify_user, modify_date)
+VALUES ('30029', '20302', '20291', '202911', '30000720', '1', NULL, NULL, '124857', '2022-10-09 16:00:10.0', '124857', '2022-10-09 16:00:10.0');
+-- Final Review
+INSERT INTO review (review_id, resource_id, submission_id, project_phase_id, scorecard_id, committed, score, initial_score, create_user, create_date, modify_user, modify_date)
+VALUES ('30030', '20305', '20291', '202910', '30000411', '1', NULL, NULL, '124857', '2022-10-09 16:00:10.0', '124857', '2022-10-09 16:00:10.0');
+-- Specification Review
+INSERT INTO review (review_id, resource_id, submission_id, project_phase_id, scorecard_id, committed, score, initial_score, create_user, create_date, modify_user, modify_date)
+VALUES ('30031', '20307', '20305', '202914', '30000722', '1', '100.0', '100.00', '124857', '2022-10-09 16:00:10.0', '124857', '2022-10-09 16:00:10.0');
