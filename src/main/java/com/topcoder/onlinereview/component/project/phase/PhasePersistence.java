@@ -998,14 +998,11 @@ public class PhasePersistence {
    * @throws SQLException if any database error occurs.
    */
   private void deleteDependencies(List<Long> ids, long dependantId) {
-    Long[] idArr = new Long[ids.size() + 1];
-    idArr[0] = dependantId;
-    for (int i = 0; i < ids.size(); i++) {
-      idArr[i + 1] = ids.get(i);
-    }
+    Long[] idArr = new Long[ids.size()];
+    ids.toArray(idArr);
     // execute update
     executeUpdateSql(
-        jdbcTemplate, DELETE_PHASE_DEPENDENCY + createQuestionMarks(idArr), newArrayList());
+        jdbcTemplate, DELETE_PHASE_DEPENDENCY + createQuestionMarks(idArr), newArrayList(dependantId));
   }
 
   /**
@@ -1060,7 +1057,7 @@ public class PhasePersistence {
               .collect(Collectors.toList())
               .toArray(new Long[0]);
       executeUpdateSql(
-          jdbcTemplate, DELETE_PHASE_CRITERIA + createQuestionMarks(ids), newArrayList());
+          jdbcTemplate, DELETE_PHASE_CRITERIA + createQuestionMarks(ids), newArrayList(phase.getId()));
     }
   }
 
