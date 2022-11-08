@@ -8090,8 +8090,8 @@ VALUES ('20291', '2', 'Hung', '124764', '2022-10-16 08:03:51', '124764', '2022-1
 INSERT INTO upload (upload_id, project_id, project_phase_id, resource_id, upload_type_id, upload_status_id, parameter, create_user, create_date, modify_user, modify_date)
 VALUES ("20291", "2029", "20292", "20291", 1, 1, 'no_file.txt', "124764", '2022-10-16 08:03:51', "124764", '2022-10-16 08:03:51');
 -- Final Fix
-INSERT INTO upload (upload_id, project_id, project_phase_id, resource_id, upload_type_id, upload_status_id, parameter, create_user, create_date, modify_user, modify_date)
-VALUES ("20306", "2029", "20299", "20291", 3, 1, 'no_file.txt', "124764", '2022-10-16 08:03:51', "124764", '2022-10-16 08:03:51');
+INSERT INTO upload (upload_id, project_id, project_phase_id, resource_id, upload_type_id, upload_status_id, parameter, create_user, create_date, modify_user, modify_date, url)
+VALUES ("20306", "2029", "20299", "20291", 3, 1, 'no_file.txt', "124764", '2022-10-16 08:03:51', "124764", '2022-10-16 08:03:51', 'https://drive.google.com/uc?export=download&id=1da5JL528CVz6ZXhJ8Octl3KK-ioNzkZR');
 INSERT INTO submission (submission_id, upload_id, submission_status_id, screening_score, initial_score, final_score, placement, submission_type_id, create_user, create_date, modify_user, modify_date)
 VALUES ("20291", "20291", 1, 100, 100, 100, 1, "1", "124764", '2022-10-10 04:12:10', "124764", '2022-10-10 04:12:10');
 -- Checkpoint Submission submission_type_id = 3
@@ -8331,10 +8331,85 @@ INSERT INTO review (review_id, resource_id, submission_id, project_phase_id, sco
 VALUES ('30028', '20298', '20303', '20294', '30000411', '1', '60.0', '60.00', '20', '2022-10-09 14:00:10.0', '20', '2022-10-09 14:00:10.0');
 -- Approval
 INSERT INTO review (review_id, resource_id, submission_id, project_phase_id, scorecard_id, committed, score, initial_score, create_user, create_date, modify_user, modify_date)
-VALUES ('30029', '20302', '20291', '202911', '30000720', '1', NULL, NULL, '124857', '2022-10-09 16:00:10.0', '124857', '2022-10-09 16:00:10.0');
+VALUES ('30029', '20302', '20291', '202911', '30000720', '1', 25, 25, '124857', '2022-10-09 16:00:10.0', '124857', '2022-10-09 16:00:10.0');
 -- Final Review
 INSERT INTO review (review_id, resource_id, submission_id, project_phase_id, scorecard_id, committed, score, initial_score, create_user, create_date, modify_user, modify_date)
 VALUES ('30030', '20305', '20291', '202910', '30000411', '1', NULL, NULL, '124857', '2022-10-09 16:00:10.0', '124857', '2022-10-09 16:00:10.0');
 -- Specification Review
 INSERT INTO review (review_id, resource_id, submission_id, project_phase_id, scorecard_id, committed, score, initial_score, create_user, create_date, modify_user, modify_date)
 VALUES ('30031', '20307', '20305', '202914', '30000722', '1', '100.0', '100.00', '124857', '2022-10-09 16:00:10.0', '124857', '2022-10-09 16:00:10.0');
+-- Review Comment
+﻿INSERT INTO tcs_catalog:informix.review_comment (review_comment_id, resource_id, review_id, comment_type_id, content, extra_info, sort, create_user, create_date, modify_user, modify_date)
+VALUES (3001, 20302, 30029, 12, 'test', 'Rejected', 1, '124857', '2022-10-09 16:00:10.0', '124857', '2022-10-09 16:00:10.0');
+﻿INSERT INTO tcs_catalog:informix.review_comment (review_comment_id, resource_id, review_id, comment_type_id, content, extra_info, sort, create_user, create_date, modify_user, modify_date)
+VALUES (3002, 20305, 30030, 10, 'test', 'Approved', 1, '124857', '2022-10-09 16:00:10.0', '124857', '2022-10-09 16:00:10.0');
+-- Review Item
+﻿INSERT INTO tcs_catalog:informix.review_item (review_item_id, review_id, scorecard_question_id, upload_id, answer, sort, create_user, create_date, modify_user, modify_date)
+VALUES (30008, 30008, 30003113, 20292, '1', 0, '124766', '2022-10-06 14:00:10.0', '124766', '2022-10-06 14:00:10.0');
+﻿INSERT INTO tcs_catalog:informix.review_item (review_item_id, review_id, scorecard_question_id, upload_id, answer, sort, create_user, create_date, modify_user, modify_date)
+VALUES (30009, 30009, 30003113, 20294, '1', 0, '124766', '2022-10-06 14:00:10.0', '124766', '2022-10-06 14:00:10.0');
+﻿INSERT INTO tcs_catalog:informix.review_item (review_item_id, review_id, scorecard_question_id, upload_id, answer, sort, create_user, create_date, modify_user, modify_date)
+VALUES (30030, 30030, 30001001, 20294, '1', 0, '124766', '2022-10-06 14:00:10.0', '124766', '2022-10-06 14:00:10.0');
+-- Review Item Comment
+INSERT INTO tcs_catalog:informix.review_item_comment (review_item_comment_id, resource_id, review_item_id, comment_type_id, content, extra_info, sort, create_user, create_date, modify_user, modify_date)
+VALUES ('30008', '20304', '30008', '1', 'Good Start! Like the UI, nice and clear, but some screens have a lot of information on them ', 'test', '1', '124766', '2022-10-06 14:00:10.0', '124766', '2022-10-06 14:00:10.0');
+INSERT INTO tcs_catalog:informix.review_item_comment (review_item_comment_id, resource_id, review_item_id, comment_type_id, content, extra_info, sort, create_user, create_date, modify_user, modify_date)
+VALUES ('30009', '20304', '30009', '1', 'Good Start! Like the UI, nice and clear', 'test', '1', '124766', '2022-10-06 14:00:10.0', '124766', '2022-10-06 14:00:10.0');
+INSERT INTO tcs_catalog:informix.review_item_comment (review_item_comment_id, resource_id, review_item_id, comment_type_id, content, extra_info, sort, create_user, create_date, modify_user, modify_date)
+VALUES ('30030', '20304', '30030', '3', 'Please check your email for final fixes.', 'Fixed', '1', '124857', '2022-10-06 14:00:10.0', '124857', '2022-10-06 14:00:10.0');
+-- -- Scoreboard Question
+UPDATE tcs_catalog:informix.scorecard_question
+SET scorecard_question_type_id = 4
+WHERE scorecard_question_id = 30003113;
+-- Scorecard Group
+INSERT INTO tcs_catalog:informix.scorecard_group (scorecard_group_id,scorecard_id, name, weight, sort, create_user, create_date, modify_user, modify_date, version)
+VALUES (5773, 30000416, 'file types', 24.0, 0, '132456', '2018-07-26 08:42:26.0', '132456', '2018-07-26 08:42:26.0', 0);
+INSERT INTO tcs_catalog:informix.scorecard_group (scorecard_group_id,scorecard_id, name, weight, sort, create_user, create_date, modify_user, modify_date, version)
+VALUES (5774, 30000416, 'Violations', 50.0, 0, '132456', '2018-07-26 08:42:26.0', '132456', '2018-07-26 08:42:26.0', 0);
+INSERT INTO tcs_catalog:informix.scorecard_group (scorecard_group_id,scorecard_id, name, weight, sort, create_user, create_date, modify_user, modify_date, version)
+VALUES (5775, 30000416, 'screening considerations', 1.0, 0, '132456', '2018-07-26 08:42:26.0', '132456', '2018-07-26 08:42:26.0', 0);
+-- -- Scoreboard Section
+UPDATE tcs_catalog:informix.scorecard_section
+SET name = 'stock art', weight = 25
+WHERE scorecard_section_id = 30001642;
+INSERT INTO tcs_catalog:informix.scorecard_section (scorecard_section_id, scorecard_group_id, name, weight, sort, create_user, create_date, modify_user, modify_date, version)
+VALUES (30001646, 5769, 'Fonts', 25.0, 0, '132456', '2018-07-26 08:42:26.0', '132456', '2018-07-26 08:42:26.0', 0);
+INSERT INTO tcs_catalog:informix.scorecard_section (scorecard_section_id, scorecard_group_id, name, weight, sort, create_user, create_date, modify_user, modify_date, version)
+VALUES (30001647, 5769, 'General copyright/ licensing', 50.0, 0, '132456', '2018-07-26 08:42:26.0', '132456', '2018-07-26 08:42:26.0', 0);
+INSERT INTO tcs_catalog:informix.scorecard_section (scorecard_section_id, scorecard_group_id, name, weight, sort, create_user, create_date, modify_user, modify_date, version)
+VALUES (30001648, 5773, 'Submission and source files', 100.0, 0, '132456', '2018-07-26 08:42:26.0', '132456', '2018-07-26 08:42:26.0', 0);
+INSERT INTO tcs_catalog:informix.scorecard_section (scorecard_section_id, scorecard_group_id, name, weight, sort, create_user, create_date, modify_user, modify_date, version)
+VALUES (30001649, 5774, 'Cheating', 50.0, 0, '132456', '2018-07-26 08:42:26.0', '132456', '2018-07-26 08:42:26.0', 0);
+INSERT INTO tcs_catalog:informix.scorecard_section (scorecard_section_id, scorecard_group_id, name, weight, sort, create_user, create_date, modify_user, modify_date, version)
+VALUES (30001650, 5774, 'Other Violations', 50.0, 0, '132456', '2018-07-26 08:42:26.0', '132456', '2018-07-26 08:42:26.0', 0);
+INSERT INTO tcs_catalog:informix.scorecard_section (scorecard_section_id, scorecard_group_id, name, weight, sort, create_user, create_date, modify_user, modify_date, version)
+VALUES (30001651, 5775, 'warning and permissions', 100.0, 0, '132456', '2018-07-26 08:42:26.0', '132456', '2018-07-26 08:42:26.0', 0);
+-- Scorecard Question
+INSERT INTO tcs_catalog:informix.scorecard_question (scorecard_question_id, scorecard_question_type_id, scorecard_section_id, description, guideline, weight, sort, upload_document, upload_document_required, create_user, create_date, modify_user, modify_date, version)
+VALUES (30003116, 4, 30001642, 'If Stock Art is allowed in this contest, are all stock art elements photographs only? No illustrations are allowed.', 'Guideline 1', 25.0, 0, 0, 0, '132456', '2018-07-26 08:42:26.0', '132456', '2018-07-26 08:42:26.0', 0);
+INSERT INTO tcs_catalog:informix.scorecard_question (scorecard_question_id, scorecard_question_type_id, scorecard_section_id, description, guideline, weight, sort, upload_document, upload_document_required, create_user, create_date, modify_user, modify_date, version)
+VALUES (30003117, 4, 30001642, 'If Stock Art is allowed in this contest, are all stock art elements photographs only? No illustrations are allowed.', 'Guideline 1', 25.0, 0, 0, 0, '132456', '2018-07-26 08:42:26.0', '132456', '2018-07-26 08:42:26.0', 0);
+INSERT INTO tcs_catalog:informix.scorecard_question (scorecard_question_id, scorecard_question_type_id, scorecard_section_id, description, guideline, weight, sort, upload_document, upload_document_required, create_user, create_date, modify_user, modify_date, version)
+VALUES (30003118, 4, 30001646, 'If Stock Art is allowed in this contest, are all stock art elements photographs only? No illustrations are allowed.', 'Guideline 1', 25.0, 0, 0, 0, '132456', '2018-07-26 08:42:26.0', '132456', '2018-07-26 08:42:26.0', 0);
+INSERT INTO tcs_catalog:informix.scorecard_question (scorecard_question_id, scorecard_question_type_id, scorecard_section_id, description, guideline, weight, sort, upload_document, upload_document_required, create_user, create_date, modify_user, modify_date, version)
+VALUES (30003119, 4, 30001646, 'If Stock Art is allowed in this contest, are all stock art elements photographs only? No illustrations are allowed.', 'Guideline 1', 25.0, 0, 0, 0, '132456', '2018-07-26 08:42:26.0', '132456', '2018-07-26 08:42:26.0', 0);
+INSERT INTO tcs_catalog:informix.scorecard_question (scorecard_question_id, scorecard_question_type_id, scorecard_section_id, description, guideline, weight, sort, upload_document, upload_document_required, create_user, create_date, modify_user, modify_date, version)
+VALUES (30003120, 4, 30001646, 'If Stock Art is allowed in this contest, are all stock art elements photographs only? No illustrations are allowed.', 'Guideline 1', 25.0, 0, 0, 0, '132456', '2018-07-26 08:42:26.0', '132456', '2018-07-26 08:42:26.0', 0);
+INSERT INTO tcs_catalog:informix.scorecard_question (scorecard_question_id, scorecard_question_type_id, scorecard_section_id, description, guideline, weight, sort, upload_document, upload_document_required, create_user, create_date, modify_user, modify_date, version)
+VALUES (30003121, 4, 30001646, 'If Stock Art is allowed in this contest, are all stock art elements photographs only? No illustrations are allowed.', 'Guideline 1', 25.0, 0, 0, 0, '132456', '2018-07-26 08:42:26.0', '132456', '2018-07-26 08:42:26.0', 0);
+INSERT INTO tcs_catalog:informix.scorecard_question (scorecard_question_id, scorecard_question_type_id, scorecard_section_id, description, guideline, weight, sort, upload_document, upload_document_required, create_user, create_date, modify_user, modify_date, version)
+VALUES (30003122, 4, 30001647, 'If Stock Art is allowed in this contest, are all stock art elements photographs only? No illustrations are allowed.', 'Guideline 1', 50.0, 0, 0, 0, '132456', '2018-07-26 08:42:26.0', '132456', '2018-07-26 08:42:26.0', 0);
+INSERT INTO tcs_catalog:informix.scorecard_question (scorecard_question_id, scorecard_question_type_id, scorecard_section_id, description, guideline, weight, sort, upload_document, upload_document_required, create_user, create_date, modify_user, modify_date, version)
+VALUES (30003123, 4, 30001647, 'If Stock Art is allowed in this contest, are all stock art elements photographs only? No illustrations are allowed.', 'Guideline 1', 50.0, 0, 0, 0, '132456', '2018-07-26 08:42:26.0', '132456', '2018-07-26 08:42:26.0', 0);
+INSERT INTO tcs_catalog:informix.scorecard_question (scorecard_question_id, scorecard_question_type_id, scorecard_section_id, description, guideline, weight, sort, upload_document, upload_document_required, create_user, create_date, modify_user, modify_date, version)
+VALUES (30003124, 4, 30001648, 'If Stock Art is allowed in this contest, are all stock art elements photographs only? No illustrations are allowed.', 'Guideline 1', 50.0, 0, 0, 0, '132456', '2018-07-26 08:42:26.0', '132456', '2018-07-26 08:42:26.0', 0);
+INSERT INTO tcs_catalog:informix.scorecard_question (scorecard_question_id, scorecard_question_type_id, scorecard_section_id, description, guideline, weight, sort, upload_document, upload_document_required, create_user, create_date, modify_user, modify_date, version)
+VALUES (30003125, 4, 30001648, 'If Stock Art is allowed in this contest, are all stock art elements photographs only? No illustrations are allowed.', 'Guideline 1', 50.0, 0, 0, 0, '132456', '2018-07-26 08:42:26.0', '132456', '2018-07-26 08:42:26.0', 0);
+INSERT INTO tcs_catalog:informix.scorecard_question (scorecard_question_id, scorecard_question_type_id, scorecard_section_id, description, guideline, weight, sort, upload_document, upload_document_required, create_user, create_date, modify_user, modify_date, version)
+VALUES (30003126, 4, 30001649, 'If Stock Art is allowed in this contest, are all stock art elements photographs only? No illustrations are allowed.', 'Guideline 1', 100.0, 0, 0, 0, '132456', '2018-07-26 08:42:26.0', '132456', '2018-07-26 08:42:26.0', 0);
+INSERT INTO tcs_catalog:informix.scorecard_question (scorecard_question_id, scorecard_question_type_id, scorecard_section_id, description, guideline, weight, sort, upload_document, upload_document_required, create_user, create_date, modify_user, modify_date, version)
+VALUES (30003127, 4, 30001650, 'If Stock Art is allowed in this contest, are all stock art elements photographs only? No illustrations are allowed.', 'Guideline 1', 100.0, 0, 0, 0, '132456', '2018-07-26 08:42:26.0', '132456', '2018-07-26 08:42:26.0', 0);
+INSERT INTO tcs_catalog:informix.scorecard_question (scorecard_question_id, scorecard_question_type_id, scorecard_section_id, description, guideline, weight, sort, upload_document, upload_document_required, create_user, create_date, modify_user, modify_date, version)
+VALUES (30003128, 4, 30001651, 'If Stock Art is allowed in this contest, are all stock art elements photographs only? No illustrations are allowed.', 'Guideline 1', 50.0, 0, 0, 0, '132456', '2018-07-26 08:42:26.0', '132456', '2018-07-26 08:42:26.0', 0);
+INSERT INTO tcs_catalog:informix.scorecard_question (scorecard_question_id, scorecard_question_type_id, scorecard_section_id, description, guideline, weight, sort, upload_document, upload_document_required, create_user, create_date, modify_user, modify_date, version)
+VALUES (30003129, 4, 30001651, 'If Stock Art is allowed in this contest, are all stock art elements photographs only? No illustrations are allowed.', 'Guideline 1', 50.0, 0, 0, 0, '132456', '2018-07-26 08:42:26.0', '132456', '2018-07-26 08:42:26.0', 0);
