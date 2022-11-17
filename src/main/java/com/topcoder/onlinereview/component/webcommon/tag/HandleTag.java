@@ -33,7 +33,7 @@ public class HandleTag extends TagSupport {
     */
     private String context = null;
 
-    public final static String DEFAULT_LINK = "/tc?module=MemberProfile&amp;cr=";
+    public final static String DEFAULT_LINK = "/members/";
 
     public final static String ALGORITHM = "algorithm";
     public final static String HS_ALGORITHM = "hs_algorithm";
@@ -174,12 +174,13 @@ public class HandleTag extends TagSupport {
                 bCSSOverride = true;
             }
             output.append("<a href=\"");
+            String handleFromDB = getString(rsc.get(0), "handle");
             if (link == null || link.equals("")) {
                 StringBuffer buf = new StringBuffer(100);
                 if (pageContext != null && pageContext.getRequest().getServerName().indexOf(ApplicationServer.SERVER_NAME) >= 0) {
-                    link = buf.append(DEFAULT_LINK).append(coderId).toString();
+                    link = buf.append(DEFAULT_LINK).append(handleFromDB).toString();
                 } else {
-                    link = buf.append("http://").append(ApplicationServer.SERVER_NAME).append(DEFAULT_LINK).append(coderId).toString();
+                    link = buf.append("https://").append(ApplicationServer.SERVER_NAME).append(DEFAULT_LINK).append(handleFromDB).toString();
                 }
 
             }
@@ -324,7 +325,7 @@ public class HandleTag extends TagSupport {
 
             output.append("\">");
 
-            output.append(getString(rsc.get(0), "handle"));
+            output.append(handleFromDB);
 
             output.append("</a>");
         }
