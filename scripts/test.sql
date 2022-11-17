@@ -8190,6 +8190,27 @@ INSERT INTO resource_info (resource_id, resource_info_type_id, value, create_use
 VALUES ('20298', '1', '20', '20', '2022-10-16 08:03:51', '20', '2022-10-16 08:03:51');
 INSERT INTO resource_info (resource_id, resource_info_type_id, value, create_user, create_date, modify_user, modify_date)
 VALUES ('20298', '2', 'dok_tester', '20', '2022-10-16 08:03:51', '20', '2022-10-16 08:03:51');
+-- Reviewer 2
+INSERT INTO resource (resource_id, resource_role_id, project_id, project_phase_id, user_id, create_user, create_date, modify_user, modify_date)
+VALUES ('20310', '4', '2029', 20294, 124861, '124861', '2022-10-16 08:03:51', '124861', '2022-10-16 08:03:51');
+INSERT INTO resource_info (resource_id, resource_info_type_id, value, create_user, create_date, modify_user, modify_date)
+VALUES ('20310', '1', '124861', '124861', '2022-10-16 08:03:51', '124861', '2022-10-16 08:03:51');
+INSERT INTO resource_info (resource_id, resource_info_type_id, value, create_user, create_date, modify_user, modify_date)
+VALUES ('20310', '2', 'ksmith', '124861', '2022-10-16 08:03:51', '124861', '2022-10-16 08:03:51');
+-- Copilot resource_id = 14
+INSERT INTO resource (resource_id, resource_role_id, project_id, project_phase_id, user_id, create_user, create_date, modify_user, modify_date)
+VALUES ('20311', '14', '2029', NULL, 132456, '132456', '2022-10-16 08:03:51', '132456', '2022-10-16 08:03:51');
+INSERT INTO resource_info (resource_id, resource_info_type_id, value, create_user, create_date, modify_user, modify_date)
+VALUES ('20311', '1', '132456', '132456', '2022-10-16 08:03:51', '132456', '2022-10-16 08:03:51');
+INSERT INTO resource_info (resource_id, resource_info_type_id, value, create_user, create_date, modify_user, modify_date)
+VALUES ('20311', '2', 'heffan', '132456', '2022-10-16 08:03:51', '132456', '2022-10-16 08:03:51');
+-- Observer resource_id = 12
+INSERT INTO resource (resource_id, resource_role_id, project_id, project_phase_id, user_id, create_user, create_date, modify_user, modify_date)
+VALUES ('20312', '12', '2029', NULL, 132456, '132456', '2022-10-16 08:03:51', '132456', '2022-10-16 08:03:51');
+INSERT INTO resource_info (resource_id, resource_info_type_id, value, create_user, create_date, modify_user, modify_date)
+VALUES ('20312', '1', '132456', '132456', '2022-10-16 08:03:51', '132456', '2022-10-16 08:03:51');
+INSERT INTO resource_info (resource_id, resource_info_type_id, value, create_user, create_date, modify_user, modify_date)
+VALUES ('20312', '2', 'heffan', '132456', '2022-10-16 08:03:51', '132456', '2022-10-16 08:03:51');
 -- Specification Submitter
 INSERT INTO resource (resource_id, resource_role_id, project_id, project_phase_id, user_id, create_user, create_date, modify_user, modify_date)
 VALUES (20306, 17, 2029, 202913, 124764, '124857', '2022-10-16 08:03:51.0', '124857', '2022-10-16 08:03:51.0');
