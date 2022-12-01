@@ -8434,3 +8434,28 @@ INSERT INTO tcs_catalog:informix.scorecard_question (scorecard_question_id, scor
 VALUES (30003128, 4, 30001651, 'If Stock Art is allowed in this contest, are all stock art elements photographs only? No illustrations are allowed.', 'Guideline 1', 50.0, 0, 0, 0, '132456', '2018-07-26 08:42:26.0', '132456', '2018-07-26 08:42:26.0', 0);
 INSERT INTO tcs_catalog:informix.scorecard_question (scorecard_question_id, scorecard_question_type_id, scorecard_section_id, description, guideline, weight, sort, upload_document, upload_document_required, create_user, create_date, modify_user, modify_date, version)
 VALUES (30003129, 4, 30001651, 'If Stock Art is allowed in this contest, are all stock art elements photographs only? No illustrations are allowed.', 'Guideline 1', 50.0, 0, 0, 0, '132456', '2018-07-26 08:42:26.0', '132456', '2018-07-26 08:42:26.0', 0);
+-- Payments
+INSERT INTO tcs_catalog:informix.project_payment (project_payment_type_id, resource_id, submission_id, amount, pacts_payment_id, create_user, create_date, modify_user, modify_date)
+VALUES ('1', '20291', '20291', '60.00', '177351', '132456', '2022-11-25 00:06:37.722', '132456', '2022-11-25 00:06:37.722');
+INSERT INTO tcs_catalog:informix.project_payment (project_payment_type_id, resource_id, submission_id, amount, pacts_payment_id, create_user, create_date, modify_user, modify_date)
+VALUES ('3', '20298', NULL, '60.00', '177352', '132456', '2022-11-25 00:06:37.743', '132456', '2022-11-25 00:06:37.743');
+INSERT INTO tcs_catalog:informix.project_payment (project_payment_type_id, resource_id, submission_id, amount, pacts_payment_id, create_user, create_date, modify_user, modify_date)
+VALUES ('4', '20311', NULL, '60.00', '177353', '132456', '2022-11-25 00:06:37.747', '132456', '2022-11-25 00:06:37.747');
+INSERT INTO tcs_catalog:informix.project_payment (project_payment_type_id, resource_id, submission_id, amount, pacts_payment_id, create_user, create_date, modify_user, modify_date)
+VALUES ('1', '20292', '20293', '100.00', '177354', '132456', '2022-11-25 00:31:35.296', '132456', '2022-11-25 00:31:35.296');
+INSERT INTO tcs_catalog:informix.project_payment (project_payment_type_id, resource_id, submission_id, amount, pacts_payment_id, create_user, create_date, modify_user, modify_date)
+VALUES ('1', '20293', '20295', '100.00', '177355', '132456', '2022-11-25 00:31:35.303', '132456', '2022-11-25 00:31:35.303');
+INSERT INTO tcs_catalog:informix.project_payment (project_payment_type_id, resource_id, submission_id, amount, pacts_payment_id, create_user, create_date, modify_user, modify_date)
+VALUES ('1', '20294', '20297', '50.00', '177356', '132456', '2022-11-25 00:31:35.308', '132456', '2022-11-25 00:31:35.308');
+INSERT INTO tcs_catalog:informix.project_payment (project_payment_type_id, resource_id, submission_id, amount, pacts_payment_id, create_user, create_date, modify_user, modify_date)
+VALUES ('3', '20300', NULL, '200.00', '177357', '132456', '2022-11-25 00:31:35.311', '132456', '2022-11-25 00:31:35.311');
+INSERT INTO tcs_catalog:informix.project_payment (project_payment_type_id, resource_id, submission_id, amount, pacts_payment_id, create_user, create_date, modify_user, modify_date)
+VALUES ('3', '20303', NULL, '600.00', '177358', '132456', '2022-11-25 00:33:53.219', '132456', '2022-11-25 00:33:53.219');
+INSERT INTO tcs_catalog:informix.project_payment (project_payment_type_id, resource_id, submission_id, amount, pacts_payment_id, create_user, create_date, modify_user, modify_date)
+VALUES ('3', '20304', NULL, '800.00', '177359', '132456', '2022-11-25 00:33:53.224', '132456', '2022-11-25 00:33:53.224');
+INSERT INTO tcs_catalog:informix.project_payment (project_payment_type_id, resource_id, submission_id, amount, pacts_payment_id, create_user, create_date, modify_user, modify_date)
+VALUES ('3', '20305', NULL, '250.00', '177360', '132456', '2022-11-25 00:33:53.229', '132456', '2022-11-25 00:33:53.229');
+INSERT INTO tcs_catalog:informix.project_payment (project_payment_type_id, resource_id, submission_id, amount, pacts_payment_id, create_user, create_date, modify_user, modify_date)
+VALUES ('3', '20307', NULL, '100.00', '177361', '132456', '2022-11-25 00:33:53.233', '132456', '2022-11-25 00:33:53.233');
+INSERT INTO tcs_catalog:informix.project_payment (project_payment_type_id, resource_id, submission_id, amount, pacts_payment_id, create_user, create_date, modify_user, modify_date)
+VALUES ('3', '20310', NULL, '100.00', '177362', '132456', '2022-11-25 00:33:53.238', '132456', '2022-11-25 00:33:53.238');
