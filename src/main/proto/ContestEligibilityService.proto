@@ -1,0 +1,23 @@
+syntax = "proto3";
+import "google/protobuf/empty.proto";
+option java_multiple_files = true;
+option java_package = "com.topcoder.onlinereview.component.grpcclient";
+package com.topcoder.onlinereview.component.grpcclient;
+
+message CreateContestEligibilityRequest {
+    int64 contestId = 1;
+    bool studio = 2;
+}
+
+message GetContestEligibilityIdByContestIdRequest {
+    int64 contestId = 1;
+}
+
+message GetContestEligibilityIdByContestIdResponse {
+    int64 contesEligibilitytId = 1;
+}
+
+service ContestEligibilityService {
+    rpc createContestEligibility(CreateContestEligibilityRequest) returns (google.protobuf.Empty);
+    rpc getContestEligibilityIdByContestId(GetContestEligibilityIdByContestIdRequest) returns (GetContestEligibilityIdByContestIdResponse);
+}
