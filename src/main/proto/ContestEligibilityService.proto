@@ -1,23 +1,67 @@
 syntax = "proto3";
+package contesteligibility;
 import "google/protobuf/empty.proto";
 option java_multiple_files = true;
-option java_package = "com.topcoder.onlinereview.component.grpcclient";
-package com.topcoder.onlinereview.component.grpcclient;
+option java_package = "com.topcoder.onlinereview.component.grpcclient.contesteligibility.protos";
 
-message CreateContestEligibilityRequest {
-    int64 contestId = 1;
+message CreateRequest {
+    int64 contest_id = 1;
     bool studio = 2;
 }
 
-message GetContestEligibilityIdByContestIdRequest {
-    int64 contestId = 1;
+message GetIdByContestIdRequest {
+    int64 contest_id = 1;
 }
 
-message GetContestEligibilityIdByContestIdResponse {
-    int64 contesEligibilitytId = 1;
+message GetIdByContestIdResponse {
+    int64 contest_eligibility_id = 1;
+}
+
+message RemoveRequest {
+    int64 contest_eligibility_id = 1;
+}
+
+message BulkRemoveRequest {
+    repeated int64 contest_eligibility_ids = 1;
+}
+
+message UpdateRequest {
+    int64 contest_eligibility_id = 1;
+    int64 contest_id = 2;
+    bool studio = 3;
+}
+
+message GetContestEligibilityRequest {
+    int64 contest_id = 1;
+    bool studio = 2;
+}
+
+message ContestEligibilitiesResponse {
+    repeated GroupContestEligibilityProto group_contest_eligibilities = 1;
+}
+
+message GroupContestEligibilityProto {
+    int64 contest_eligibility_id = 1;
+    int64 contest_id = 2;
+    bool studio = 3;
+    int64 group_id = 4;
+}
+
+message HaveEligibilityRequest {
+    repeated int64 contest_ids = 1;
+    bool studio = 2;
+}
+
+message HaveEligibilityResponse {
+    repeated int64 contest_ids = 1;
 }
 
 service ContestEligibilityService {
-    rpc createContestEligibility(CreateContestEligibilityRequest) returns (google.protobuf.Empty);
-    rpc getContestEligibilityIdByContestId(GetContestEligibilityIdByContestIdRequest) returns (GetContestEligibilityIdByContestIdResponse);
+    rpc create(CreateRequest) returns (google.protobuf.Empty);
+    rpc getIdByContestId(GetIdByContestIdRequest) returns (GetIdByContestIdResponse);
+    rpc remove(RemoveRequest) returns (google.protobuf.Empty);
+    rpc bulkRemove(BulkRemoveRequest) returns (google.protobuf.Empty);
+    rpc update(UpdateRequest) returns (google.protobuf.Empty);
+    rpc getContestEligibility(GetContestEligibilityRequest) returns (ContestEligibilitiesResponse);
+    rpc haveEligibility(HaveEligibilityRequest) returns (HaveEligibilityResponse);
 }

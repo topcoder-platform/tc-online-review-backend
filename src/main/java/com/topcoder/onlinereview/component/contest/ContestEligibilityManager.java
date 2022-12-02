@@ -9,7 +9,10 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
+import com.topcoder.onlinereview.component.grpcclient.contesteligibility.ContestEligibilityServiceRpc;
+
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
@@ -78,6 +81,9 @@ public class ContestEligibilityManager {
     @Autowired
     @Qualifier("tcsJdbcTemplate")
     private JdbcTemplate jdbcTemplate;
+
+    @Autowired
+    private ContestEligibilityServiceRpc contestEligibilityServiceRpc;
     /**
      * Add a contest eligibility.
      *
@@ -95,8 +101,11 @@ public class ContestEligibilityManager {
             new Object[] {contestEligibility});
         checkNull(contestEligibility, "contestEligibility");
         try {
+            Long id = contestEligibilityServiceRpc.create(contestEligibility);
+            /* TODO GRPC
             jdbcTemplate.update("insert into contest_eligibility(contest_eligibility_id, contest_id, is_studio) VALUES(CONTEST_ELIGIBILITY_SEQ.NEXTVAL, ?, ?)", contestEligibility.getContestId(), contestEligibility.getStudio());
             Long id = jdbcTemplate.queryForObject("select max(contest_eligibility_id) from contest_eligibility where contest_id=" + contestEligibility.getContestId(), Long.class);
+            */
             contestEligibility.setId(id);
         } catch (RuntimeException e) {
             throw logError(new ContestEligibilityPersistenceException(
@@ -121,8 +130,11 @@ public class ContestEligibilityManager {
             new Object[] {contestEligibility});
         checkNull(contestEligibility, "contestEligibility");
         try {
+            contestEligibilityServiceRpc.remove(contestEligibility.getContestId());
+            /* TODO GRPC
             jdbcTemplate.update("delete from contest_eligibility where contest_eligibility_id="
                     + contestEligibility.getId());
+            */
         } catch (RuntimeException e) {
             throw logError(new ContestEligibilityPersistenceException(
                 "Some error happens while removing the entity.", e));
@@ -165,6 +177,8 @@ public class ContestEligibilityManager {
                 list.stream().filter(c -> c.getId() == 0).collect(Collectors.toList());
         try {
             if (!toDelete.isEmpty()) {
+                contestEligibilityServiceRpc.bulkRemove(toDelete.stream().map(x -> x.getId()).collect(Collectors.toList()));
+                /* TODO GRPC
                 StringBuilder sb =
                         new StringBuilder("delete from contest_eligibility where contest_eligibility_id in (?");
                 for (int i = 1; i < toDelete.size(); i++) {
@@ -172,17 +186,24 @@ public class ContestEligibilityManager {
                 }
                 sb.append(")");
                 jdbcTemplate.update(sb.toString(), toDelete.toArray());
+                */
                 list.removeAll(toDelete);
             }
             if (!toUpdate.isEmpty()) {
                 for (ContestEligibility ce : toUpdate) {
+                    contestEligibilityServiceRpc.update(ce);
+                    /* TODO GRPC
                     jdbcTemplate.update("update contest_eligibility set contest_id=?, is_studio=? where contest_eligibility_id=?", ce.getContestId(), ce.getStudio(), ce.getId());
+                     */
                 }
             }
             if (!toAdd.isEmpty()) {
                 for (ContestEligibility ce : toUpdate) {
+                    Long id = contestEligibilityServiceRpc.create(ce);
+                    /* TODO GRPC
                     jdbcTemplate.update("insert into contest_eligibility(contest_eligibility_id, contest_id, is_studio) VALUES(CONTEST_ELIGIBILITY_SEQ.NEXTVAL, ?, ?)", ce.getContestId(), ce.getStudio());
                     Long id = jdbcTemplate.queryForObject("select max(contest_eligibility_id) from contest_eligibility where contest_id=" + ce.getContestId(), Long.class);
+                    */
                     ce.setId(id);
                 }
             }
@@ -210,6 +231,8 @@ public class ContestEligibilityManager {
         logEntrance("ContestEligibilityManagerBean#getContestEligibility", new String[] {"contestId",
         "isStudio"}, new Object[] {contestId, isStudio});
         checkPositive(contestId, "contestId");
+        List<ContestEligibility> results = contestEligibilityServiceRpc.getContestEligibility(contestId, isStudio);
+        /* TODO GRPC
         List<Map<String, Object>> qr = jdbcTemplate.queryForList(
                 "select c.contest_eligibility_id, c.contest_id, c.is_studio, g.group_id from contest_eligibility AS c JOIN group_contest_eligibility AS g On c.contest_eligibility_id = g.contest_eligibility_id "
                         + "where c.is_studio = "
@@ -226,6 +249,7 @@ public class ContestEligibilityManager {
             ce.setGroupId(getLong(r, "group_id"));
             results.add(ce);
         }
+        */
         logExit("ContestEligibilityManagerBean#getContestEligibility");
         return results;
     
@@ -249,6 +273,8 @@ public class ContestEligibilityManager {
         logEntrance("ContestEligibilityManagerBean#haveEligibility", new String[] {"contestIds[]",
             "isStudio"}, new Object[]{contestIds, isStudio});
 
+        Set<Long> result = contestEligibilityServiceRpc.haveEligibility(contestIds, isStudio);
+        /* TODO GRPC
         Set<Long> result = new HashSet<Long>();
 
         if (contestIds == null || contestIds.length == 0)
@@ -285,6 +311,7 @@ public class ContestEligibilityManager {
                 break;
             }
         }
+        */
         logExit("ContestEligibilityManagerBean#haveEligibility");
         return result;
     }
