@@ -97,10 +97,6 @@ project_details = {
 				'duration': 12,
 				'criteria': [[5, 'No'], [1, '30000411'], [6, 3]]
 				}, # Review
-			11: {
-				'duration': 12,
-				'criteria': [[1, '30000720']]
-				}, # Approval
 			9: {
 				'duration': 24,
 				'criteria': [[5, 'No']]
@@ -109,6 +105,10 @@ project_details = {
 				'duration': 6,
 				'criteria': [[5, 'No']]
 				}, # Final Review
+			11: {
+				'duration': 12,
+				'criteria': [[1, '30000720']]
+				}, # Approval
 		}
 	},
 	'qa': {

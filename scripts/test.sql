@@ -2585,11 +2585,11 @@ INSERT INTO phase_dependency (dependency_phase_id, dependent_phase_id, dependenc
 INSERT INTO phase_dependency (dependency_phase_id, dependent_phase_id, dependency_start, dependent_start, lag_time, create_user, create_date, modify_user, modify_date)
 	VALUES ('20293', '20294', '0', '1', '0', '132456', '2022-10-04 14:45:22', '132456', '2022-10-04 14:45:22');
 INSERT INTO phase_dependency (dependency_phase_id, dependent_phase_id, dependency_start, dependent_start, lag_time, create_user, create_date, modify_user, modify_date)
-	VALUES ('20294', '202911', '0', '1', '0', '132456', '2022-10-04 14:45:22', '132456', '2022-10-04 14:45:22');
+	VALUES ('20294', '20299', '0', '1', '0', '132456', '2022-10-04 14:45:22', '132456', '2022-10-04 14:45:22');
 INSERT INTO phase_dependency (dependency_phase_id, dependent_phase_id, dependency_start, dependent_start, lag_time, create_user, create_date, modify_user, modify_date)
-	VALUES ('202911', '20299', '0', '1', '0', '132456', '2022-10-04 14:45:22', '132456', '2022-10-04 14:45:22');
+	VALUES ('202910', '202911', '0', '1', '0', '132456', '2022-10-04 14:45:22', '132456', '2022-10-04 14:45:22');
 INSERT INTO phase_dependency (dependency_phase_id, dependent_phase_id, dependency_start, dependent_start, lag_time, create_user, create_date, modify_user, modify_date)
-	VALUES ('20299', '202910', '0', '1', '0', '132456', '2022-10-04 14:45:22', '132456', '2022-10-04 14:45:22');
+	VALUES ('20299', '202910', '0', '1', '0', '132456', '2022-10-04 14:45:22', '132456', '2022-10-04 14:45`:22');
 --  Data for resource
 INSERT INTO resource (resource_id, resource_role_id, project_id, project_phase_id, user_id, create_user, create_date, modify_user, modify_date)
 	VALUES ('2029', '13', '2029', NULL, 132456, '132456', '2022-10-04 14:45:22', '132456', '2022-10-04 14:45:22');
