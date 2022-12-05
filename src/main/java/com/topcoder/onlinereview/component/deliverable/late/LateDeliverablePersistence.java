@@ -10,6 +10,8 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.topcoder.onlinereview.component.grpcclient.deliverable.DeliverableServiceRpc;
+
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Date;
@@ -87,6 +89,9 @@ public class LateDeliverablePersistence {
     @Autowired
     @Qualifier("tcsJdbcTemplate")
     private JdbcTemplate jdbcTemplate;
+
+    @Autowired
+    private DeliverableServiceRpc deliverableServiceRpc;
 
     /**
      * <p>
@@ -177,6 +182,8 @@ public class LateDeliverablePersistence {
         // Log method entry
         Helper.logEntrance(log, signature, null, null);
         try {
+            List<LateDeliverableType> result = deliverableServiceRpc.getLateDeliverableTypes();
+            /* TODO GRPC
             // Execute the query:
             List<Map<String, Object>> resultSet = executeSql(jdbcTemplate, SQL_QUERY_LATE_DELIVERABLE_TYPE);
             // Create a list for result:
@@ -192,7 +199,7 @@ public class LateDeliverablePersistence {
                 // Add late deliverable type to the list:
                 result.add(lateDeliverableType);
             }
-
+            */
             // Log method exit
             Helper.logExit(log, signature, new Object[] {result}, enterTimestamp);
             return result;
@@ -221,6 +228,11 @@ public class LateDeliverablePersistence {
      *             if a database access errors.
      */
     private void updateLateDeliverable(LateDeliverable lateDeliverable) throws LateDeliverableNotFoundException {
+        if (deliverableServiceRpc.updateLateDeliverable(lateDeliverable) == 0) {
+            throw new LateDeliverableNotFoundException(Helper.concat("The late deliverable with ID '",
+                    lateDeliverable.getId(), "' doesn't exist in persistence."), lateDeliverable.getId());
+        }
+        /* TODO GRPC
         List<Object> params = newArrayList(lateDeliverable.getProjectPhaseId(),
                 lateDeliverable.getResourceId(),
                 lateDeliverable.getDeliverableId(),
@@ -242,6 +254,7 @@ public class LateDeliverablePersistence {
             throw new LateDeliverableNotFoundException(Helper.concat("The late deliverable with ID '",
                     lateDeliverable.getId(), "' doesn't exist in persistence."), lateDeliverable.getId());
         }
+        */
     }
     /**
      * <p>

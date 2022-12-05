@@ -3,6 +3,7 @@
  */
 package com.topcoder.onlinereview.component.deliverable;
 
+import com.topcoder.onlinereview.component.grpcclient.deliverable.DeliverableServiceRpc;
 import com.topcoder.onlinereview.component.project.management.LogMessage;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -70,6 +71,9 @@ public class SqlDeliverablePersistence {
   @Autowired
   @Qualifier("tcsJdbcTemplate")
   private JdbcTemplate jdbcTemplate;
+
+  @Autowired
+  private DeliverableServiceRpc deliverableServiceRpc;
 
   /**
    * Loads the deliverables associated with the given deliverable id and resource id. There may be
@@ -332,9 +336,13 @@ public class SqlDeliverablePersistence {
       // since two queries may be needed, auto-commit mode is
       // disabled to ensure that the database snapshot does not change during the two queries.
       if (submissionIds != null) {
+        return deliverableServiceRpc.loadDeliverablesWithSubmission(deliverableIds, resourceIds, phaseIds, submissionIds);
+        /* TODO GRPC
         return loadDeliverablesWithSubmission(matchCondition);
+        */
       }
-
+      Deliverable[] deliverables = deliverableServiceRpc.loadDeliverablesWithoutSubmission(deliverableIds, resourceIds, phaseIds);
+      /* TODO GRPC
       // get the non-"per submission" deliverables
       Deliverable[] deliverablesWithoutSubmission =
           loadDeliverablesWithoutSubmission(matchCondition);
@@ -352,7 +360,7 @@ public class SqlDeliverablePersistence {
           deliverables,
           deliverablesWithoutSubmission.length,
           deliverablesWithSubmission.length);
-
+      */
       return deliverables;
 
     } catch (PersistenceException e) {

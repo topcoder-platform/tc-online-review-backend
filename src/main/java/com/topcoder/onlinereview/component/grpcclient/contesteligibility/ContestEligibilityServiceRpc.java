@@ -7,6 +7,9 @@ import java.util.List;
 import java.util.Set;
 
 import org.springframework.stereotype.Component;
+
+import com.google.protobuf.BoolValue;
+import com.google.protobuf.Int64Value;
 import com.topcoder.onlinereview.component.contest.ContestEligibility;
 import com.topcoder.onlinereview.component.contest.GroupContestEligibility;
 import com.topcoder.onlinereview.component.grpcclient.contesteligibility.protos.*;
@@ -20,19 +23,30 @@ public class ContestEligibilityServiceRpc {
     private ContestEligibilityServiceGrpc.ContestEligibilityServiceBlockingStub stub;
 
     public Long create(ContestEligibility contestEligibility) {
-        CreateRequest createRequest = CreateRequest.newBuilder().setContestId(contestEligibility.getContestId())
-                .setStudio(contestEligibility.getStudio()).build();
-        stub.create(createRequest);
+        CreateRequest.Builder cBuilder = CreateRequest.newBuilder();
+        if (contestEligibility.getContestId() != null) {
+            cBuilder.setContestId(Int64Value.of(contestEligibility.getContestId()));
+        }
+        if (contestEligibility.getStudio() != null) {
+            cBuilder.setStudio(BoolValue.of(contestEligibility.getStudio()));
+        }
+        stub.create(cBuilder.build());
 
         GetIdByContestIdRequest getIdByContestIdRequest = GetIdByContestIdRequest
-                .newBuilder().setContestId(contestEligibility.getContestId()).build();
+                .newBuilder().setContestId(
+                        contestEligibility.getContestId() != null ? Int64Value.of(contestEligibility.getContestId())
+                                : null)
+                .build();
         GetIdByContestIdResponse getIdByContestIdResponse = stub
                 .getIdByContestId(getIdByContestIdRequest);
-        return getIdByContestIdResponse.getContestEligibilityId();
+        if (getIdByContestIdResponse.hasContestEligibilityId()) {
+            return getIdByContestIdResponse.getContestEligibilityId().getValue();
+        }
+        return null;
     }
 
     public void remove(long id) {
-        RemoveRequest removeRequest = RemoveRequest.newBuilder().setContestEligibilityId(id)
+        RemoveRequest removeRequest = RemoveRequest.newBuilder().setContestEligibilityId(Int64Value.of(id))
                 .build();
         stub.remove(removeRequest);
     }
@@ -44,25 +58,39 @@ public class ContestEligibilityServiceRpc {
     }
 
     public void update(ContestEligibility contestEligibility) {
-        UpdateRequest updateRequest = UpdateRequest.newBuilder().setContestEligibilityId(contestEligibility.getId())
-                .setContestId(contestEligibility.getContestId()).setStudio(contestEligibility.getStudio()).build();
-        stub.update(updateRequest);
+        UpdateRequest.Builder uBuilder = UpdateRequest.newBuilder();
+        if (contestEligibility.getId() != null) {
+            uBuilder.setContestEligibilityId(Int64Value.of(contestEligibility.getId()));
+        }
+        if (contestEligibility.getStudio() != null) {
+            uBuilder.setStudio(BoolValue.of(contestEligibility.getStudio()));
+        }
+        stub.update(uBuilder.build());
     }
 
     public List<ContestEligibility> getContestEligibility(long contestId, boolean isStudio) {
         GetContestEligibilityRequest getContestEligibilityRequest = GetContestEligibilityRequest.newBuilder()
-                .setContestId(contestId).setStudio(isStudio).build();
+                .setContestId(Int64Value.of(contestId)).setStudio(BoolValue.of(isStudio)).build();
         ContestEligibilitiesResponse contestEligibilitiesResponse = stub
                 .getContestEligibility(getContestEligibilityRequest);
-        List<GroupContestEligibilityProto> x = contestEligibilitiesResponse.getGroupContestEligibilitiesList();
+        List<GroupContestEligibilityProto> groupContestEligibilitiesList = contestEligibilitiesResponse
+                .getGroupContestEligibilitiesList();
         List<ContestEligibility> results = new ArrayList<>();
-        for (GroupContestEligibilityProto groupContestEligibility : x) {
+        for (GroupContestEligibilityProto groupContestEligibility : groupContestEligibilitiesList) {
             GroupContestEligibility ce = new GroupContestEligibility();
-            ce.setId(groupContestEligibility.getContestEligibilityId());
-            ce.setContestId(groupContestEligibility.getContestId());
-            ce.setStudio(groupContestEligibility.getStudio());
+            if (groupContestEligibility.hasContestEligibilityId()) {
+                ce.setId(groupContestEligibility.getContestEligibilityId().getValue());
+            }
+            if (groupContestEligibility.hasContestId()) {
+                ce.setContestId(groupContestEligibility.getContestId().getValue());
+            }
+            if (groupContestEligibility.hasStudio()) {
+                ce.setStudio(groupContestEligibility.getStudio().getValue());
+            }
             ce.setDeleted(false);
-            ce.setGroupId(groupContestEligibility.getGroupId());
+            if (groupContestEligibility.hasGroupId()) {
+                ce.setGroupId(groupContestEligibility.getGroupId().getValue());
+            }
             results.add(ce);
         }
         return results;
@@ -70,7 +98,7 @@ public class ContestEligibilityServiceRpc {
 
     public Set<Long> haveEligibility(Long[] contestIds, boolean isStudio) {
         HaveEligibilityRequest haveEligibilityRequest = HaveEligibilityRequest.newBuilder()
-                .addAllContestIds(Arrays.asList(contestIds)).setStudio(isStudio).build();
+                .addAllContestIds(Arrays.asList(contestIds)).setStudio(BoolValue.of(isStudio)).build();
         HaveEligibilityResponse haveEligibilityResponse = stub.haveEligibility(haveEligibilityRequest);
         return new HashSet<>(haveEligibilityResponse.getContestIdsList());
     }

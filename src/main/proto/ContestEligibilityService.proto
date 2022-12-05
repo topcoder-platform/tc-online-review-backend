@@ -1,24 +1,26 @@
 syntax = "proto3";
 package contesteligibility;
 import "google/protobuf/empty.proto";
+import "google/protobuf/wrappers.proto";
 option java_multiple_files = true;
 option java_package = "com.topcoder.onlinereview.component.grpcclient.contesteligibility.protos";
+option java_outer_classname = "ContestEligibilityProtos";
 
 message CreateRequest {
-    int64 contest_id = 1;
-    bool studio = 2;
+    google.protobuf.Int64Value contest_id = 1;
+    google.protobuf.BoolValue studio = 2;
 }
 
 message GetIdByContestIdRequest {
-    int64 contest_id = 1;
+    google.protobuf.Int64Value contest_id = 1;
 }
 
 message GetIdByContestIdResponse {
-    int64 contest_eligibility_id = 1;
+    google.protobuf.Int64Value contest_eligibility_id = 1;
 }
 
 message RemoveRequest {
-    int64 contest_eligibility_id = 1;
+    google.protobuf.Int64Value contest_eligibility_id = 1;
 }
 
 message BulkRemoveRequest {
@@ -26,14 +28,14 @@ message BulkRemoveRequest {
 }
 
 message UpdateRequest {
-    int64 contest_eligibility_id = 1;
-    int64 contest_id = 2;
-    bool studio = 3;
+    google.protobuf.Int64Value contest_eligibility_id = 1;
+    google.protobuf.Int64Value contest_id = 2;
+    google.protobuf.BoolValue studio = 3;
 }
 
 message GetContestEligibilityRequest {
-    int64 contest_id = 1;
-    bool studio = 2;
+    google.protobuf.Int64Value contest_id = 1;
+    google.protobuf.BoolValue studio = 2;
 }
 
 message ContestEligibilitiesResponse {
@@ -41,15 +43,15 @@ message ContestEligibilitiesResponse {
 }
 
 message GroupContestEligibilityProto {
-    int64 contest_eligibility_id = 1;
-    int64 contest_id = 2;
-    bool studio = 3;
-    int64 group_id = 4;
+    google.protobuf.Int64Value contest_eligibility_id = 1;
+    google.protobuf.Int64Value contest_id = 2;
+    google.protobuf.BoolValue studio = 3;
+    google.protobuf.Int64Value group_id = 4;
 }
 
 message HaveEligibilityRequest {
     repeated int64 contest_ids = 1;
-    bool studio = 2;
+    google.protobuf.BoolValue studio = 2;
 }
 
 message HaveEligibilityResponse {

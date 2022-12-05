@@ -3,6 +3,7 @@
  */
 package com.topcoder.onlinereview.component.deliverable;
 
+import com.topcoder.onlinereview.component.grpcclient.upload.UploadServiceRpc;
 import com.topcoder.onlinereview.component.project.management.FileType;
 import com.topcoder.onlinereview.component.project.management.LogMessage;
 import com.topcoder.onlinereview.component.project.management.Prize;
@@ -360,6 +361,9 @@ public class SqlUploadPersistence {
   @Qualifier("tcsJdbcTemplate")
   private JdbcTemplate jdbcTemplate;
 
+  @Autowired
+  private UploadServiceRpc uploadServiceRpc;
+
   /**
    * Adds the given uploadType to the persistence. The id of the upload type must already be
    * assigned, as must all the other fields needed for persistence.
@@ -371,8 +375,10 @@ public class SqlUploadPersistence {
   public void addUploadType(UploadType uploadType) throws UploadPersistenceException {
 
     assertEntityNotNullAndValidToPersist(uploadType, "uploadType");
-
+    uploadServiceRpc.addUploadType(uploadType);
+    /* TODO GRPC
     addNameEntity(uploadType, "upload_type_lu", "upload_type_id");
+    */
   }
 
   /**
@@ -386,8 +392,10 @@ public class SqlUploadPersistence {
    */
   public void addUploadStatus(UploadStatus uploadStatus) throws UploadPersistenceException {
     assertEntityNotNullAndValidToPersist(uploadStatus, "uploadStatus");
-
+    uploadServiceRpc.addUploadStatus(uploadStatus);
+    /* TODO GRPC
     addNameEntity(uploadStatus, "upload_status_lu", "upload_status_id");
+    */
   }
 
   /**
@@ -402,8 +410,10 @@ public class SqlUploadPersistence {
   public void addSubmissionStatus(SubmissionStatus submissionStatus)
       throws UploadPersistenceException {
     assertEntityNotNullAndValidToPersist(submissionStatus, "submissionStatus");
-
+    uploadServiceRpc.addSubmissionStatus(submissionStatus);
+    /* TODO GRPC
     addNameEntity(submissionStatus, "submission_status_lu", "submission_status_id");
+    */
   }
 
   /**
@@ -418,8 +428,10 @@ public class SqlUploadPersistence {
   public void removeUploadType(UploadType uploadType) throws UploadPersistenceException {
     Helper.assertObjectNotNull(uploadType, "uploadType");
     Helper.assertIdNotUnset(uploadType.getId(), "uploadType id");
-
+    uploadServiceRpc.removeUploadType(uploadType.getId());
+    /* TODO GRPC
     removeEntity(uploadType, "upload_type_lu", "upload_type_id");
+    */
   }
 
   /**
@@ -434,8 +446,10 @@ public class SqlUploadPersistence {
   public void removeUploadStatus(UploadStatus uploadStatus) throws UploadPersistenceException {
     Helper.assertObjectNotNull(uploadStatus, "uploadStatus");
     Helper.assertIdNotUnset(uploadStatus.getId(), "uploadStatus id");
-
+    uploadServiceRpc.removeUploadStatus(uploadStatus.getId());
+    /* TODO GRPC
     removeEntity(uploadStatus, "upload_status_lu", "upload_status_id");
+    */
   }
 
   /**
@@ -451,8 +465,10 @@ public class SqlUploadPersistence {
       throws UploadPersistenceException {
     Helper.assertObjectNotNull(submissionStatus, "submissionStatus");
     Helper.assertIdNotUnset(submissionStatus.getId(), "submissionStatus id");
-
+    uploadServiceRpc.removeSubmissionStatus(submissionStatus.getId());
+    /* TODO GRPC
     removeEntity(submissionStatus, "submission_status_lu", "submission_status_id");
+    */
   }
 
   /**
@@ -467,8 +483,10 @@ public class SqlUploadPersistence {
   public void removeUpload(Upload upload) throws UploadPersistenceException {
     Helper.assertObjectNotNull(upload, "upload");
     Helper.assertIdNotUnset(upload.getId(), "upload id");
-
+    uploadServiceRpc.removeUpload(upload.getId());
+    /* TODO GRPC
     removeEntity(upload, "upload", "upload_id");
+    */
   }
 
   /**
@@ -483,8 +501,10 @@ public class SqlUploadPersistence {
   public void removeSubmission(Submission submission) throws UploadPersistenceException {
     Helper.assertObjectNotNull(submission, "submission");
     Helper.assertIdNotUnset(submission.getId(), "submission id");
-
+    uploadServiceRpc.removeSubmission(submission.getId());
+    /* TODO GRPC
     removeEntity(submission, "submission", "submission_id");
+    */
   }
 
   /**
@@ -498,8 +518,10 @@ public class SqlUploadPersistence {
    */
   public void updateUploadType(UploadType uploadType) throws UploadPersistenceException {
     assertEntityNotNullAndValidToPersist(uploadType, "uploadType");
-
+    uploadServiceRpc.updateUploadType(uploadType);
+    /* TODO GRPC
     updateNamedEntity(uploadType, "upload_type_lu", "upload_type_id");
+    */
   }
 
   /**
@@ -513,8 +535,10 @@ public class SqlUploadPersistence {
    */
   public void updateUploadStatus(UploadStatus uploadStatus) throws UploadPersistenceException {
     assertEntityNotNullAndValidToPersist(uploadStatus, "uploadStatus");
-
+    uploadServiceRpc.updateUploadStatus(uploadStatus);
+    /* TODO GRPC
     updateNamedEntity(uploadStatus, "upload_status_lu", "upload_status_id");
+    */
   }
 
   /**
@@ -529,8 +553,10 @@ public class SqlUploadPersistence {
   public void updateSubmissionStatus(SubmissionStatus submissionStatus)
       throws UploadPersistenceException {
     assertEntityNotNullAndValidToPersist(submissionStatus, "submissionStatus");
-
+    uploadServiceRpc.updateSubmissionStatus(submissionStatus);
+    /* TODO GRPC
     updateNamedEntity(submissionStatus, "submission_status_lu", "submission_status_id");
+    */
   }
 
   /**
@@ -541,7 +567,10 @@ public class SqlUploadPersistence {
    * @throws UploadPersistenceException If there is an error when reading the persistence store
    */
   public Long[] getAllUploadTypeIds() throws UploadPersistenceException {
+    return uploadServiceRpc.getAllUploadTypeIds();
+    /* TODO GRPC
     return getAllEntityIds("upload_type_lu", "upload_type_id");
+    */
   }
 
   /**
@@ -552,7 +581,10 @@ public class SqlUploadPersistence {
    * @throws UploadPersistenceException If there is an error when reading the persistence store
    */
   public Long[] getAllUploadStatusIds() throws UploadPersistenceException {
+    return uploadServiceRpc.getAllUploadStatusIds();
+    /* TODO GRPC
     return getAllEntityIds("upload_status_lu", "upload_status_id");
+    */
   }
 
   /**
@@ -563,7 +595,10 @@ public class SqlUploadPersistence {
    * @throws UploadPersistenceException If there is an error when reading the persistence store
    */
   public Long[] getAllSubmissionStatusIds() throws UploadPersistenceException {
+    return uploadServiceRpc.getAllSubmissionStatusIds();
+    /* TODO GRPC
     return getAllEntityIds("submission_status_lu", "submission_status_id");
+    */
   }
 
   /**
@@ -577,8 +612,10 @@ public class SqlUploadPersistence {
    */
   public void addSubmissionType(SubmissionType submissionType) throws UploadPersistenceException {
     assertEntityNotNullAndValidToPersist(submissionType, "submissionType");
-
+    uploadServiceRpc.addSubmissionType(submissionType);
+    /* TODO GRPC
     addNameEntity(submissionType, "submission_type_lu", "submission_type_id");
+    */
   }
 
   /**
@@ -594,8 +631,10 @@ public class SqlUploadPersistence {
       throws UploadPersistenceException {
     Helper.assertObjectNotNull(submissionType, "submissionType");
     Helper.assertIdNotUnset(submissionType.getId(), "submissionType id");
-
+    uploadServiceRpc.removeSubmissionType(submissionType.getId());
+    /* TODO GRPC
     removeEntity(submissionType, "submission_type_lu", "submission_type_id");
+    */
   }
 
   /**
@@ -610,8 +649,10 @@ public class SqlUploadPersistence {
   public void updateSubmissionType(SubmissionType submissionType)
       throws UploadPersistenceException {
     assertEntityNotNullAndValidToPersist(submissionType, "submissionType");
-
+    uploadServiceRpc.updateSubmissionType(submissionType);
+    /* TODO GRPC
     updateNamedEntity(submissionType, "submission_type_lu", "submission_type_id");
+    */
   }
 
   /**
@@ -644,10 +685,12 @@ public class SqlUploadPersistence {
   public SubmissionType[] loadSubmissionTypes(Long[] submissionTypeIds)
       throws UploadPersistenceException {
     Helper.assertLongArrayNotNullAndOnlyHasPositive(submissionTypeIds, "submissionTypeIds");
-
+    return uploadServiceRpc.loadSubmissionTypes(submissionTypeIds);
+    /* TODO GRPC
     return (SubmissionType[])
         loadNamedEntities(
             submissionTypeIds, SubmissionType.class, "submission_type_lu", "submission_type_id");
+    */
   }
 
   /**
@@ -659,7 +702,10 @@ public class SqlUploadPersistence {
    * @since 1.1
    */
   public Long[] getAllSubmissionTypeIds() throws UploadPersistenceException {
+    return uploadServiceRpc.getAllSubmissionTypeIds();
+    /* TODO GRPC
     return getAllEntityIds("submission_type_lu", "submission_type_id");
+    */
   }
 
   /**
@@ -721,9 +767,11 @@ public class SqlUploadPersistence {
    */
   public UploadType[] loadUploadTypes(Long[] uploadTypeIds) throws UploadPersistenceException {
     Helper.assertLongArrayNotNullAndOnlyHasPositive(uploadTypeIds, "uploadTypeIds");
-
+    return uploadServiceRpc.loadUploadTypes(uploadTypeIds);
+    /* TODO GRPC
     return (UploadType[])
         loadNamedEntities(uploadTypeIds, UploadType.class, "upload_type_lu", "upload_type_id");
+    */
   }
 
   /**
@@ -737,10 +785,12 @@ public class SqlUploadPersistence {
   public UploadStatus[] loadUploadStatuses(Long[] uploadStatusIds)
       throws UploadPersistenceException {
     Helper.assertLongArrayNotNullAndOnlyHasPositive(uploadStatusIds, "uploadStatusIds");
-
+    return uploadServiceRpc.loadUploadStatuses(uploadStatusIds);
+    /* TODO GRPC
     return (UploadStatus[])
         loadNamedEntities(
             uploadStatusIds, UploadStatus.class, "upload_status_lu", "upload_status_id");
+    */
   }
 
   /**
@@ -755,12 +805,15 @@ public class SqlUploadPersistence {
       throws UploadPersistenceException {
     Helper.assertLongArrayNotNullAndOnlyHasPositive(submissionStatusIds, "submissionStatusIds");
 
+    return uploadServiceRpc.loadSubmissionStatuses(submissionStatusIds);
+    /* TODO GRPC
     return (SubmissionStatus[])
         loadNamedEntities(
             submissionStatusIds,
             SubmissionStatus.class,
             "submission_status_lu",
-            "submission_status_id");
+            "submission_status_id");,
+    */
   }
 
   /**
@@ -780,6 +833,8 @@ public class SqlUploadPersistence {
    */
   public void addUpload(Upload upload) throws UploadPersistenceException {
     assertEntityNotNullAndValidToPersist(upload, "upload");
+    uploadServiceRpc.addUpload(upload);
+    /* TODO GRPC
     // add upload to database
     executeUpdateSql(
         jdbcTemplate,
@@ -797,6 +852,7 @@ public class SqlUploadPersistence {
             upload.getUploadStatus().getId(),
             upload.getParameter(),
             upload.getDescription()));
+    */
   }
 
   /**
@@ -812,6 +868,8 @@ public class SqlUploadPersistence {
    */
   public void updateUpload(Upload upload) throws UploadPersistenceException {
     assertEntityNotNullAndValidToPersist(upload, "upload");
+    uploadServiceRpc.updateUpload(upload);
+    /* TODO GRPC
     // update upload to database
     executeUpdateSql(
         jdbcTemplate,
@@ -827,6 +885,7 @@ public class SqlUploadPersistence {
             upload.getParameter(),
             upload.getDescription(),
             upload.getId()));
+    */
   }
 
   /**
@@ -845,7 +904,8 @@ public class SqlUploadPersistence {
    */
   public void addSubmission(Submission submission) throws UploadPersistenceException {
     assertEntityNotNullAndValidToPersist(submission, "submission");
-
+    uploadServiceRpc.addSubmission(submission);
+    /* TODO GRPC
     // add submission to database
     executeUpdateSql(
         jdbcTemplate,
@@ -867,6 +927,7 @@ public class SqlUploadPersistence {
             submission.getPrize() != null ? submission.getPrize().getId() : null,
             submission.getUpload() != null ? submission.getUpload().getId() : null,
             submission.getThurgoodJobId()));
+    */
   }
 
   /**
@@ -885,6 +946,8 @@ public class SqlUploadPersistence {
    */
   public void updateSubmission(Submission submission) throws UploadPersistenceException {
     assertEntityNotNullAndValidToPersist(submission, "submission");
+    uploadServiceRpc.updateSubmission(submission);
+    /* TODO GRPC
     // update submission to database
     executeUpdateSql(
         jdbcTemplate,
@@ -904,6 +967,7 @@ public class SqlUploadPersistence {
             submission.getUpload() != null ? submission.getUpload().getId() : null,
             submission.getThurgoodJobId(),
             submission.getId()));
+    */
   }
 
   /**
@@ -939,10 +1003,12 @@ public class SqlUploadPersistence {
     if (uploadIds.length == 0) {
       return new Upload[0];
     }
-
+    return uploadServiceRpc.loadUploads(uploadIds);
+    /* TODO GRPC
     List<Map<String, Object>> rows =
         executeSql(jdbcTemplate, LOAD_UPLOADS_SQL + makeIdListString(uploadIds));
     return loadUploads(rows);
+    */
   }
 
   /**
@@ -1006,9 +1072,12 @@ public class SqlUploadPersistence {
     if (submissionIds.length == 0) {
       return new Submission[0];
     }
+    return uploadServiceRpc.loadSubmissions(submissionIds);
+    /* TODO GRPC
     List<Map<String, Object>> rows =
         executeSql(jdbcTemplate, LOAD_SUBMISSIONS_SQL + makeIdListString(submissionIds));
     return loadSubmissions(rows);
+    */
   }
 
   /**
@@ -1061,6 +1130,8 @@ public class SqlUploadPersistence {
             + submissionImage.getSubmissionId()
             + ", and image id:"
             + submissionImage.getImageId());
+    uploadServiceRpc.addSubmissionImage(submissionImage);
+    /* TODO GRPC
     executeUpdateSql(
         jdbcTemplate,
         ADD_SUBMISSION_IMAGE_SQL,
@@ -1070,6 +1141,7 @@ public class SqlUploadPersistence {
             submissionImage.getSortOrder(),
             submissionImage.getModifyDate(),
             submissionImage.getCreateDate()));
+    */
   }
 
   /**
@@ -1097,7 +1169,8 @@ public class SqlUploadPersistence {
             + submissionImage.getSubmissionId()
             + ", and image id:"
             + submissionImage.getImageId());
-
+    uploadServiceRpc.updateSubmissionImage(submissionImage);
+    /* TODO GRPC
     // build arguments
     Object[] queryArgs =
         new Object[] {
@@ -1122,6 +1195,7 @@ public class SqlUploadPersistence {
             submissionImage.getCreateDate(),
             submissionImage.getSubmissionId(),
             submissionImage.getImageId()));
+    */
   }
 
   /**
@@ -1145,10 +1219,13 @@ public class SqlUploadPersistence {
             + submissionImage.getSubmissionId()
             + ", and image id:"
             + submissionImage.getImageId());
+    uploadServiceRpc.removeSubmissionImage(submissionImage);
+    /* TODO GRPC
     executeUpdateSql(
         jdbcTemplate,
         DELETE_SUBMISSION_IMAGE_SQL,
         newArrayList(submissionImage.getSubmissionId(), submissionImage.getImageId()));
+    */
   }
 
   /**
@@ -1182,8 +1259,10 @@ public class SqlUploadPersistence {
    */
   public Long[] getAllMimeTypeIds() throws UploadPersistenceException {
     log.debug(new LogMessage(null, null, "Load all MimeType ids in persistence.").toString());
-
+    return uploadServiceRpc.getAllMimeTypeIds();
+    /* TODO GRPC
     return getAllEntityIds("mime_type_lu", "mime_type_id");
+    */
   }
 
   /**
@@ -1204,7 +1283,8 @@ public class SqlUploadPersistence {
     if (mimeTypeIds.length == 0) {
       return new MimeType[0];
     }
-
+    return uploadServiceRpc.loadMimeTypes(mimeTypeIds);
+    /* TODO GRPC
     List<Map<String, Object>> rows =
         executeSql(jdbcTemplate, LOAD_MIME_TYPES_SQL + makeIdListString(mimeTypeIds));
 
@@ -1217,6 +1297,7 @@ public class SqlUploadPersistence {
     }
 
     return mimeTypes;
+    */
   }
 
   /**
@@ -1240,7 +1321,8 @@ public class SqlUploadPersistence {
             .toString());
 
     assertLongBePositive(submissionId, "submissionId");
-
+    return uploadServiceRpc.getImagesForSubmission(submissionId);
+    /* TODO GRPC
     List<Map<String, Object>> rows =
         executeSqlWithParam(
             jdbcTemplate, GET_SUBMISSION_IMAGES_FOR_SUBMISSION_SQL, newArrayList(submissionId));
@@ -1263,6 +1345,7 @@ public class SqlUploadPersistence {
     }
 
     return submissionImages;
+    */
   }
 
   /**
