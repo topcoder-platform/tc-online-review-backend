@@ -107,6 +107,58 @@ message AppealResponsesDeliverableCheckResponse {
     repeated google.protobuf.Int64Value modify_date = 1;
 }
 
+message FilterProto {
+    bytes filter = 1;
+}
+
+message SearchDeliverablesProto {
+    google.protobuf.Int64Value deliverable_id = 1;
+    google.protobuf.Int64Value resource_id = 2;
+    google.protobuf.Int64Value project_phase_id = 3;
+}
+
+message SearchDeliverablesResponse {
+    repeated SearchDeliverablesProto deliverables = 1;
+}
+
+message SearchDeliverablesWithSubmissionProto {
+    google.protobuf.Int64Value deliverable_id = 1;
+    google.protobuf.Int64Value resource_id = 2;
+    google.protobuf.Int64Value project_phase_id = 3;
+    google.protobuf.Int64Value submission_id = 4;
+}
+
+message SearchDeliverablesWithSubmissionResponse {
+    repeated SearchDeliverablesWithSubmissionProto deliverables = 1;
+}
+
+message LateDeliverablesProto {
+    google.protobuf.Int64Value late_deliverable_id = 1;
+    google.protobuf.Int64Value project_id = 2;
+    google.protobuf.Int64Value project_phase_id = 3;
+    google.protobuf.Int64Value resource_id = 4;
+    google.protobuf.Int64Value deliverable_id = 5;
+    google.protobuf.Timestamp deadline = 6;
+    google.protobuf.Timestamp compensated_deadline = 7;
+    google.protobuf.Timestamp create_date = 8;
+    google.protobuf.BoolValue forgive_ind = 9;
+    google.protobuf.Timestamp last_notified = 10;
+    google.protobuf.Int64Value delay = 11;
+    google.protobuf.StringValue explanation = 12;
+    google.protobuf.Timestamp explanation_date = 13;
+    google.protobuf.StringValue response = 14;
+    google.protobuf.StringValue response_user = 15;
+    google.protobuf.Timestamp response_date = 16;
+    google.protobuf.Int64Value late_deliverable_type_id = 17;
+    google.protobuf.StringValue name = 18;
+    google.protobuf.StringValue description = 19;
+
+}
+
+message SearchLateDeliverablesResponse {
+    repeated LateDeliverablesProto late_deliverables = 1;
+}
+
 service DeliverableService {
     rpc loadDeliverablesWithoutSubmission(LoadDeliverablesWithoutSubmissionRequest) returns (LoadDeliverablesWithoutSubmissionResponse);
     rpc loadDeliverablesWithSubmission(LoadDeliverablesWithSubmissionRequest) returns (LoadDeliverablesWithSubmissionResponse);
@@ -114,4 +166,8 @@ service DeliverableService {
     rpc getLateDeliverableTypes(google.protobuf.Empty) returns (LateDeliverableTypesResponse);
     rpc aggregationDeliverableCheck(AggregationDeliverableCheckRequest) returns (AggregationDeliverableCheckResponse);
     rpc appealResponsesDeliverableCheck(AppealResponsesDeliverableCheckRequest) returns (AppealResponsesDeliverableCheckResponse);
+    rpc searchDeliverables(FilterProto) returns (SearchDeliverablesResponse);
+    rpc searchDeliverablesWithSubmission(FilterProto) returns (SearchDeliverablesWithSubmissionResponse);
+    rpc searchLateDeliverablesNonRestricted(FilterProto) returns (SearchLateDeliverablesResponse);
+    rpc searchLateDeliverablesRestricted(FilterProto) returns (SearchLateDeliverablesResponse);
 }

@@ -3,6 +3,7 @@
  */
 package com.topcoder.onlinereview.component.deliverable;
 
+import com.topcoder.onlinereview.component.grpcclient.deliverable.DeliverableServiceRpc;
 import com.topcoder.onlinereview.component.search.SearchBuilderException;
 import com.topcoder.onlinereview.component.search.SearchBundle;
 import com.topcoder.onlinereview.component.search.SearchBundleManager;
@@ -116,6 +117,9 @@ public class DeliverableManager {
    */
   private SearchBundle deliverableWithSubmissionsSearchBundle;
 
+  @Autowired
+  private DeliverableServiceRpc deliverableServiceRpc;
+
   @PostConstruct
   public void postRun() {
     deliverableSearchBundle = searchBundleManager.getSearchBundle(DELIVERABLE_SEARCH_BUNDLE_NAME);
@@ -213,9 +217,17 @@ public class DeliverableManager {
       throws SearchBuilderException, DeliverablePersistenceException, DeliverableCheckingException {
     DeliverableHelper.checkObjectNotNull(filter, "filter");
 
+    Long[][] array;
+    if (cols.size() == 3) {
+        array = deliverableServiceRpc.searchDeliverables(filter);
+    } else {
+        array = deliverableServiceRpc.searchDeliverablesWithSubmission(filter);
+    }
+    /* TODO GRPC
     // Get object with given filter from corresponding search bundle.
     List<Map<String, Object>> obj;
     if (cols.size() == 3) {
+        deliverableServiceRpc.searchDeliverables(filter);
       obj = deliverableSearchBundle.search(filter);
     } else {
       obj = deliverableWithSubmissionsSearchBundle.search(filter);
@@ -224,7 +236,7 @@ public class DeliverableManager {
     // Check if the return object is a CustomResultSet, and it's record count is correct too.
     // And retrieve long[][] from correct CustomResultSet.
     Long[][] array = checkAndGetCustomResultSetValidDeliverable(obj, cols);
-
+    */
     // Create a List for temporary storage.
     List<Deliverable> list = new ArrayList<>();
 

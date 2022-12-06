@@ -3,6 +3,7 @@
  */
 package com.topcoder.onlinereview.component.deliverable;
 
+import com.topcoder.onlinereview.component.grpcclient.upload.UploadServiceRpc;
 import com.topcoder.onlinereview.component.id.DBHelper;
 import com.topcoder.onlinereview.component.id.IDGenerationException;
 import com.topcoder.onlinereview.component.id.IDGenerator;
@@ -361,6 +362,9 @@ public class UploadManager {
 
   @Autowired private DBHelper dbHelper;
 
+  @Autowired
+  private UploadServiceRpc uploadServiceRpc;
+
   @PostConstruct
   public void postRun() throws IDGenerationException {
     uploadSearchBundle = searchBundleManager.getSearchBundle(UPLOAD_SEARCH_BUNDLE_NAME);
@@ -458,6 +462,8 @@ public class UploadManager {
   public Upload[] searchUploads(Filter filter)
       throws UploadPersistenceException, SearchBuilderException {
     DeliverableHelper.checkObjectNotNull(filter, "filter");
+    return uploadServiceRpc.searchUploads(filter);
+    /* TODO GRPC
     List<Map<String, Object>> resultSet = uploadSearchBundle.search(filter);
     log.debug(
         new LogMessage(null, null, "search uploads with filter.") + " found: " + resultSet.size());
@@ -465,6 +471,7 @@ public class UploadManager {
     // The parameter 1 indicate that there should be a single column in the CustomResultSet.
     // The return type is long[][], what we need is the first array.
     return persistence.loadUploads(resultSet);
+    */
   }
 
   /**
@@ -699,6 +706,8 @@ public class UploadManager {
   public Submission[] searchSubmissions(Filter filter)
       throws UploadPersistenceException, SearchBuilderException {
     DeliverableHelper.checkObjectNotNull(filter, "filter");
+    Submission[] submissions = uploadServiceRpc.searchSubmissions(filter);
+    /* TODO GRPC
     List<Map<String, Object>> customResult = submissionSearchBundle.search(filter);
 
     log.debug(
@@ -706,7 +715,7 @@ public class UploadManager {
             + " found: "
             + customResult.size());
     Submission[] submissions = persistence.loadSubmissions(customResult);
-
+    */
     // retrieve the uploads and submission images separately for each submission
     for (Submission submission : submissions) {
       submission.setImages(Arrays.asList(persistence.getImagesForSubmission(submission.getId())));

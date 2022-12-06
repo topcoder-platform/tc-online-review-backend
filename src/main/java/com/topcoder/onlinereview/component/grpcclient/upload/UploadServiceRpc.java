@@ -4,9 +4,11 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
+import org.apache.commons.lang3.SerializationUtils;
 import org.springframework.stereotype.Component;
 
 import com.google.protobuf.BoolValue;
+import com.google.protobuf.ByteString;
 import com.google.protobuf.DoubleValue;
 import com.google.protobuf.Int32Value;
 import com.google.protobuf.Int64Value;
@@ -25,6 +27,7 @@ import com.topcoder.onlinereview.component.grpcclient.upload.protos.*;
 import com.topcoder.onlinereview.component.project.management.FileType;
 import com.topcoder.onlinereview.component.project.management.Prize;
 import com.topcoder.onlinereview.component.project.management.PrizeType;
+import com.topcoder.onlinereview.component.search.filter.Filter;
 
 import net.devh.boot.grpc.client.inject.GrpcClient;
 
@@ -263,6 +266,47 @@ public class UploadServiceRpc {
         return submissionImages;
     }
 
+    public Upload[] searchUploads(Filter filter) {
+        FilterProto filterProto = FilterProto.newBuilder()
+                .setFilter(ByteString.copyFrom(SerializationUtils.serialize(filter))).build();
+        UploadCompleteListProto response = stub.searchUploads(filterProto);
+        List<UploadCompleteProto> uploadList = response.getUploadsList();
+        Upload[] uploads = new Upload[response.getUploadsCount()];
+        for (int i = 0; i < response.getUploadsCount(); ++i) {
+            Upload upload = loadUpload(uploadList.get(i).getUpload());
+            upload.setUploadType(loadUploadType(uploadList.get(i).getUploadType()));
+            upload.setUploadStatus(loadUploadStatus(uploadList.get(i).getUploadStatus()));
+            uploads[i] = upload;
+        }
+        return uploads;
+    }
+
+    public Submission[] searchSubmissions(Filter filter) {
+        FilterProto filterProto = FilterProto.newBuilder()
+                .setFilter(ByteString.copyFrom(SerializationUtils.serialize(filter))).build();
+        SubmissionCompleteListProto response = stub.searchSubmissions(filterProto);
+        List<SubmissionCompleteProto> submissionList = response.getSubmissionsList();
+        Submission[] submissions = new Submission[response.getSubmissionsCount()];
+        for (int i = 0; i < response.getSubmissionsCount(); ++i) {
+            Submission submission = loadSubmission(submissionList.get(i).getSubmission());
+            submission.setSubmissionStatus(loadSubmissionStatus(submissionList.get(i).getSubmissionStatus()));
+            submission.setSubmissionType(loadSubmissionType(submissionList.get(i).getSubmissionType()));
+            PrizeProto p = submissionList.get(i).getPrize();
+            if (p.hasPrizeId()) {
+                Prize prize = loadPrize(p);
+                PrizeType prizeType = loadPrizeType(submissionList.get(i).getPrizeType());
+                prize.setPrizeType(prizeType);
+                submission.setPrize(prize);
+            }
+            Upload upload = loadUpload(submissionList.get(i).getUpload().getUpload());
+            upload.setUploadType(loadUploadType(submissionList.get(i).getUpload().getUploadType()));
+            upload.setUploadStatus(loadUploadStatus(submissionList.get(i).getUpload().getUploadStatus()));
+            submission.setUpload(upload);
+            submissions[i] = submission;
+        }
+        return submissions;
+    }
+
     private EntityProto buildEntityProto(NamedDeliverableStructure entity) {
         EntityProto.Builder eBuilder = EntityProto.newBuilder().setId(Int64Value.of(entity.getId()));
         if (entity.getCreationUser() != null) {
@@ -439,13 +483,13 @@ public class UploadServiceRpc {
             entity.setCreationUser(e.getCreateUser().getValue());
         }
         if (e.hasCreateDate()) {
-            entity.setCreationTimestamp(new Date(e.getCreateDate().getSeconds()));
+            entity.setCreationTimestamp(new Date(e.getCreateDate().getSeconds() * 1000));
         }
         if (e.hasModifyUser()) {
             entity.setModificationUser(e.getModifyUser().getValue());
         }
         if (e.hasModifyDate()) {
-            entity.setModificationTimestamp(new Date(e.getModifyDate().getSeconds()));
+            entity.setModificationTimestamp(new Date(e.getModifyDate().getSeconds() * 1000));
         }
     }
 
@@ -458,13 +502,13 @@ public class UploadServiceRpc {
             upload.setCreationUser(u.getCreateUser().getValue());
         }
         if (u.hasCreateDate()) {
-            upload.setCreationTimestamp(new Date(u.getCreateDate().getSeconds()));
+            upload.setCreationTimestamp(new Date(u.getCreateDate().getSeconds() * 1000));
         }
         if (u.hasModifyUser()) {
             upload.setModificationUser(u.getModifyUser().getValue());
         }
         if (u.hasModifyDate()) {
-            upload.setModificationTimestamp(new Date(u.getModifyDate().getSeconds()));
+            upload.setModificationTimestamp(new Date(u.getModifyDate().getSeconds() * 1000));
         }
         if (u.hasProjectId()) {
             upload.setProject(u.getProjectId().getValue());
@@ -517,13 +561,13 @@ public class UploadServiceRpc {
             submission.setCreationUser(s.getCreateUser().getValue());
         }
         if (s.hasCreateDate()) {
-            submission.setCreationTimestamp(new Date(s.getCreateDate().getSeconds()));
+            submission.setCreationTimestamp(new Date(s.getCreateDate().getSeconds() * 1000));
         }
         if (s.hasModifyUser()) {
             submission.setModificationUser(s.getModifyUser().getValue());
         }
         if (s.hasModifyDate()) {
-            submission.setModificationTimestamp(new Date(s.getModifyDate().getSeconds()));
+            submission.setModificationTimestamp(new Date(s.getModifyDate().getSeconds() * 1000));
         }
         return submission;
     }
@@ -546,13 +590,13 @@ public class UploadServiceRpc {
             prize.setCreationUser(p.getCreateUser().getValue());
         }
         if (p.hasCreateDate()) {
-            prize.setCreationTimestamp(new Date(p.getCreateDate().getSeconds()));
+            prize.setCreationTimestamp(new Date(p.getCreateDate().getSeconds() * 1000));
         }
         if (p.hasModifyUser()) {
             prize.setModificationUser(p.getModifyUser().getValue());
         }
         if (p.hasModifyDate()) {
-            prize.setModificationTimestamp(new Date(p.getModifyDate().getSeconds()));
+            prize.setModificationTimestamp(new Date(p.getModifyDate().getSeconds() * 1000));
         }
         return prize;
     }
@@ -611,10 +655,10 @@ public class UploadServiceRpc {
             si.setSortOrder(sip.getSortOrder().getValue());
         }
         if (sip.hasCreateDate()) {
-            si.setCreateDate(new Date(sip.getCreateDate().getSeconds()));
+            si.setCreateDate(new Date(sip.getCreateDate().getSeconds() * 1000));
         }
         if (sip.hasModifyDate()) {
-            si.setModifyDate(new Date(sip.getModifyDate().getSeconds()));
+            si.setModifyDate(new Date(sip.getModifyDate().getSeconds() * 1000));
         }
         return si;
     }

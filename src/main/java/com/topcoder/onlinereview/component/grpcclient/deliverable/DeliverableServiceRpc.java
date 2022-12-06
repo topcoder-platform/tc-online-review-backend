@@ -3,11 +3,15 @@ package com.topcoder.onlinereview.component.grpcclient.deliverable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
+import org.apache.commons.lang3.SerializationUtils;
 import org.springframework.stereotype.Component;
 
 import com.google.protobuf.BoolValue;
+import com.google.protobuf.ByteString;
 import com.google.protobuf.Int64Value;
 import com.google.protobuf.StringValue;
 import com.google.protobuf.Timestamp;
@@ -15,6 +19,7 @@ import com.topcoder.onlinereview.component.deliverable.Deliverable;
 import com.topcoder.onlinereview.component.deliverable.late.LateDeliverable;
 import com.topcoder.onlinereview.component.deliverable.late.LateDeliverableType;
 import com.topcoder.onlinereview.component.grpcclient.deliverable.protos.*;
+import com.topcoder.onlinereview.component.search.filter.Filter;
 
 import net.devh.boot.grpc.client.inject.GrpcClient;
 
@@ -44,13 +49,13 @@ public class DeliverableServiceRpc {
                 deliverable.setCreationUser(dp.getCreateUser().getValue());
             }
             if (dp.hasCreateDate()) {
-                deliverable.setCreationTimestamp(new Date(dp.getCreateDate().getSeconds()));
+                deliverable.setCreationTimestamp(new Date(dp.getCreateDate().getSeconds() * 1000));
             }
             if (dp.hasModifyUser()) {
                 deliverable.setModificationUser(dp.getModifyUser().getValue());
             }
             if (dp.hasModifyDate()) {
-                deliverable.setModificationTimestamp(new Date(dp.getModifyDate().getSeconds()));
+                deliverable.setModificationTimestamp(new Date(dp.getModifyDate().getSeconds() * 1000));
             }
             if (dp.hasName()) {
                 deliverable.setName(dp.getName().getValue());
@@ -84,13 +89,13 @@ public class DeliverableServiceRpc {
                 deliverable.setCreationUser(dp.getCreateUser().getValue());
             }
             if (dp.hasCreateDate()) {
-                deliverable.setCreationTimestamp(new Date(dp.getCreateDate().getSeconds()));
+                deliverable.setCreationTimestamp(new Date(dp.getCreateDate().getSeconds() * 1000));
             }
             if (dp.hasModifyUser()) {
                 deliverable.setModificationUser(dp.getModifyUser().getValue());
             }
             if (dp.hasModifyDate()) {
-                deliverable.setModificationTimestamp(new Date(dp.getModifyDate().getSeconds()));
+                deliverable.setModificationTimestamp(new Date(dp.getModifyDate().getSeconds() * 1000));
             }
             if (dp.hasName()) {
                 deliverable.setName(dp.getName().getValue());
@@ -172,10 +177,141 @@ public class DeliverableServiceRpc {
         AggregationDeliverableCheckRequest.Builder builder = AggregationDeliverableCheckRequest.newBuilder();
         builder.setResourceId(Int64Value.of(deliverable.getResource()));
         AggregationDeliverableCheckResponse response = stub.aggregationDeliverableCheck(builder.build());
-        if (response.getModifyDateCount() > 0 && response.getModifyDate(0).isInitialized()) {
+        if (response.getModifyDateCount() > 0) {
             deliverable
-                    .setCompletionDate(new Date(response.getModifyDate(0).getSeconds()));
+                    .setCompletionDate(new Date(response.getModifyDate(0).getSeconds() * 1000));
         }
 
+    }
+
+    public Long[][] searchDeliverables(Filter filter) {
+        FilterProto request = FilterProto.newBuilder()
+                .setFilter(ByteString.copyFrom(SerializationUtils.serialize(filter))).build();
+        SearchDeliverablesResponse response = stub.searchDeliverables(request);
+        List<SearchDeliverablesProto> deliverableList = response.getDeliverablesList();
+        Long[][] res = new Long[3][response.getDeliverablesCount()];
+        for (int i = 0; i < response.getDeliverablesCount(); i++) {
+            SearchDeliverablesProto dp = deliverableList.get(i);
+            if (dp.hasDeliverableId()) {
+                res[0][i] = deliverableList.get(i).getDeliverableId().getValue();
+            }
+            if (dp.hasResourceId()) {
+                res[1][i] = deliverableList.get(i).getResourceId().getValue();
+            }
+            if (dp.hasProjectPhaseId()) {
+                res[2][i] = deliverableList.get(i).getProjectPhaseId().getValue();
+            }
+        }
+        return res;
+    }
+
+    public Long[][] searchDeliverablesWithSubmission(Filter filter) {
+        FilterProto request = FilterProto.newBuilder()
+                .setFilter(ByteString.copyFrom(SerializationUtils.serialize(filter))).build();
+        SearchDeliverablesWithSubmissionResponse response = stub.searchDeliverablesWithSubmission(request);
+        List<SearchDeliverablesWithSubmissionProto> deliverableList = response.getDeliverablesList();
+        Long[][] res = new Long[3][response.getDeliverablesCount()];
+        for (int i = 0; i < response.getDeliverablesCount(); i++) {
+            SearchDeliverablesWithSubmissionProto dp = deliverableList.get(i);
+            if (dp.hasDeliverableId()) {
+                res[0][i] = deliverableList.get(i).getDeliverableId().getValue();
+            }
+            if (dp.hasResourceId()) {
+                res[1][i] = deliverableList.get(i).getResourceId().getValue();
+            }
+            if (dp.hasProjectPhaseId()) {
+                res[2][i] = deliverableList.get(i).getProjectPhaseId().getValue();
+            }
+            if (dp.hasSubmissionId()) {
+                res[2][i] = deliverableList.get(i).getSubmissionId().getValue();
+            }
+        }
+        return res;
+    }
+
+    public List<LateDeliverable> searchLateDeliverablesNonRestricted(Filter filter) {
+        FilterProto request = FilterProto.newBuilder()
+                .setFilter(ByteString.copyFrom(SerializationUtils.serialize(filter))).build();
+        return loadLateDeliverablesFromSearch(stub.searchLateDeliverablesNonRestricted(request));
+    }
+
+    public List<LateDeliverable> searchLateDeliverablesRestricted(Filter filter) {
+        FilterProto request = FilterProto.newBuilder()
+                .setFilter(ByteString.copyFrom(SerializationUtils.serialize(filter))).build();
+        return loadLateDeliverablesFromSearch(stub.searchLateDeliverablesRestricted(request));
+    }
+
+    private List<LateDeliverable> loadLateDeliverablesFromSearch(SearchLateDeliverablesResponse response) {
+        List<LateDeliverable> result = new ArrayList<LateDeliverable>();
+        Map<Long, LateDeliverableType> lateDeliverableTypes = new HashMap<Long, LateDeliverableType>();
+        for (LateDeliverablesProto ldp : response.getLateDeliverablesList()) {
+            LateDeliverable lateDeliverable = new LateDeliverable();
+            if (ldp.hasLateDeliverableId()) {
+                lateDeliverable.setId(ldp.getLateDeliverableId().getValue());
+            }
+            if (ldp.hasProjectId()) {
+                lateDeliverable.setProjectId(ldp.getProjectId().getValue());
+            }
+            if (ldp.hasProjectPhaseId()) {
+                lateDeliverable.setProjectPhaseId(ldp.getProjectPhaseId().getValue());
+            }
+            if (ldp.hasResourceId()) {
+                lateDeliverable.setResourceId(ldp.getResourceId().getValue());
+            }
+            if (ldp.hasDeliverableId()) {
+                lateDeliverable.setDeliverableId(ldp.getDeliverableId().getValue());
+            }
+            if (ldp.hasDeadline()) {
+                lateDeliverable.setDeadline(new Date(ldp.getDeadline().getSeconds() * 1000));
+            }
+            if (ldp.hasCompensatedDeadline()) {
+                lateDeliverable.setCompensatedDeadline(new Date(ldp.getCompensatedDeadline().getSeconds() * 1000));
+            }
+            if (ldp.hasCreateDate()) {
+                lateDeliverable.setCreateDate(new Date(ldp.getCreateDate().getSeconds() * 1000));
+            }
+            if (ldp.hasForgiveInd()) {
+                lateDeliverable.setForgiven(ldp.getForgiveInd().getValue());
+            }
+            if (ldp.hasLastNotified()) {
+                lateDeliverable.setLastNotified(new Date(ldp.getLastNotified().getSeconds() * 1000));
+            }
+            if (ldp.hasDelay()) {
+                lateDeliverable.setDelay(ldp.getDelay().getValue());
+            }
+            if (ldp.hasExplanation()) {
+                lateDeliverable.setExplanation(ldp.getExplanation().getValue());
+            }
+            if (ldp.hasExplanationDate()) {
+                lateDeliverable.setExplanationDate(new Date(ldp.getExplanationDate().getSeconds() * 1000));
+            }
+            if (ldp.hasResponse()) {
+                lateDeliverable.setResponse(ldp.getResponse().getValue());
+            }
+            if (ldp.hasResponseUser()) {
+                lateDeliverable.setResponseUser(ldp.getResponseUser().getValue());
+            }
+            if (ldp.hasResponseDate()) {
+                lateDeliverable.setResponseDate(new Date(ldp.getResponseDate().getSeconds() * 1000));
+            }
+            if (ldp.hasLateDeliverableTypeId()) {
+                long lateDeliverableTypeId = ldp.getLateDeliverableTypeId().getValue();
+                LateDeliverableType lateDeliverableType = lateDeliverableTypes.get(lateDeliverableTypeId);
+                if (lateDeliverableType == null) {
+                    lateDeliverableType = new LateDeliverableType();
+                    lateDeliverableType.setId(lateDeliverableTypeId);
+                    if (ldp.hasName()) {
+                        lateDeliverableType.setName(ldp.getName().getValue());
+                    }
+                    if (ldp.hasDescription()) {
+                        lateDeliverableType.setDescription(ldp.getDescription().getValue());
+                    }
+                    lateDeliverableTypes.put(lateDeliverableTypeId, lateDeliverableType);
+                }
+                lateDeliverable.setType(lateDeliverableType);
+            }
+            result.add(lateDeliverable);
+        }
+        return result;
     }
 }

@@ -3,6 +3,7 @@
  */
 package com.topcoder.onlinereview.component.deliverable.late;
 
+import com.topcoder.onlinereview.component.grpcclient.deliverable.DeliverableServiceRpc;
 import com.topcoder.onlinereview.component.search.SearchBundle;
 import com.topcoder.onlinereview.component.search.SearchBundleManager;
 import com.topcoder.onlinereview.component.search.filter.AndFilter;
@@ -311,6 +312,9 @@ public class LateDeliverableManager {
     private LateDeliverablePersistence persistence;
     @Autowired private SearchBundleManager searchBundleManager;
 
+    @Autowired
+    private DeliverableServiceRpc deliverableServiceRpc;
+
     @PostConstruct
     public void postRun() {
         nonRestrictedSearchBundle = searchBundleManager.getSearchBundle(KEY_NON_RESTRICTED_SB_NAME);
@@ -470,7 +474,10 @@ public class LateDeliverableManager {
                 filter = new NotFilter(new NullFilter("deliverableId"));
             }
             // Get late deliverables using Search Builder:
+            List<LateDeliverable> result = deliverableServiceRpc.searchLateDeliverablesNonRestricted(filter);
+            /* TODO GRPC
             List<LateDeliverable> result = getLateDeliverables(nonRestrictedSearchBundle, filter);
+            */
 
             // Log method exit
             Helper.logExit(log, signature, new Object[] {result}, enterTimestamp);
@@ -548,9 +555,11 @@ public class LateDeliverableManager {
                 compositeFilter = userIdFilter;
             }
 
+            List<LateDeliverable> result = deliverableServiceRpc.searchLateDeliverablesRestricted(compositeFilter);
             // Get late deliverables using Search Builder:
+            /* TODO GRPC
             List<LateDeliverable> result = getLateDeliverables(restrictedSearchBundle, compositeFilter);
-
+            */
             // Log method exit
             Helper.logExit(log, signature, new Object[] {result}, enterTimestamp);
 
