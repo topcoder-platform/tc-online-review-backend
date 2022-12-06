@@ -6,6 +6,8 @@ package com.topcoder.onlinereview.component.deliverable.checker;
 import com.topcoder.onlinereview.component.deliverable.Deliverable;
 import com.topcoder.onlinereview.component.deliverable.DeliverableChecker;
 import com.topcoder.onlinereview.component.deliverable.DeliverableCheckingException;
+import com.topcoder.onlinereview.component.grpcclient.deliverable.DeliverableServiceRpc;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -39,12 +41,16 @@ public class IndividualReviewDeliverableChecker implements DeliverableChecker {
   @Qualifier("tcsJdbcTemplate")
   private JdbcTemplate jdbcTemplate;
 
+  @Autowired
+  private DeliverableServiceRpc deliverableServiceRpc;
+
   public void check(Deliverable deliverable) throws DeliverableCheckingException {
     if (deliverable == null) {
       throw new IllegalArgumentException("deliverable cannot be null.");
     }
     try {
-      // execute it
+      deliverableServiceRpc.individualReviewDeliverableCheck(deliverable);
+      /* TODO GRPC
       List<Map<String, Object>> rs =
           executeSqlWithParam(jdbcTemplate, getSqlQuery(), newArrayList(deliverable.getResource()));
       if (!rs.isEmpty()) {
@@ -53,6 +59,7 @@ public class IndividualReviewDeliverableChecker implements DeliverableChecker {
           deliverable.setSubmission(getLong(rs.get(0), "submission_id"));
         }
       }
+      */
     } catch (Exception ex) {
       throw new DeliverableCheckingException("Error occurs while database check operation.", ex);
     }

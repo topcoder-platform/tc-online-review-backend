@@ -6,6 +6,8 @@ package com.topcoder.onlinereview.component.deliverable.checker;
 import com.topcoder.onlinereview.component.deliverable.Deliverable;
 import com.topcoder.onlinereview.component.deliverable.DeliverableChecker;
 import com.topcoder.onlinereview.component.deliverable.DeliverableCheckingException;
+import com.topcoder.onlinereview.component.grpcclient.deliverable.DeliverableServiceRpc;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -55,6 +57,9 @@ public class AppealResponsesDeliverableChecker implements DeliverableChecker {
   @Qualifier("tcsJdbcTemplate")
   private JdbcTemplate jdbcTemplate;
 
+  @Autowired
+  private DeliverableServiceRpc deliverableServiceRpc;
+
   /**
    * Checks the given deliverable to see if it is complete. This method queries the database to
    * select, for each "Appeal" comment, the "Appeal Response" comment.
@@ -69,7 +74,8 @@ public class AppealResponsesDeliverableChecker implements DeliverableChecker {
       throw new IllegalArgumentException("deliverable cannot be null.");
     }
     try {
-      // execute
+      deliverableServiceRpc.appealResponsesDeliverableCheck(deliverable);
+      /* TODO GRPC
       List<Map<String, Object>> rs =
           executeSqlWithParam(
               jdbcTemplate,
@@ -84,6 +90,7 @@ public class AppealResponsesDeliverableChecker implements DeliverableChecker {
             .max(Comparator.comparing(d -> d))
             .ifPresent(d -> deliverable.setCompletionDate(d));
       }
+      */
     } catch (Exception ex) {
       throw new DeliverableCheckingException("Error occurs while checking in database.", ex);
     }

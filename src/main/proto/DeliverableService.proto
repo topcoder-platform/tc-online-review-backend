@@ -104,7 +104,93 @@ message AppealResponsesDeliverableCheckRequest {
 }
 
 message AppealResponsesDeliverableCheckResponse {
-    repeated google.protobuf.Int64Value modify_date = 1;
+    repeated google.protobuf.Timestamp modify_date = 1;
+}
+
+message CommittedReviewDeliverableCheckRequest {
+    google.protobuf.Int64Value resource_id = 1;
+    google.protobuf.Int64Value project_phase_id = 2;
+    google.protobuf.Int64Value submission_id = 3;
+    google.protobuf.BoolValue is_per_submission = 4;
+}
+
+message CommittedReviewDeliverableCheckResponse {
+    repeated google.protobuf.Timestamp modify_date = 1;
+}
+
+message FinalFixesDeliverableCheckRequest {
+    google.protobuf.Int64Value resource_id = 1;
+    google.protobuf.Int64Value project_phase_id = 2;
+}
+
+message FinalFixesDeliverableCheckResponse {
+    repeated google.protobuf.Timestamp modify_date = 1;
+}
+
+message FinalReviewDeliverableCheckRequest {
+    google.protobuf.Int64Value resource_id = 1;
+}
+
+message FinalReviewDeliverableCheckResponseMessage {
+    google.protobuf.Timestamp modify_date = 1;
+    google.protobuf.Int64Value submission_id = 2;
+}
+
+message FinalReviewDeliverableCheckResponse {
+    repeated FinalReviewDeliverableCheckResponseMessage result = 1;
+}
+
+message IndividualReviewDeliverableCheckRequest {
+    google.protobuf.Int64Value resource_id = 1;
+}
+
+message IndividualReviewDeliverableCheckResponseMessage {
+    google.protobuf.Timestamp modify_date = 1;
+    google.protobuf.Int64Value submission_id = 2;
+}
+
+message IndividualReviewDeliverableCheckResponse {
+    repeated IndividualReviewDeliverableCheckResponseMessage result = 1;
+}
+
+message SpecificationSubmissionDeliverableCheckRequest {
+    google.protobuf.Int64Value resource_id = 1;
+    google.protobuf.Int64Value project_phase_id = 2;
+}
+
+message SpecificationSubmissionDeliverableCheckResponse {
+    repeated google.protobuf.Timestamp modify_date = 1;
+}
+
+message SubmissionDeliverableCheckRequest {
+    google.protobuf.Int64Value resource_id = 1;
+    google.protobuf.Int64Value project_phase_id = 2;
+}
+
+message SubmissionDeliverableCheckResponse {
+    repeated google.protobuf.Timestamp modify_date = 1;
+}
+
+message SubmitterCommentDeliverableCheckRequest {
+    google.protobuf.Int64Value resource_id = 1;
+}
+
+message SubmitterCommentDeliverableCheckResponseMessage {
+    google.protobuf.Timestamp modify_date = 1;
+    google.protobuf.Int64Value submission_id = 2;
+}
+
+message SubmitterCommentDeliverableCheckResponse {
+    repeated SubmitterCommentDeliverableCheckResponseMessage result = 1;
+}
+
+message TestCasesDeliverableCheckRequest {
+    google.protobuf.Int64Value resource_id = 1;
+    google.protobuf.Int64Value project_phase_id = 2;
+}
+
+message TestCasesDeliverableCheckResponse {
+    repeated google.protobuf.Timestamp modify_date = 1;
 }
 
 message FilterProto {
@@ -166,6 +252,14 @@ service DeliverableService {
     rpc getLateDeliverableTypes(google.protobuf.Empty) returns (LateDeliverableTypesResponse);
     rpc aggregationDeliverableCheck(AggregationDeliverableCheckRequest) returns (AggregationDeliverableCheckResponse);
     rpc appealResponsesDeliverableCheck(AppealResponsesDeliverableCheckRequest) returns (AppealResponsesDeliverableCheckResponse);
+    rpc committedReviewDeliverableCheck(CommittedReviewDeliverableCheckRequest) returns (CommittedReviewDeliverableCheckResponse);
+    rpc finalFixesDeliverableCheck(FinalFixesDeliverableCheckRequest) returns (FinalFixesDeliverableCheckResponse);
+    rpc finalReviewDeliverableCheck(FinalReviewDeliverableCheckRequest) returns (FinalReviewDeliverableCheckResponse);
+    rpc individualReviewDeliverableCheck(IndividualReviewDeliverableCheckRequest) returns (IndividualReviewDeliverableCheckResponse);
+    rpc specificationSubmissionDeliverableCheck(SpecificationSubmissionDeliverableCheckRequest) returns (SpecificationSubmissionDeliverableCheckResponse);
+    rpc submissionDeliverableCheck(SubmissionDeliverableCheckRequest) returns (SubmissionDeliverableCheckResponse);
+    rpc submitterCommentDeliverableCheck(SubmitterCommentDeliverableCheckRequest) returns (SubmitterCommentDeliverableCheckResponse);
+    rpc testCasesDeliverableCheck(TestCasesDeliverableCheckRequest) returns (TestCasesDeliverableCheckResponse);
     rpc searchDeliverables(FilterProto) returns (SearchDeliverablesResponse);
     rpc searchDeliverablesWithSubmission(FilterProto) returns (SearchDeliverablesWithSubmissionResponse);
     rpc searchLateDeliverablesNonRestricted(FilterProto) returns (SearchLateDeliverablesResponse);

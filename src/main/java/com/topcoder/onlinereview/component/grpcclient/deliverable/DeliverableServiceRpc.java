@@ -2,6 +2,7 @@ package com.topcoder.onlinereview.component.grpcclient.deliverable;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -182,6 +183,130 @@ public class DeliverableServiceRpc {
                     .setCompletionDate(new Date(response.getModifyDate(0).getSeconds() * 1000));
         }
 
+    }
+
+    public void appealResponsesDeliverableCheck(Deliverable deliverable) {
+        AppealResponsesDeliverableCheckRequest.Builder builder = AppealResponsesDeliverableCheckRequest.newBuilder();
+        builder.setResourceId(Int64Value.of(deliverable.getResource()));
+        if (deliverable.getSubmission() != null) {
+            builder.setSubmissionId(Int64Value.of(deliverable.getSubmission()));
+        }
+        AppealResponsesDeliverableCheckResponse response = stub.appealResponsesDeliverableCheck(builder.build());
+        if (response.getModifyDateCount() == 0) {
+            deliverable.setCompletionDate(new Date());
+        } else {
+            response.getModifyDateList().stream().map(x -> new Date(x.getSeconds() * 1000))
+                    .max(Comparator.comparing(x -> x)).ifPresent(d -> deliverable.setCompletionDate(d));
+        }
+    }
+
+    public void committedReviewDeliverableCheck(Deliverable deliverable) {
+        CommittedReviewDeliverableCheckRequest.Builder builder = CommittedReviewDeliverableCheckRequest.newBuilder();
+        builder.setIsPerSubmission(BoolValue.of(deliverable.isPerSubmission()));
+        builder.setResourceId(Int64Value.of(deliverable.getResource()));
+        builder.setProjectPhaseId(Int64Value.of(deliverable.getPhase()));
+        if (deliverable.getSubmission() != null) {
+            builder.setSubmissionId(Int64Value.of(deliverable.getSubmission()));
+        }
+        CommittedReviewDeliverableCheckResponse response = stub.committedReviewDeliverableCheck(builder.build());
+        if (response.getModifyDateCount() > 0) {
+            deliverable
+                    .setCompletionDate(new Date(response.getModifyDate(0).getSeconds() * 1000));
+        }
+    }
+
+    public void finalFixesDeliverableCheck(Deliverable deliverable) {
+        FinalFixesDeliverableCheckRequest.Builder builder = FinalFixesDeliverableCheckRequest.newBuilder();
+        builder.setResourceId(Int64Value.of(deliverable.getResource()));
+        builder.setProjectPhaseId(Int64Value.of(deliverable.getPhase()));
+        FinalFixesDeliverableCheckResponse response = stub.finalFixesDeliverableCheck(builder.build());
+        if (response.getModifyDateCount() > 0) {
+            deliverable
+                    .setCompletionDate(new Date(response.getModifyDate(0).getSeconds() * 1000));
+        }
+    }
+
+    public void finalReviewDeliverableCheck(Deliverable deliverable) {
+        FinalReviewDeliverableCheckRequest.Builder builder = FinalReviewDeliverableCheckRequest.newBuilder();
+        builder.setResourceId(Int64Value.of(deliverable.getResource()));
+        FinalReviewDeliverableCheckResponse response = stub.finalReviewDeliverableCheck(builder.build());
+        if (response.getResultCount() > 0) {
+            FinalReviewDeliverableCheckResponseMessage result = response.getResult(0);
+            if (result.hasModifyDate()) {
+                deliverable
+                        .setCompletionDate(new Date(result.getModifyDate().getSeconds() * 1000));
+            }
+            if (result.hasSubmissionId()) {
+                deliverable.setSubmission(result.getSubmissionId().getValue());
+            }
+        }
+    }
+
+    public void individualReviewDeliverableCheck(Deliverable deliverable) {
+        IndividualReviewDeliverableCheckRequest.Builder builder = IndividualReviewDeliverableCheckRequest.newBuilder();
+        builder.setResourceId(Int64Value.of(deliverable.getResource()));
+        IndividualReviewDeliverableCheckResponse response = stub.individualReviewDeliverableCheck(builder.build());
+        if (response.getResultCount() > 0) {
+            IndividualReviewDeliverableCheckResponseMessage result = response.getResult(0);
+            if (result.hasModifyDate()) {
+                deliverable
+                        .setCompletionDate(new Date(result.getModifyDate().getSeconds() * 1000));
+            }
+            if (result.hasSubmissionId()) {
+                deliverable.setSubmission(result.getSubmissionId().getValue());
+            }
+        }
+    }
+
+    public void specificationSubmissionDeliverableCheck(Deliverable deliverable) {
+        SpecificationSubmissionDeliverableCheckRequest.Builder builder = SpecificationSubmissionDeliverableCheckRequest
+                .newBuilder();
+        builder.setResourceId(Int64Value.of(deliverable.getResource()));
+        builder.setProjectPhaseId(Int64Value.of(deliverable.getPhase()));
+        SpecificationSubmissionDeliverableCheckResponse response = stub
+                .specificationSubmissionDeliverableCheck(builder.build());
+        if (response.getModifyDateCount() > 0) {
+            deliverable
+                    .setCompletionDate(new Date(response.getModifyDate(0).getSeconds() * 1000));
+        }
+    }
+
+    public void submissionDeliverableCheck(Deliverable deliverable) {
+        SubmissionDeliverableCheckRequest.Builder builder = SubmissionDeliverableCheckRequest.newBuilder();
+        builder.setResourceId(Int64Value.of(deliverable.getResource()));
+        builder.setProjectPhaseId(Int64Value.of(deliverable.getPhase()));
+        SubmissionDeliverableCheckResponse response = stub.submissionDeliverableCheck(builder.build());
+        if (response.getModifyDateCount() > 0) {
+            deliverable
+                    .setCompletionDate(new Date(response.getModifyDate(0).getSeconds() * 1000));
+        }
+    }
+
+    public void submitterCommentDeliverableCheck(Deliverable deliverable) {
+        SubmitterCommentDeliverableCheckRequest.Builder builder = SubmitterCommentDeliverableCheckRequest.newBuilder();
+        builder.setResourceId(Int64Value.of(deliverable.getResource()));
+        SubmitterCommentDeliverableCheckResponse response = stub.submitterCommentDeliverableCheck(builder.build());
+        if (response.getResultCount() > 0) {
+            SubmitterCommentDeliverableCheckResponseMessage result = response.getResult(0);
+            if (result.hasModifyDate()) {
+                deliverable
+                        .setCompletionDate(new Date(result.getModifyDate().getSeconds() * 1000));
+            }
+            if (result.hasSubmissionId()) {
+                deliverable.setSubmission(result.getSubmissionId().getValue());
+            }
+        }
+    }
+
+    public void testCasesDeliverableCheck(Deliverable deliverable) {
+        TestCasesDeliverableCheckRequest.Builder builder = TestCasesDeliverableCheckRequest.newBuilder();
+        builder.setResourceId(Int64Value.of(deliverable.getResource()));
+        builder.setProjectPhaseId(Int64Value.of(deliverable.getPhase()));
+        TestCasesDeliverableCheckResponse response = stub.testCasesDeliverableCheck(builder.build());
+        if (response.getModifyDateCount() > 0) {
+            deliverable
+                    .setCompletionDate(new Date(response.getModifyDate(0).getSeconds() * 1000));
+        }
     }
 
     public Long[][] searchDeliverables(Filter filter) {
