@@ -19,7 +19,7 @@ import com.google.protobuf.Timestamp;
 import com.topcoder.onlinereview.component.deliverable.Deliverable;
 import com.topcoder.onlinereview.component.deliverable.late.LateDeliverable;
 import com.topcoder.onlinereview.component.deliverable.late.LateDeliverableType;
-import com.topcoder.onlinereview.component.grpcclient.deliverable.protos.*;
+import com.topcoder.onlinereview.grpc.deliverable.proto.*;
 import com.topcoder.onlinereview.component.search.filter.Filter;
 
 import net.devh.boot.grpc.client.inject.GrpcClient;

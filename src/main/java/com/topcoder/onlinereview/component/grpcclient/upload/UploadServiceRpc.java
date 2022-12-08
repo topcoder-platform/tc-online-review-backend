@@ -23,7 +23,7 @@ import com.topcoder.onlinereview.component.deliverable.SubmissionType;
 import com.topcoder.onlinereview.component.deliverable.Upload;
 import com.topcoder.onlinereview.component.deliverable.UploadStatus;
 import com.topcoder.onlinereview.component.deliverable.UploadType;
-import com.topcoder.onlinereview.component.grpcclient.upload.protos.*;
+import com.topcoder.onlinereview.grpc.upload.proto.*;
 import com.topcoder.onlinereview.component.project.management.FileType;
 import com.topcoder.onlinereview.component.project.management.Prize;
 import com.topcoder.onlinereview.component.project.management.PrizeType;

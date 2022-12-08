@@ -12,7 +12,7 @@ import com.google.protobuf.BoolValue;
 import com.google.protobuf.Int64Value;
 import com.topcoder.onlinereview.component.contest.ContestEligibility;
 import com.topcoder.onlinereview.component.contest.GroupContestEligibility;
-import com.topcoder.onlinereview.component.grpcclient.contesteligibility.protos.*;
+import com.topcoder.onlinereview.grpc.contesteligibility.proto.*;
 
 import net.devh.boot.grpc.client.inject.GrpcClient;
 
