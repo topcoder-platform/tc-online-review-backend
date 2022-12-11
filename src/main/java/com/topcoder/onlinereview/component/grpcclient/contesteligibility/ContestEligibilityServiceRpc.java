@@ -41,17 +41,10 @@ public class ContestEligibilityServiceRpc {
         if (contestEligibility.getStudio() != null) {
             cBuilder.setStudio(BoolValue.of(contestEligibility.getStudio()));
         }
-        stub.create(cBuilder.build());
+        CreateResponse response = stub.create(cBuilder.build());
 
-        GetIdByContestIdRequest getIdByContestIdRequest = GetIdByContestIdRequest
-                .newBuilder().setContestId(
-                        contestEligibility.getContestId() != null ? Int64Value.of(contestEligibility.getContestId())
-                                : null)
-                .build();
-        GetIdByContestIdResponse getIdByContestIdResponse = stub
-                .getIdByContestId(getIdByContestIdRequest);
-        if (getIdByContestIdResponse.hasContestEligibilityId()) {
-            return getIdByContestIdResponse.getContestEligibilityId().getValue();
+        if (response.hasContestEligibilityId()) {
+            return response.getContestEligibilityId().getValue();
         }
         return null;
     }
