@@ -4,8 +4,12 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
+import javax.annotation.PostConstruct;
+
 import org.apache.commons.lang3.SerializationUtils;
-import org.springframework.stereotype.Component;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.DependsOn;
+import org.springframework.stereotype.Service;
 
 import com.google.protobuf.BoolValue;
 import com.google.protobuf.ByteString;
@@ -23,19 +27,26 @@ import com.topcoder.onlinereview.component.deliverable.SubmissionType;
 import com.topcoder.onlinereview.component.deliverable.Upload;
 import com.topcoder.onlinereview.component.deliverable.UploadStatus;
 import com.topcoder.onlinereview.component.deliverable.UploadType;
+import com.topcoder.onlinereview.component.grpcclient.GrpcChannelManager;
 import com.topcoder.onlinereview.grpc.upload.proto.*;
 import com.topcoder.onlinereview.component.project.management.FileType;
 import com.topcoder.onlinereview.component.project.management.Prize;
 import com.topcoder.onlinereview.component.project.management.PrizeType;
 import com.topcoder.onlinereview.component.search.filter.Filter;
 
-import net.devh.boot.grpc.client.inject.GrpcClient;
-
-@Component
+@Service
+@DependsOn({ "grpcChannelManager" })
 public class UploadServiceRpc {
 
-    @GrpcClient("UploadServiceRpc")
+    @Autowired
+    private GrpcChannelManager grpcChannelManager;
+
     private UploadServiceGrpc.UploadServiceBlockingStub stub;
+
+    @PostConstruct
+    public void init() {
+        stub = UploadServiceGrpc.newBlockingStub(grpcChannelManager.getChannel());
+    }
 
     public void addUploadType(UploadType entity) {
         stub.addUploadType(buildEntityProto(entity));

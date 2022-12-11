@@ -6,21 +6,32 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.springframework.stereotype.Component;
+import javax.annotation.PostConstruct;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.DependsOn;
+import org.springframework.stereotype.Service;
 
 import com.google.protobuf.BoolValue;
 import com.google.protobuf.Int64Value;
 import com.topcoder.onlinereview.component.contest.ContestEligibility;
 import com.topcoder.onlinereview.component.contest.GroupContestEligibility;
+import com.topcoder.onlinereview.component.grpcclient.GrpcChannelManager;
 import com.topcoder.onlinereview.grpc.contesteligibility.proto.*;
 
-import net.devh.boot.grpc.client.inject.GrpcClient;
-
-@Component
+@Service
+@DependsOn({ "grpcChannelManager" })
 public class ContestEligibilityServiceRpc {
 
-    @GrpcClient("ContestEligibilityServiceRpc")
+    @Autowired
+    private GrpcChannelManager grpcChannelManager;
+
     private ContestEligibilityServiceGrpc.ContestEligibilityServiceBlockingStub stub;
+
+    @PostConstruct
+    public void init() {
+        stub = ContestEligibilityServiceGrpc.newBlockingStub(grpcChannelManager.getChannel());
+    }
 
     public Long create(ContestEligibility contestEligibility) {
         CreateRequest.Builder cBuilder = CreateRequest.newBuilder();
