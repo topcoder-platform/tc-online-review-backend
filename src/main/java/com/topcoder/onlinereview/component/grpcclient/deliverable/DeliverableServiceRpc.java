@@ -15,10 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Service;
 
-import com.google.protobuf.BoolValue;
 import com.google.protobuf.ByteString;
-import com.google.protobuf.Int64Value;
-import com.google.protobuf.StringValue;
 import com.google.protobuf.Timestamp;
 import com.topcoder.onlinereview.component.deliverable.Deliverable;
 import com.topcoder.onlinereview.component.deliverable.late.LateDeliverable;
@@ -54,26 +51,26 @@ public class DeliverableServiceRpc {
         for (int i = 0; i < loadDeliverablesWithoutSubmissionResponse
                 .getDeliverablesWithoutSubmissionsCount(); ++i) {
             DeliverableWithoutSubmissionProto dp = deliverableWithoutSubmissionList.get(i);
-            Deliverable deliverable = new Deliverable(dp.getProjectId().getValue(), dp.getProjectPhaseId().getValue(),
-                    dp.getResourceId().getValue(), null, dp.getRequired().getValue());
-            deliverable.setId(dp.getDeliverableId().getValue());
+            Deliverable deliverable = new Deliverable(dp.getProjectId(), dp.getProjectPhaseId(),
+                    dp.getResourceId(), null, dp.getRequired());
+            deliverable.setId(dp.getDeliverableId());
             if (dp.hasCreateUser()) {
-                deliverable.setCreationUser(dp.getCreateUser().getValue());
+                deliverable.setCreationUser(dp.getCreateUser());
             }
             if (dp.hasCreateDate()) {
                 deliverable.setCreationTimestamp(new Date(dp.getCreateDate().getSeconds() * 1000));
             }
             if (dp.hasModifyUser()) {
-                deliverable.setModificationUser(dp.getModifyUser().getValue());
+                deliverable.setModificationUser(dp.getModifyUser());
             }
             if (dp.hasModifyDate()) {
                 deliverable.setModificationTimestamp(new Date(dp.getModifyDate().getSeconds() * 1000));
             }
             if (dp.hasName()) {
-                deliverable.setName(dp.getName().getValue());
+                deliverable.setName(dp.getName());
             }
             if (dp.hasDescription()) {
-                deliverable.setDescription(dp.getDescription().getValue());
+                deliverable.setDescription(dp.getDescription());
             }
             deliverables[i] = deliverable;
         }
@@ -94,26 +91,26 @@ public class DeliverableServiceRpc {
                 .getDeliverablesWithSubmissionsCount()];
         for (int i = 0; i < loadDeliverablesWithSubmissionResponse.getDeliverablesWithSubmissionsCount(); ++i) {
             DeliverableWithSubmissionProto dp = deliverableWithSubmissionList.get(i);
-            Deliverable deliverable = new Deliverable(dp.getProjectId().getValue(), dp.getProjectPhaseId().getValue(),
-                    dp.getResourceId().getValue(), dp.getSubmissionId().getValue(), dp.getRequired().getValue());
-            deliverable.setId(dp.getDeliverableId().getValue());
+            Deliverable deliverable = new Deliverable(dp.getProjectId(), dp.getProjectPhaseId(),
+                    dp.getResourceId(), dp.getSubmissionId(), dp.getRequired());
+            deliverable.setId(dp.getDeliverableId());
             if (dp.hasCreateUser()) {
-                deliverable.setCreationUser(dp.getCreateUser().getValue());
+                deliverable.setCreationUser(dp.getCreateUser());
             }
             if (dp.hasCreateDate()) {
                 deliverable.setCreationTimestamp(new Date(dp.getCreateDate().getSeconds() * 1000));
             }
             if (dp.hasModifyUser()) {
-                deliverable.setModificationUser(dp.getModifyUser().getValue());
+                deliverable.setModificationUser(dp.getModifyUser());
             }
             if (dp.hasModifyDate()) {
                 deliverable.setModificationTimestamp(new Date(dp.getModifyDate().getSeconds() * 1000));
             }
             if (dp.hasName()) {
-                deliverable.setName(dp.getName().getValue());
+                deliverable.setName(dp.getName());
             }
             if (dp.hasDescription()) {
-                deliverable.setDescription(dp.getDescription().getValue());
+                deliverable.setDescription(dp.getDescription());
             }
             deliverables[i] = deliverable;
         }
@@ -122,10 +119,10 @@ public class DeliverableServiceRpc {
 
     public int updateLateDeliverable(LateDeliverable lateDeliverable) {
         UpdateLateDeliverableRequest.Builder rBuilder = UpdateLateDeliverableRequest.newBuilder();
-        rBuilder.setLateDeliverableId(Int64Value.of(lateDeliverable.getId()));
-        rBuilder.setProjectPhaseId(Int64Value.of(lateDeliverable.getProjectPhaseId()));
-        rBuilder.setResourceId(Int64Value.of(lateDeliverable.getResourceId()));
-        rBuilder.setDeliverableId(Int64Value.of(lateDeliverable.getDeliverableId()));
+        rBuilder.setLateDeliverableId(lateDeliverable.getId());
+        rBuilder.setProjectPhaseId(lateDeliverable.getProjectPhaseId());
+        rBuilder.setResourceId(lateDeliverable.getResourceId());
+        rBuilder.setDeliverableId(lateDeliverable.getDeliverableId());
         if (lateDeliverable.getDeadline() != null) {
             rBuilder.setDeadline(
                     Timestamp.newBuilder().setSeconds(lateDeliverable.getDeadline().toInstant().getEpochSecond())
@@ -140,30 +137,33 @@ public class DeliverableServiceRpc {
                     Timestamp.newBuilder().setSeconds(lateDeliverable.getCreateDate().toInstant().getEpochSecond())
                             .build());
         }
-        rBuilder.setForgiveInd(BoolValue.of(lateDeliverable.isForgiven()));
+        rBuilder.setForgiveInd(lateDeliverable.isForgiven());
         if (lateDeliverable.getLastNotified() != null) {
             rBuilder.setLastNotified(Timestamp.newBuilder()
                     .setSeconds(lateDeliverable.getLastNotified().toInstant().getEpochSecond()).build());
         }
         if (lateDeliverable.getDelay() != null) {
-            rBuilder.setDelay(Int64Value.of(lateDeliverable.getDelay()));
+            rBuilder.setDelay(lateDeliverable.getDelay());
         }
         if (lateDeliverable.getExplanation() != null) {
-            rBuilder.setExplanation(StringValue.of(lateDeliverable.getExplanation()));
+            rBuilder.setExplanation(lateDeliverable.getExplanation());
         }
         if (lateDeliverable.getExplanationDate() != null) {
             rBuilder.setExplanationDate(Timestamp.newBuilder()
                     .setSeconds(lateDeliverable.getExplanationDate().toInstant().getEpochSecond()).build());
         }
         if (lateDeliverable.getResponse() != null) {
-            rBuilder.setResponse(StringValue.of(lateDeliverable.getResponse()));
+            rBuilder.setResponse(lateDeliverable.getResponse());
+        }
+        if (lateDeliverable.getResponseUser() != null) {
+            rBuilder.setResponseUser(lateDeliverable.getResponseUser());
         }
         if (lateDeliverable.getResponseDate() != null) {
             rBuilder.setResponseDate(Timestamp.newBuilder()
                     .setSeconds(lateDeliverable.getResponseDate().toInstant().getEpochSecond()).build());
         }
         if (lateDeliverable.getType() != null) {
-            rBuilder.setLateDeliverableTypeId(Int64Value.of(lateDeliverable.getType().getId()));
+            rBuilder.setLateDeliverableTypeId(lateDeliverable.getType().getId());
         }
         return stub.updateLateDeliverable(rBuilder.build()).getCount();
     }
@@ -174,13 +174,13 @@ public class DeliverableServiceRpc {
         for (LateDeliverableTypeProto ldtp : response.getLateDeliverableTypesList()) {
             LateDeliverableType lateDeliverableType = new LateDeliverableType();
             if (ldtp.hasLateDeliverableTypeId()) {
-                lateDeliverableType.setId(ldtp.getLateDeliverableTypeId().getValue());
+                lateDeliverableType.setId(ldtp.getLateDeliverableTypeId());
             }
             if (ldtp.hasName()) {
-                lateDeliverableType.setName(ldtp.getName().getValue());
+                lateDeliverableType.setName(ldtp.getName());
             }
             if (ldtp.hasDescription()) {
-                lateDeliverableType.setDescription(ldtp.getDescription().getValue());
+                lateDeliverableType.setDescription(ldtp.getDescription());
             }
             result.add(lateDeliverableType);
         }
@@ -189,7 +189,7 @@ public class DeliverableServiceRpc {
 
     public void aggregationDeliverableCheck(Deliverable deliverable) {
         AggregationDeliverableCheckRequest.Builder builder = AggregationDeliverableCheckRequest.newBuilder();
-        builder.setResourceId(Int64Value.of(deliverable.getResource()));
+        builder.setResourceId(deliverable.getResource());
         AggregationDeliverableCheckResponse response = stub.aggregationDeliverableCheck(builder.build());
         if (response.getModifyDatesCount() > 0) {
             deliverable
@@ -200,9 +200,9 @@ public class DeliverableServiceRpc {
 
     public void appealResponsesDeliverableCheck(Deliverable deliverable) {
         AppealResponsesDeliverableCheckRequest.Builder builder = AppealResponsesDeliverableCheckRequest.newBuilder();
-        builder.setResourceId(Int64Value.of(deliverable.getResource()));
+        builder.setResourceId(deliverable.getResource());
         if (deliverable.getSubmission() != null) {
-            builder.setSubmissionId(Int64Value.of(deliverable.getSubmission()));
+            builder.setSubmissionId(deliverable.getSubmission());
         }
         AppealResponsesDeliverableCheckResponse response = stub.appealResponsesDeliverableCheck(builder.build());
         if (response.getModifyDatesCount() == 0) {
@@ -215,11 +215,11 @@ public class DeliverableServiceRpc {
 
     public void committedReviewDeliverableCheck(Deliverable deliverable) {
         CommittedReviewDeliverableCheckRequest.Builder builder = CommittedReviewDeliverableCheckRequest.newBuilder();
-        builder.setIsPerSubmission(BoolValue.of(deliverable.isPerSubmission()));
-        builder.setResourceId(Int64Value.of(deliverable.getResource()));
-        builder.setProjectPhaseId(Int64Value.of(deliverable.getPhase()));
+        builder.setIsPerSubmission(deliverable.isPerSubmission());
+        builder.setResourceId(deliverable.getResource());
+        builder.setProjectPhaseId(deliverable.getPhase());
         if (deliverable.getSubmission() != null) {
-            builder.setSubmissionId(Int64Value.of(deliverable.getSubmission()));
+            builder.setSubmissionId(deliverable.getSubmission());
         }
         CommittedReviewDeliverableCheckResponse response = stub.committedReviewDeliverableCheck(builder.build());
         if (response.getModifyDatesCount() > 0) {
@@ -230,8 +230,8 @@ public class DeliverableServiceRpc {
 
     public void finalFixesDeliverableCheck(Deliverable deliverable) {
         FinalFixesDeliverableCheckRequest.Builder builder = FinalFixesDeliverableCheckRequest.newBuilder();
-        builder.setResourceId(Int64Value.of(deliverable.getResource()));
-        builder.setProjectPhaseId(Int64Value.of(deliverable.getPhase()));
+        builder.setResourceId(deliverable.getResource());
+        builder.setProjectPhaseId(deliverable.getPhase());
         FinalFixesDeliverableCheckResponse response = stub.finalFixesDeliverableCheck(builder.build());
         if (response.getModifyDatesCount() > 0) {
             deliverable
@@ -241,7 +241,7 @@ public class DeliverableServiceRpc {
 
     public void finalReviewDeliverableCheck(Deliverable deliverable) {
         FinalReviewDeliverableCheckRequest.Builder builder = FinalReviewDeliverableCheckRequest.newBuilder();
-        builder.setResourceId(Int64Value.of(deliverable.getResource()));
+        builder.setResourceId(deliverable.getResource());
         FinalReviewDeliverableCheckResponse response = stub.finalReviewDeliverableCheck(builder.build());
         if (response.getResultsCount() > 0) {
             FinalReviewDeliverableCheckResponseMessage result = response.getResults(0);
@@ -250,14 +250,14 @@ public class DeliverableServiceRpc {
                         .setCompletionDate(new Date(result.getModifyDate().getSeconds() * 1000));
             }
             if (result.hasSubmissionId()) {
-                deliverable.setSubmission(result.getSubmissionId().getValue());
+                deliverable.setSubmission(result.getSubmissionId());
             }
         }
     }
 
     public void individualReviewDeliverableCheck(Deliverable deliverable) {
         IndividualReviewDeliverableCheckRequest.Builder builder = IndividualReviewDeliverableCheckRequest.newBuilder();
-        builder.setResourceId(Int64Value.of(deliverable.getResource()));
+        builder.setResourceId(deliverable.getResource());
         IndividualReviewDeliverableCheckResponse response = stub.individualReviewDeliverableCheck(builder.build());
         if (response.getResultsCount() > 0) {
             IndividualReviewDeliverableCheckResponseMessage result = response.getResults(0);
@@ -266,7 +266,7 @@ public class DeliverableServiceRpc {
                         .setCompletionDate(new Date(result.getModifyDate().getSeconds() * 1000));
             }
             if (result.hasSubmissionId()) {
-                deliverable.setSubmission(result.getSubmissionId().getValue());
+                deliverable.setSubmission(result.getSubmissionId());
             }
         }
     }
@@ -274,8 +274,8 @@ public class DeliverableServiceRpc {
     public void specificationSubmissionDeliverableCheck(Deliverable deliverable) {
         SpecificationSubmissionDeliverableCheckRequest.Builder builder = SpecificationSubmissionDeliverableCheckRequest
                 .newBuilder();
-        builder.setResourceId(Int64Value.of(deliverable.getResource()));
-        builder.setProjectPhaseId(Int64Value.of(deliverable.getPhase()));
+        builder.setResourceId(deliverable.getResource());
+        builder.setProjectPhaseId(deliverable.getPhase());
         SpecificationSubmissionDeliverableCheckResponse response = stub
                 .specificationSubmissionDeliverableCheck(builder.build());
         if (response.getModifyDatesCount() > 0) {
@@ -286,8 +286,8 @@ public class DeliverableServiceRpc {
 
     public void submissionDeliverableCheck(Deliverable deliverable) {
         SubmissionDeliverableCheckRequest.Builder builder = SubmissionDeliverableCheckRequest.newBuilder();
-        builder.setResourceId(Int64Value.of(deliverable.getResource()));
-        builder.setProjectPhaseId(Int64Value.of(deliverable.getPhase()));
+        builder.setResourceId(deliverable.getResource());
+        builder.setProjectPhaseId(deliverable.getPhase());
         SubmissionDeliverableCheckResponse response = stub.submissionDeliverableCheck(builder.build());
         if (response.getModifyDatesCount() > 0) {
             deliverable
@@ -297,7 +297,7 @@ public class DeliverableServiceRpc {
 
     public void submitterCommentDeliverableCheck(Deliverable deliverable) {
         SubmitterCommentDeliverableCheckRequest.Builder builder = SubmitterCommentDeliverableCheckRequest.newBuilder();
-        builder.setResourceId(Int64Value.of(deliverable.getResource()));
+        builder.setResourceId(deliverable.getResource());
         SubmitterCommentDeliverableCheckResponse response = stub.submitterCommentDeliverableCheck(builder.build());
         if (response.getResultsCount() > 0) {
             SubmitterCommentDeliverableCheckResponseMessage result = response.getResults(0);
@@ -306,15 +306,15 @@ public class DeliverableServiceRpc {
                         .setCompletionDate(new Date(result.getModifyDate().getSeconds() * 1000));
             }
             if (result.hasSubmissionId()) {
-                deliverable.setSubmission(result.getSubmissionId().getValue());
+                deliverable.setSubmission(result.getSubmissionId());
             }
         }
     }
 
     public void testCasesDeliverableCheck(Deliverable deliverable) {
         TestCasesDeliverableCheckRequest.Builder builder = TestCasesDeliverableCheckRequest.newBuilder();
-        builder.setResourceId(Int64Value.of(deliverable.getResource()));
-        builder.setProjectPhaseId(Int64Value.of(deliverable.getPhase()));
+        builder.setResourceId(deliverable.getResource());
+        builder.setProjectPhaseId(deliverable.getPhase());
         TestCasesDeliverableCheckResponse response = stub.testCasesDeliverableCheck(builder.build());
         if (response.getModifyDatesCount() > 0) {
             deliverable
@@ -331,13 +331,13 @@ public class DeliverableServiceRpc {
         for (int i = 0; i < response.getDeliverablesCount(); i++) {
             SearchDeliverablesProto dp = deliverableList.get(i);
             if (dp.hasDeliverableId()) {
-                res[0][i] = deliverableList.get(i).getDeliverableId().getValue();
+                res[0][i] = deliverableList.get(i).getDeliverableId();
             }
             if (dp.hasResourceId()) {
-                res[1][i] = deliverableList.get(i).getResourceId().getValue();
+                res[1][i] = deliverableList.get(i).getResourceId();
             }
             if (dp.hasProjectPhaseId()) {
-                res[2][i] = deliverableList.get(i).getProjectPhaseId().getValue();
+                res[2][i] = deliverableList.get(i).getProjectPhaseId();
             }
         }
         return res;
@@ -352,16 +352,16 @@ public class DeliverableServiceRpc {
         for (int i = 0; i < response.getDeliverablesCount(); i++) {
             SearchDeliverablesWithSubmissionProto dp = deliverableList.get(i);
             if (dp.hasDeliverableId()) {
-                res[0][i] = deliverableList.get(i).getDeliverableId().getValue();
+                res[0][i] = deliverableList.get(i).getDeliverableId();
             }
             if (dp.hasResourceId()) {
-                res[1][i] = deliverableList.get(i).getResourceId().getValue();
+                res[1][i] = deliverableList.get(i).getResourceId();
             }
             if (dp.hasProjectPhaseId()) {
-                res[2][i] = deliverableList.get(i).getProjectPhaseId().getValue();
+                res[2][i] = deliverableList.get(i).getProjectPhaseId();
             }
             if (dp.hasSubmissionId()) {
-                res[2][i] = deliverableList.get(i).getSubmissionId().getValue();
+                res[2][i] = deliverableList.get(i).getSubmissionId();
             }
         }
         return res;
@@ -385,19 +385,19 @@ public class DeliverableServiceRpc {
         for (LateDeliverablesProto ldp : response.getLateDeliverablesList()) {
             LateDeliverable lateDeliverable = new LateDeliverable();
             if (ldp.hasLateDeliverableId()) {
-                lateDeliverable.setId(ldp.getLateDeliverableId().getValue());
+                lateDeliverable.setId(ldp.getLateDeliverableId());
             }
             if (ldp.hasProjectId()) {
-                lateDeliverable.setProjectId(ldp.getProjectId().getValue());
+                lateDeliverable.setProjectId(ldp.getProjectId());
             }
             if (ldp.hasProjectPhaseId()) {
-                lateDeliverable.setProjectPhaseId(ldp.getProjectPhaseId().getValue());
+                lateDeliverable.setProjectPhaseId(ldp.getProjectPhaseId());
             }
             if (ldp.hasResourceId()) {
-                lateDeliverable.setResourceId(ldp.getResourceId().getValue());
+                lateDeliverable.setResourceId(ldp.getResourceId());
             }
             if (ldp.hasDeliverableId()) {
-                lateDeliverable.setDeliverableId(ldp.getDeliverableId().getValue());
+                lateDeliverable.setDeliverableId(ldp.getDeliverableId());
             }
             if (ldp.hasDeadline()) {
                 lateDeliverable.setDeadline(new Date(ldp.getDeadline().getSeconds() * 1000));
@@ -409,40 +409,40 @@ public class DeliverableServiceRpc {
                 lateDeliverable.setCreateDate(new Date(ldp.getCreateDate().getSeconds() * 1000));
             }
             if (ldp.hasForgiveInd()) {
-                lateDeliverable.setForgiven(ldp.getForgiveInd().getValue());
+                lateDeliverable.setForgiven(ldp.getForgiveInd());
             }
             if (ldp.hasLastNotified()) {
                 lateDeliverable.setLastNotified(new Date(ldp.getLastNotified().getSeconds() * 1000));
             }
             if (ldp.hasDelay()) {
-                lateDeliverable.setDelay(ldp.getDelay().getValue());
+                lateDeliverable.setDelay(ldp.getDelay());
             }
             if (ldp.hasExplanation()) {
-                lateDeliverable.setExplanation(ldp.getExplanation().getValue());
+                lateDeliverable.setExplanation(ldp.getExplanation());
             }
             if (ldp.hasExplanationDate()) {
                 lateDeliverable.setExplanationDate(new Date(ldp.getExplanationDate().getSeconds() * 1000));
             }
             if (ldp.hasResponse()) {
-                lateDeliverable.setResponse(ldp.getResponse().getValue());
+                lateDeliverable.setResponse(ldp.getResponse());
             }
             if (ldp.hasResponseUser()) {
-                lateDeliverable.setResponseUser(ldp.getResponseUser().getValue());
+                lateDeliverable.setResponseUser(ldp.getResponseUser());
             }
             if (ldp.hasResponseDate()) {
                 lateDeliverable.setResponseDate(new Date(ldp.getResponseDate().getSeconds() * 1000));
             }
             if (ldp.hasLateDeliverableTypeId()) {
-                long lateDeliverableTypeId = ldp.getLateDeliverableTypeId().getValue();
+                long lateDeliverableTypeId = ldp.getLateDeliverableTypeId();
                 LateDeliverableType lateDeliverableType = lateDeliverableTypes.get(lateDeliverableTypeId);
                 if (lateDeliverableType == null) {
                     lateDeliverableType = new LateDeliverableType();
                     lateDeliverableType.setId(lateDeliverableTypeId);
                     if (ldp.hasName()) {
-                        lateDeliverableType.setName(ldp.getName().getValue());
+                        lateDeliverableType.setName(ldp.getName());
                     }
                     if (ldp.hasDescription()) {
-                        lateDeliverableType.setDescription(ldp.getDescription().getValue());
+                        lateDeliverableType.setDescription(ldp.getDescription());
                     }
                     lateDeliverableTypes.put(lateDeliverableTypeId, lateDeliverableType);
                 }

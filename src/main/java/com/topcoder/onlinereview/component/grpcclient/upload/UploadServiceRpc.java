@@ -11,12 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Service;
 
-import com.google.protobuf.BoolValue;
 import com.google.protobuf.ByteString;
-import com.google.protobuf.DoubleValue;
-import com.google.protobuf.Int32Value;
-import com.google.protobuf.Int64Value;
-import com.google.protobuf.StringValue;
 import com.google.protobuf.Timestamp;
 import com.topcoder.onlinereview.component.deliverable.MimeType;
 import com.topcoder.onlinereview.component.deliverable.NamedDeliverableStructure;
@@ -78,44 +73,44 @@ public class UploadServiceRpc {
 
     public void removeUploadType(long id) {
         IdProto entitiyRemoveRequest = IdProto.newBuilder()
-                .setId(Int64Value.of(id)).build();
+                .setId(id).build();
         stub.removeUploadType(entitiyRemoveRequest);
     }
 
     public void removeUploadStatus(long id) {
         IdProto entitiyRemoveRequest = IdProto.newBuilder()
-                .setId(Int64Value.of(id)).build();
+                .setId(id).build();
         stub.removeUploadStatus(entitiyRemoveRequest);
     }
 
     public void removeSubmissionType(long id) {
         IdProto entitiyRemoveRequest = IdProto.newBuilder()
-                .setId(Int64Value.of(id)).build();
+                .setId(id).build();
         stub.removeSubmissionType(entitiyRemoveRequest);
     }
 
     public void removeSubmissionStatus(long id) {
         IdProto entitiyRemoveRequest = IdProto.newBuilder()
-                .setId(Int64Value.of(id)).build();
+                .setId(id).build();
         stub.removeSubmissionStatus(entitiyRemoveRequest);
     }
 
     public void removeUpload(long id) {
         IdProto entitiyRemoveRequest = IdProto.newBuilder()
-                .setId(Int64Value.of(id)).build();
+                .setId(id).build();
         stub.removeUpload(entitiyRemoveRequest);
     }
 
     public void removeSubmission(long id) {
         IdProto entitiyRemoveRequest = IdProto.newBuilder()
-                .setId(Int64Value.of(id)).build();
+                .setId(id).build();
         stub.removeSubmission(entitiyRemoveRequest);
     }
 
     public void removeSubmissionImage(SubmissionImage submissionImage) {
         RemoveSubmissionImageRequest request = RemoveSubmissionImageRequest.newBuilder()
-                .setSubmissionId(Int64Value.of(submissionImage.getSubmissionId()))
-                .setImageId(Int32Value.of(submissionImage.getImageId())).build();
+                .setSubmissionId(submissionImage.getSubmissionId())
+                .setImageId(submissionImage.getImageId()).build();
         stub.removeSubmissionImage(request);
     }
 
@@ -267,7 +262,7 @@ public class UploadServiceRpc {
     }
 
     public SubmissionImage[] getImagesForSubmission(long submissionId) {
-        IdProto request = IdProto.newBuilder().setId(Int64Value.of(submissionId)).build();
+        IdProto request = IdProto.newBuilder().setId(submissionId).build();
         SubmissionImageListProto response = stub.getImagesForSubmission(request);
         List<SubmissionImageProto> submissionImageList = response.getSubmissionImagesList();
         SubmissionImage[] submissionImages = new SubmissionImage[response.getSubmissionImagesCount()];
@@ -319,16 +314,16 @@ public class UploadServiceRpc {
     }
 
     private EntityProto buildEntityProto(NamedDeliverableStructure entity) {
-        EntityProto.Builder eBuilder = EntityProto.newBuilder().setId(Int64Value.of(entity.getId()));
+        EntityProto.Builder eBuilder = EntityProto.newBuilder().setId(entity.getId());
         if (entity.getCreationUser() != null) {
-            eBuilder.setCreateUser(StringValue.of(entity.getCreationUser()));
+            eBuilder.setCreateUser(entity.getCreationUser());
         }
         if (entity.getCreationTimestamp() != null) {
             eBuilder.setCreateDate(Timestamp.newBuilder()
                     .setSeconds(entity.getCreationTimestamp().toInstant().getEpochSecond()).build());
         }
         if (entity.getModificationUser() != null) {
-            eBuilder.setModifyUser(StringValue.of(entity.getModificationUser()));
+            eBuilder.setModifyUser(entity.getModificationUser());
         }
         if (entity.getModificationTimestamp() != null) {
             eBuilder.setModifyDate(
@@ -336,19 +331,19 @@ public class UploadServiceRpc {
                             .build());
         }
         if (entity.getName() != null) {
-            eBuilder.setName(StringValue.of(entity.getName()));
+            eBuilder.setName(entity.getName());
         }
         if (entity.getDescription() != null) {
-            eBuilder.setDescription(StringValue.of(entity.getDescription()));
+            eBuilder.setDescription(entity.getDescription());
         }
         return eBuilder.build();
     }
 
     private UploadProto buildUploadProto(Upload upload) {
         UploadProto.Builder uploadProtoBuilder = UploadProto.newBuilder()
-                .setUploadId(Int64Value.of(upload.getId()));
+                .setUploadId(upload.getId());
         if (upload.getCreationUser() != null) {
-            uploadProtoBuilder.setCreateUser(StringValue.of(upload.getCreationUser()));
+            uploadProtoBuilder.setCreateUser(upload.getCreationUser());
         }
         if (upload.getCreationTimestamp() != null) {
             uploadProtoBuilder
@@ -356,7 +351,7 @@ public class UploadServiceRpc {
                             .setSeconds(upload.getCreationTimestamp().toInstant().getEpochSecond()).build());
         }
         if (upload.getModificationUser() != null) {
-            uploadProtoBuilder.setModifyUser(StringValue.of(upload.getModificationUser()));
+            uploadProtoBuilder.setModifyUser(upload.getModificationUser());
         }
         if (upload.getModificationTimestamp() != null) {
             uploadProtoBuilder.setModifyDate(
@@ -364,30 +359,30 @@ public class UploadServiceRpc {
                             .build());
         }
 
-        uploadProtoBuilder.setProjectId(Int64Value.of(upload.getProject()));
-        uploadProtoBuilder.setProjectPhaseId(Int64Value.of(upload.getProjectPhase()));
-        uploadProtoBuilder.setResourceId(Int64Value.of(upload.getOwner()));
+        uploadProtoBuilder.setProjectId(upload.getProject());
+        uploadProtoBuilder.setProjectPhaseId(upload.getProjectPhase());
+        uploadProtoBuilder.setResourceId(upload.getOwner());
         if (upload.getUploadType() != null) {
-            uploadProtoBuilder.setUploadTypeId(Int64Value.of(upload.getUploadType().getId()));
+            uploadProtoBuilder.setUploadTypeId(upload.getUploadType().getId());
         }
         if (upload.getUploadStatus() != null) {
-            uploadProtoBuilder.setUploadStatusId(Int64Value.of(upload.getUploadStatus().getId()));
+            uploadProtoBuilder.setUploadStatusId(upload.getUploadStatus().getId());
         }
 
         if (upload.getParameter() != null) {
-            uploadProtoBuilder.setParameter(StringValue.of(upload.getParameter()));
+            uploadProtoBuilder.setParameter(upload.getParameter());
         }
         if (upload.getDescription() != null) {
-            uploadProtoBuilder.setUploadDesc(StringValue.of(upload.getDescription()));
+            uploadProtoBuilder.setUploadDesc(upload.getDescription());
         }
         return uploadProtoBuilder.build();
     }
 
     private SubmissionProto buildSubmissionProto(Submission submission) {
         SubmissionProto.Builder submissionProtoBuilder = SubmissionProto.newBuilder()
-                .setSubmissionId(Int64Value.of(submission.getId()));
+                .setSubmissionId(submission.getId());
         if (submission.getCreationUser() != null) {
-            submissionProtoBuilder.setCreateUser(StringValue.of(submission.getCreationUser()));
+            submissionProtoBuilder.setCreateUser(submission.getCreationUser());
         }
         if (submission.getCreationTimestamp() != null) {
             submissionProtoBuilder.setCreateDate(
@@ -395,7 +390,7 @@ public class UploadServiceRpc {
                             .build());
         }
         if (submission.getModificationUser() != null) {
-            submissionProtoBuilder.setModifyUser(StringValue.of(submission.getModificationUser()));
+            submissionProtoBuilder.setModifyUser(submission.getModificationUser());
         }
         if (submission.getModificationTimestamp() != null) {
             submissionProtoBuilder.setModifyDate(
@@ -404,45 +399,45 @@ public class UploadServiceRpc {
         }
         if (submission.getSubmissionStatus() != null) {
             submissionProtoBuilder
-                    .setSubmissionStatusId(Int64Value.of(submission.getSubmissionStatus().getId()));
+                    .setSubmissionStatusId(submission.getSubmissionStatus().getId());
         }
         if (submission.getSubmissionType() != null) {
             submissionProtoBuilder
-                    .setSubmissionTypeId(Int64Value.of(submission.getSubmissionType().getId()));
+                    .setSubmissionTypeId(submission.getSubmissionType().getId());
         }
         if (submission.getScreeningScore() != null) {
-            submissionProtoBuilder.setScreeningScore(DoubleValue.of(submission.getScreeningScore()));
+            submissionProtoBuilder.setScreeningScore(submission.getScreeningScore());
         }
         if (submission.getInitialScore() != null) {
-            submissionProtoBuilder.setInitialScore(DoubleValue.of(submission.getInitialScore()));
+            submissionProtoBuilder.setInitialScore(submission.getInitialScore());
         }
         if (submission.getFinalScore() != null) {
-            submissionProtoBuilder.setFinalScore(DoubleValue.of(submission.getFinalScore()));
+            submissionProtoBuilder.setFinalScore(submission.getFinalScore());
         }
         if (submission.getPlacement() != null) {
-            submissionProtoBuilder.setPlacement(Int64Value.of(submission.getPlacement()));
+            submissionProtoBuilder.setPlacement(submission.getPlacement());
         }
-        submissionProtoBuilder.setUserRank(Int32Value.of(submission.getUserRank()));
-        submissionProtoBuilder.setMarkForPurchase(BoolValue.of(submission.isExtra()));
+        submissionProtoBuilder.setUserRank(submission.getUserRank());
+        submissionProtoBuilder.setMarkForPurchase(submission.isExtra());
         if (submission.getPrize() != null) {
-            submissionProtoBuilder.setPrizeId(Int64Value.of(submission.getPrize().getId()));
+            submissionProtoBuilder.setPrizeId(submission.getPrize().getId());
         }
         if (submission.getUpload() != null) {
             submissionProtoBuilder
-                    .setUploadId(Int64Value.of(submission.getUpload().getId()));
+                    .setUploadId(submission.getUpload().getId());
         }
         if (submission.getThurgoodJobId() != null) {
             submissionProtoBuilder
-                    .setThurgoodJobId(StringValue.of(submission.getThurgoodJobId()));
+                    .setThurgoodJobId(submission.getThurgoodJobId());
         }
         return submissionProtoBuilder.build();
     }
 
     private SubmissionImageProto buildSubmissionImageProto(SubmissionImage submissionImage) {
         SubmissionImageProto.Builder sBuilder = SubmissionImageProto.newBuilder();
-        sBuilder.setSubmissionId(Int64Value.of(submissionImage.getSubmissionId()));
-        sBuilder.setImageId(Int32Value.of(submissionImage.getImageId()));
-        sBuilder.setSortOrder(Int32Value.of(submissionImage.getSortOrder()));
+        sBuilder.setSubmissionId(submissionImage.getSubmissionId());
+        sBuilder.setImageId(submissionImage.getImageId());
+        sBuilder.setSortOrder(submissionImage.getSortOrder());
         if (submissionImage.getCreateDate() != null) {
             sBuilder.setCreateDate(
                     Timestamp.newBuilder().setSeconds(submissionImage.getCreateDate().toInstant().getEpochSecond())
@@ -482,22 +477,22 @@ public class UploadServiceRpc {
 
     private void loadNamedStructure(NamedDeliverableStructure entity, EntityProto e) {
         if (e.hasId()) {
-            entity.setId(e.getId().getValue());
+            entity.setId(e.getId());
         }
         if (e.hasName()) {
-            entity.setName(e.getName().getValue());
+            entity.setName(e.getName());
         }
         if (e.hasDescription()) {
-            entity.setDescription(e.getDescription().getValue());
+            entity.setDescription(e.getDescription());
         }
         if (e.hasCreateUser()) {
-            entity.setCreationUser(e.getCreateUser().getValue());
+            entity.setCreationUser(e.getCreateUser());
         }
         if (e.hasCreateDate()) {
             entity.setCreationTimestamp(new Date(e.getCreateDate().getSeconds() * 1000));
         }
         if (e.hasModifyUser()) {
-            entity.setModificationUser(e.getModifyUser().getValue());
+            entity.setModificationUser(e.getModifyUser());
         }
         if (e.hasModifyDate()) {
             entity.setModificationTimestamp(new Date(e.getModifyDate().getSeconds() * 1000));
@@ -507,37 +502,37 @@ public class UploadServiceRpc {
     private Upload loadUpload(UploadProto u) {
         Upload upload = new Upload();
         if (u.hasUploadId()) {
-            upload.setId(u.getUploadId().getValue());
+            upload.setId(u.getUploadId());
         }
         if (u.hasCreateUser()) {
-            upload.setCreationUser(u.getCreateUser().getValue());
+            upload.setCreationUser(u.getCreateUser());
         }
         if (u.hasCreateDate()) {
             upload.setCreationTimestamp(new Date(u.getCreateDate().getSeconds() * 1000));
         }
         if (u.hasModifyUser()) {
-            upload.setModificationUser(u.getModifyUser().getValue());
+            upload.setModificationUser(u.getModifyUser());
         }
         if (u.hasModifyDate()) {
             upload.setModificationTimestamp(new Date(u.getModifyDate().getSeconds() * 1000));
         }
         if (u.hasProjectId()) {
-            upload.setProject(u.getProjectId().getValue());
+            upload.setProject(u.getProjectId());
         }
         if (u.hasProjectPhaseId()) {
-            upload.setProjectPhase(u.getProjectPhaseId().getValue());
+            upload.setProjectPhase(u.getProjectPhaseId());
         }
         if (u.hasResourceId()) {
-            upload.setOwner(u.getResourceId().getValue());
+            upload.setOwner(u.getResourceId());
         }
         if (u.hasParameter()) {
-            upload.setParameter(u.getParameter().getValue());
+            upload.setParameter(u.getParameter());
         }
         if (u.hasUploadDesc()) {
-            upload.setDescription(u.getUploadDesc().getValue());
+            upload.setDescription(u.getUploadDesc());
         }
         if (u.hasUrl()) {
-            upload.setUrl(u.getUrl().getValue());
+            upload.setUrl(u.getUrl());
         }
         return upload;
     }
@@ -545,37 +540,37 @@ public class UploadServiceRpc {
     private Submission loadSubmission(SubmissionProto s) {
         Submission submission = new Submission();
         if (s.hasSubmissionId()) {
-            submission.setId(s.getSubmissionId().getValue());
+            submission.setId(s.getSubmissionId());
         }
         if (s.hasScreeningScore()) {
-            submission.setScreeningScore(s.getScreeningScore().getValue());
+            submission.setScreeningScore(s.getScreeningScore());
         }
         if (s.hasInitialScore()) {
-            submission.setInitialScore(s.getInitialScore().getValue());
+            submission.setInitialScore(s.getInitialScore());
         }
         if (s.hasFinalScore()) {
-            submission.setFinalScore(s.getFinalScore().getValue());
+            submission.setFinalScore(s.getFinalScore());
         }
         if (s.hasPlacement()) {
-            submission.setPlacement(s.getPlacement().getValue());
+            submission.setPlacement(s.getPlacement());
         }
         if (s.hasMarkForPurchase()) {
-            submission.setExtra(s.getMarkForPurchase().getValue());
+            submission.setExtra(s.getMarkForPurchase());
         }
         if (s.hasThurgoodJobId()) {
-            submission.setThurgoodJobId(s.getThurgoodJobId().getValue());
+            submission.setThurgoodJobId(s.getThurgoodJobId());
         }
         if (s.hasUserRank()) {
-            submission.setUserRank(s.getUserRank().getValue());
+            submission.setUserRank(s.getUserRank());
         }
         if (s.hasCreateUser()) {
-            submission.setCreationUser(s.getCreateUser().getValue());
+            submission.setCreationUser(s.getCreateUser());
         }
         if (s.hasCreateDate()) {
             submission.setCreationTimestamp(new Date(s.getCreateDate().getSeconds() * 1000));
         }
         if (s.hasModifyUser()) {
-            submission.setModificationUser(s.getModifyUser().getValue());
+            submission.setModificationUser(s.getModifyUser());
         }
         if (s.hasModifyDate()) {
             submission.setModificationTimestamp(new Date(s.getModifyDate().getSeconds() * 1000));
@@ -586,25 +581,25 @@ public class UploadServiceRpc {
     private Prize loadPrize(PrizeProto p) {
         Prize prize = new Prize();
         if (p.hasPrizeId()) {
-            prize.setId(p.getPrizeId().getValue());
+            prize.setId(p.getPrizeId());
         }
         if (p.hasPlace()) {
-            prize.setPlace(p.getPlace().getValue());
+            prize.setPlace(p.getPlace());
         }
         if (p.hasPrizeAmount()) {
-            prize.setPrizeAmount(p.getPrizeAmount().getValue());
+            prize.setPrizeAmount(p.getPrizeAmount());
         }
         if (p.hasNumberOfSubmissions()) {
-            prize.setNumberOfSubmissions(p.getNumberOfSubmissions().getValue());
+            prize.setNumberOfSubmissions(p.getNumberOfSubmissions());
         }
         if (p.hasCreateUser()) {
-            prize.setCreationUser(p.getCreateUser().getValue());
+            prize.setCreationUser(p.getCreateUser());
         }
         if (p.hasCreateDate()) {
             prize.setCreationTimestamp(new Date(p.getCreateDate().getSeconds() * 1000));
         }
         if (p.hasModifyUser()) {
-            prize.setModificationUser(p.getModifyUser().getValue());
+            prize.setModificationUser(p.getModifyUser());
         }
         if (p.hasModifyDate()) {
             prize.setModificationTimestamp(new Date(p.getModifyDate().getSeconds() * 1000));
@@ -615,10 +610,10 @@ public class UploadServiceRpc {
     private PrizeType loadPrizeType(PrizeTypeProto p) {
         PrizeType prizeType = new PrizeType();
         if (p.hasPrizeTypeId()) {
-            prizeType.setId(p.getPrizeTypeId().getValue());
+            prizeType.setId(p.getPrizeTypeId());
         }
         if (p.hasPrizeTypeDesc()) {
-            prizeType.setDescription(p.getPrizeTypeDesc().getValue());
+            prizeType.setDescription(p.getPrizeTypeDesc());
         }
         return prizeType;
     }
@@ -626,29 +621,29 @@ public class UploadServiceRpc {
     private MimeType loadMimeType(MimeTypeProto m) {
         MimeType mimeType = new MimeType();
         if (m.hasMimeTypeId()) {
-            mimeType.setId(m.getMimeTypeId().getValue());
+            mimeType.setId(m.getMimeTypeId());
         }
         if (m.hasMimeTypeDesc()) {
-            mimeType.setDescription(m.getMimeTypeDesc().getValue());
+            mimeType.setDescription(m.getMimeTypeDesc());
         }
         FileType fileType = new FileType();
         if (m.hasFileTypeId()) {
-            fileType.setId(m.getFileTypeId().getValue());
+            fileType.setId(m.getFileTypeId());
         }
         if (m.hasFileTypeDesc()) {
-            fileType.setDescription(m.getFileTypeDesc().getValue());
+            fileType.setDescription(m.getFileTypeDesc());
         }
         if (m.hasSort()) {
-            fileType.setSort(m.getSort().getValue());
+            fileType.setSort(m.getSort());
         }
         if (m.hasImageFileInd()) {
-            fileType.setImageFile(m.getImageFileInd().getValue());
+            fileType.setImageFile(m.getImageFileInd());
         }
         if (m.hasExtension()) {
-            fileType.setExtension(m.getExtension().getValue());
+            fileType.setExtension(m.getExtension());
         }
         if (m.hasBundledFileInd()) {
-            fileType.setBundledFile(m.getBundledFileInd().getValue());
+            fileType.setBundledFile(m.getBundledFileInd());
         }
         mimeType.setFileType(fileType);
         return mimeType;
@@ -657,13 +652,13 @@ public class UploadServiceRpc {
     private SubmissionImage loadSubmissionImage(SubmissionImageProto sip) {
         SubmissionImage si = new SubmissionImage();
         if (sip.hasSubmissionId()) {
-            si.setSubmissionId(sip.getSubmissionId().getValue());
+            si.setSubmissionId(sip.getSubmissionId());
         }
         if (sip.hasImageId()) {
-            si.setImageId(sip.getImageId().getValue());
+            si.setImageId(sip.getImageId());
         }
         if (sip.hasSortOrder()) {
-            si.setSortOrder(sip.getSortOrder().getValue());
+            si.setSortOrder(sip.getSortOrder());
         }
         if (sip.hasCreateDate()) {
             si.setCreateDate(new Date(sip.getCreateDate().getSeconds() * 1000));
