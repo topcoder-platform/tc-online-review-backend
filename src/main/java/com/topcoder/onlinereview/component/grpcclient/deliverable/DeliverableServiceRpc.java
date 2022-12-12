@@ -128,20 +128,22 @@ public class DeliverableServiceRpc {
         rBuilder.setDeliverableId(Int64Value.of(lateDeliverable.getDeliverableId()));
         if (lateDeliverable.getDeadline() != null) {
             rBuilder.setDeadline(
-                    Timestamp.newBuilder().setSeconds(lateDeliverable.getDeadline().toInstant().getEpochSecond()));
+                    Timestamp.newBuilder().setSeconds(lateDeliverable.getDeadline().toInstant().getEpochSecond())
+                            .build());
         }
         if (lateDeliverable.getCompensatedDeadline() != null) {
             rBuilder.setCompensatedDeadline(Timestamp.newBuilder()
-                    .setSeconds(lateDeliverable.getCompensatedDeadline().toInstant().getEpochSecond()));
+                    .setSeconds(lateDeliverable.getCompensatedDeadline().toInstant().getEpochSecond()).build());
         }
         if (lateDeliverable.getCreateDate() != null) {
             rBuilder.setCreateDate(
-                    Timestamp.newBuilder().setSeconds(lateDeliverable.getCreateDate().toInstant().getEpochSecond()));
+                    Timestamp.newBuilder().setSeconds(lateDeliverable.getCreateDate().toInstant().getEpochSecond())
+                            .build());
         }
         rBuilder.setForgiveInd(BoolValue.of(lateDeliverable.isForgiven()));
         if (lateDeliverable.getLastNotified() != null) {
             rBuilder.setLastNotified(Timestamp.newBuilder()
-                    .setSeconds(lateDeliverable.getLastNotified().toInstant().getEpochSecond()));
+                    .setSeconds(lateDeliverable.getLastNotified().toInstant().getEpochSecond()).build());
         }
         if (lateDeliverable.getDelay() != null) {
             rBuilder.setDelay(Int64Value.of(lateDeliverable.getDelay()));
@@ -151,14 +153,14 @@ public class DeliverableServiceRpc {
         }
         if (lateDeliverable.getExplanationDate() != null) {
             rBuilder.setExplanationDate(Timestamp.newBuilder()
-                    .setSeconds(lateDeliverable.getExplanationDate().toInstant().getEpochSecond()));
+                    .setSeconds(lateDeliverable.getExplanationDate().toInstant().getEpochSecond()).build());
         }
         if (lateDeliverable.getResponse() != null) {
             rBuilder.setResponse(StringValue.of(lateDeliverable.getResponse()));
         }
         if (lateDeliverable.getResponseDate() != null) {
             rBuilder.setResponseDate(Timestamp.newBuilder()
-                    .setSeconds(lateDeliverable.getResponseDate().toInstant().getEpochSecond()));
+                    .setSeconds(lateDeliverable.getResponseDate().toInstant().getEpochSecond()).build());
         }
         if (lateDeliverable.getType() != null) {
             rBuilder.setLateDeliverableTypeId(Int64Value.of(lateDeliverable.getType().getId()));
