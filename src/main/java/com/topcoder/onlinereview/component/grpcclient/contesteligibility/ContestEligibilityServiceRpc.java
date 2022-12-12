@@ -106,4 +106,11 @@ public class ContestEligibilityServiceRpc {
         HaveEligibilityResponse haveEligibilityResponse = stub.haveEligibility(haveEligibilityRequest);
         return new HashSet<>(haveEligibilityResponse.getContestIdsList());
     }
+
+    public boolean validateUserContestEligibility(long userId, long groupId) {
+        ValidateUserContestEligibilityRequest request = ValidateUserContestEligibilityRequest.newBuilder()
+                .setUserId(Int64Value.of(userId)).setGroupId(Int64Value.of(groupId)).build();
+        ValidateUserContestEligibilityResponse response = stub.validateUserContestEligibility(request);
+        return response.getIsValid();
+    }
 }
