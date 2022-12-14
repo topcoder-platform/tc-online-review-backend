@@ -4,8 +4,6 @@
 package com.topcoder.onlinereview.component.deliverable.late;
 
 import com.topcoder.onlinereview.component.grpcclient.deliverable.DeliverableServiceRpc;
-import com.topcoder.onlinereview.component.search.SearchBundle;
-import com.topcoder.onlinereview.component.search.SearchBundleManager;
 import com.topcoder.onlinereview.component.search.filter.AndFilter;
 import com.topcoder.onlinereview.component.search.filter.EqualToFilter;
 import com.topcoder.onlinereview.component.search.filter.Filter;
@@ -16,17 +14,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
-import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-
-import static com.topcoder.onlinereview.component.util.CommonUtils.getDate;
-import static com.topcoder.onlinereview.component.util.CommonUtils.getInt;
-import static com.topcoder.onlinereview.component.util.CommonUtils.getLong;
-import static com.topcoder.onlinereview.component.util.CommonUtils.getString;
 
 /**
  * <p>
@@ -238,70 +227,6 @@ public class LateDeliverableManager {
 
     /**
      * <p>
-     * Represents the child key 'objectFactoryConfig'.
-     * </p>
-     */
-    private static final String KEY_OF_CONFIG = "objectFactoryConfig";
-
-    /**
-     * <p>
-     * Represents the child key 'persistenceConfig'.
-     * </p>
-     */
-    private static final String KEY_PERSISTENCE_CONFIG = "persistenceConfig";
-
-    /**
-     * <p>
-     * Represents the property key 'searchBundleManagerNamespace'.
-     * </p>
-     */
-    private static final String KEY_SBM_NAMESPACE = "searchBundleManagerNamespace";
-
-    /**
-     * <p>
-     * Represents the property key 'nonRestrictedSearchBundleName'.
-     * </p>
-     */
-    private static final String KEY_NON_RESTRICTED_SB_NAME = "Non-restricted Late Deliverable Search Bundle";
-
-    /**
-     * <p>
-     * Represents the property key 'restrictedSearchBundleName'.
-     * </p>
-     */
-    private static final String KEY_RESTRICTED_SB_NAME = "Restricted Late Deliverable Search Bundle";
-
-    /**
-     * <p>
-     * Represents the property key 'persistenceKey'.
-     * </p>
-     */
-    private static final String KEY_PERSISTENCE_KEY = "persistenceKey";
-
-    /**
-     * <p>
-     * The search bundle used by this class when searching for late deliverables with no user restriction./p>
-     *
-     * <p>
-     * Is initialized in the constructor and never changed after that. Cannot be null. Is used in
-     * searchAllLateDeliverables().
-     * </p>
-     */
-    private SearchBundle nonRestrictedSearchBundle;
-
-    /**
-     * <p>
-     * The search bundle used by this class when searching for late deliverables with specific user restriction. /p>
-     *
-     * <p>
-     * Is initialized in the constructor and never changed after that. Cannot be null. Is used in
-     * searchRestrictedLateDeliverables().
-     * </p>
-     */
-    private SearchBundle restrictedSearchBundle;
-
-    /**
-     * <p>
      * The late deliverable persistence instance used by this class for updating late deliverables in persistence./p>
      *
      * <p>
@@ -310,16 +235,9 @@ public class LateDeliverableManager {
      */
     @Autowired
     private LateDeliverablePersistence persistence;
-    @Autowired private SearchBundleManager searchBundleManager;
 
     @Autowired
     private DeliverableServiceRpc deliverableServiceRpc;
-
-    @PostConstruct
-    public void postRun() {
-        nonRestrictedSearchBundle = searchBundleManager.getSearchBundle(KEY_NON_RESTRICTED_SB_NAME);
-        restrictedSearchBundle = searchBundleManager.getSearchBundle(KEY_RESTRICTED_SB_NAME);
-    }
 
     /**
      * <p>
@@ -473,12 +391,7 @@ public class LateDeliverableManager {
                 // Create filter that matches all records:
                 filter = new NotFilter(new NullFilter("deliverableId"));
             }
-            // Get late deliverables using Search Builder:
             List<LateDeliverable> result = deliverableServiceRpc.searchLateDeliverablesNonRestricted(filter);
-            /* TODO GRPC
-            List<LateDeliverable> result = getLateDeliverables(nonRestrictedSearchBundle, filter);
-            */
-
             // Log method exit
             Helper.logExit(log, signature, new Object[] {result}, enterTimestamp);
 
@@ -556,10 +469,6 @@ public class LateDeliverableManager {
             }
 
             List<LateDeliverable> result = deliverableServiceRpc.searchLateDeliverablesRestricted(compositeFilter);
-            // Get late deliverables using Search Builder:
-            /* TODO GRPC
-            List<LateDeliverable> result = getLateDeliverables(restrictedSearchBundle, compositeFilter);
-            */
             // Log method exit
             Helper.logExit(log, signature, new Object[] {result}, enterTimestamp);
 
@@ -608,132 +517,6 @@ public class LateDeliverableManager {
             // Log exception
             throw Helper.logException(log, signature, e, "LateDeliverablePersistenceException is thrown"
                 + " when retrieving all existing late deliverable types.");
-        }
-    }
-
-    /**
-     * <p>
-     * Retrieves the list of late deliverables with the search bundle and filter.
-     * </p>
-     *
-     * <p>
-     * <em>Changes in version 1.0.6:</em>
-     * <ol>
-     * <li>Added steps to retrieve the late deliverable type.</li>
-     * </ol>
-     * </p>
-     *
-     * @param searchBundle
-     *            the search bundle.
-     * @param filter
-     *            the filter.
-     *
-     * @return the retrieved late deliverables (not null, doesn't contain null).
-     *
-     * @throws LateDeliverablePersistenceException
-     *             if some error occurred when retrieving late deliverables.
-     * @throws LateDeliverableManagementException
-     *             if some other error occurred.
-     */
-    private static List<LateDeliverable> getLateDeliverables(SearchBundle searchBundle, Filter filter)
-        throws LateDeliverableManagementException {
-
-        // Perform the search using Search Builder:
-        List<Map<String, Object>> resultSet = searchBundle.search(filter);
-
-        // Create a list for result
-        List<LateDeliverable> result = new ArrayList<LateDeliverable>();
-        // Create a map for cached late deliverable types:
-        Map<Long, LateDeliverableType> lateDeliverableTypes = new HashMap<Long, LateDeliverableType>();
-
-        for (Map<String, Object> row: resultSet) {
-            // Create late deliverable instance:
-            LateDeliverable lateDeliverable = new LateDeliverable();
-
-            int index = 1;
-
-            // Copy ID to the late deliverable instance:
-            lateDeliverable.setId(getLong(row, "late_deliverable_id"));
-            // Copy project ID from the result set to the late deliverable instance:
-            lateDeliverable.setProjectId(getLong(row, "project_id"));
-            // Copy project phase ID from the result set to the late deliverable instance:
-            lateDeliverable.setProjectPhaseId(getLong(row, "project_phase_id"));
-            // Copy resource ID from the result set to the late deliverable instance:
-            lateDeliverable.setResourceId(getLong(row, "resource_id"));
-            // Copy deliverable ID from the result set to the late deliverable instance:
-            lateDeliverable.setDeliverableId(getLong(row, "deliverable_id"));
-            // Copy deadline from the result set to the late deliverable instance:
-            lateDeliverable.setDeadline(getDate(row, "deadline"));
-            // Copy compensated deadline from the result set to the late deliverable instance:
-            lateDeliverable.setCompensatedDeadline(getDate(row, "compensated_deadline"));
-            // Copy creation date from the result set to the late deliverable instance:
-            lateDeliverable.setCreateDate(getDate(row, "create_date"));
-
-            int forgiven = getInt(row, "forgive_ind");
-            // Copy forgiven flag to the late deliverable instance:
-            lateDeliverable.setForgiven((forgiven == 0) ? false : true);
-
-            // Copy last notification date from the result set to the late deliverable instance:
-            lateDeliverable.setLastNotified(getDate(row, "last_notified"));
-            // Copy delay from the result set to the late deliverable instance:
-            lateDeliverable.setDelay(getLong(row, "delay"));
-            // Copy explanation from the result set to the late deliverable instance:
-            lateDeliverable.setExplanation(getString(row, "explanation"));
-            // Copy explanation date from the result set to the late deliverable instance:
-            lateDeliverable.setExplanationDate(getDate(row, "explanation_date"));
-            // Copy response from the result set to the late deliverable instance:
-            lateDeliverable.setResponse(getString(row, "response"));
-            // Copy response user from the result set to the late deliverable instance:
-            lateDeliverable.setResponseUser(getString(row, "response_user"));
-            // Copy response date from the result set to the late deliverable instance:
-            lateDeliverable.setResponseDate(getDate(row, "response_date"));
-
-            // Get late deliverable type ID from the result set:
-            long lateDeliverableTypeId = getLong(row, "late_deliverable_type_id");
-            // Get cached late deliverable type from the map:
-            LateDeliverableType lateDeliverableType = lateDeliverableTypes.get(lateDeliverableTypeId);
-            if (lateDeliverableType == null) {
-                // Create new late deliverable type instance:
-                lateDeliverableType = new LateDeliverableType();
-                // Set ID to the late deliverable type:
-                lateDeliverableType.setId(lateDeliverableTypeId);
-                // Copy late deliverable type name from the result set to the late deliverable type instance:
-                lateDeliverableType.setName(getString(row, "name"));
-                // Copy late deliverable type description from the result set to the late deliverable type
-                // instance:
-                lateDeliverableType.setDescription(getString(row, "description"));
-
-
-                lateDeliverableTypes.put(lateDeliverableTypeId, lateDeliverableType);
-            }
-            // Set late deliverable type to the late deliverable instance:
-            lateDeliverable.setType(lateDeliverableType);
-
-            // Add late deliverable to the list:
-            result.add(lateDeliverable);
-        }
-
-        return result;
-    }
-
-    /**
-     * <p>
-     * Validates the value of a string. The value can not be <code>null</code> or an empty string.
-     * </p>
-     *
-     * @param value
-     *            the value of the variable to be validated.
-     * @param name
-     *            the name of the variable to be validated.
-     *
-     * @throws IllegalArgumentException
-     *             if the given string is <code>null</code> or an empty string.
-     */
-    private static void checkNullOrEmpty(String value, String name) {
-        Helper.checkNull(value, name);
-
-        if (value.trim().length() == 0) {
-            throw new IllegalArgumentException("'" + name + "' should not be an empty string.");
         }
     }
 

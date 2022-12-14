@@ -9,18 +9,7 @@ import com.topcoder.onlinereview.component.deliverable.DeliverableCheckingExcept
 import com.topcoder.onlinereview.component.grpcclient.deliverable.DeliverableServiceRpc;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
-
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.util.List;
-import java.util.Map;
-
-import static com.google.common.collect.Lists.newArrayList;
-import static com.topcoder.onlinereview.component.util.CommonUtils.executeSqlWithParam;
-import static com.topcoder.onlinereview.component.util.CommonUtils.getDate;
 
 /**
  * The AggregationDeliverableChecker class subclasses the SingleQuerySqlDeliverableChecker class.
@@ -39,10 +28,6 @@ import static com.topcoder.onlinereview.component.util.CommonUtils.getDate;
 public class AggregationDeliverableChecker implements DeliverableChecker {
 
   @Autowired
-  @Qualifier("tcsJdbcTemplate")
-  private JdbcTemplate jdbcTemplate;
-
-  @Autowired
   private DeliverableServiceRpc deliverableServiceRpc;
 
   public void check(Deliverable deliverable) throws DeliverableCheckingException {
@@ -51,44 +36,8 @@ public class AggregationDeliverableChecker implements DeliverableChecker {
     }
     try {
         deliverableServiceRpc.aggregationDeliverableCheck(deliverable);
-      /* TODO GRPC
-      List<Map<String, Object>> rs =
-          executeSqlWithParam(
-              jdbcTemplate,
-              "SELECT modify_date FROM review WHERE committed = 1 AND resource_id = ?",
-              newArrayList(deliverable.getResource()));
-      if (!rs.isEmpty()) {
-        if (rs.get(0).get("modify_date") != null) {
-          deliverable.setCompletionDate(getDate(rs.get(0), "modify_date"));
-        }
-      }
-      */
     } catch (Exception ex) {
       throw new DeliverableCheckingException("Error occurs while database check operation.", ex);
     }
-  }
-  /**
-   * Given a PreparedStatement representation of the SQL query returned by the getSqlQuery method,
-   * this method extracts resource id and project id values from the deliverable and sets them as
-   * parameters of the PreparedStatement.
-   *
-   * @param deliverable The deliverable from which to get any needed parameters to set on the
-   *     PreparedStatement.
-   * @param statement The PreparedStatement representation of the SQL query returned by getSqlQuery.
-   * @throws SQLException if any error occurs while setting the values to statement.
-   */
-  protected void fillInQueryParameters(Deliverable deliverable, PreparedStatement statement)
-      throws SQLException {
-    statement.setLong(1, deliverable.getResource());
-  }
-
-  /**
-   * Gets the SQL query string to select the modification date of the aggregation review scorecard.
-   * Returned query will have two placeholders for the resource_id and project_id values.
-   *
-   * @return The SQL query string to execute.
-   */
-  protected String getSqlQuery() {
-    return "SELECT modify_date FROM review WHERE committed = 1 AND resource_id = ?";
   }
 }

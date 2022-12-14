@@ -5,24 +5,14 @@ package com.topcoder.onlinereview.component.deliverable.late;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.topcoder.onlinereview.component.grpcclient.deliverable.DeliverableServiceRpc;
 
 import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.Map;
-
-import static com.google.common.collect.Lists.newArrayList;
-import static com.topcoder.onlinereview.component.util.CommonUtils.executeSql;
-import static com.topcoder.onlinereview.component.util.CommonUtils.executeUpdateSql;
-import static com.topcoder.onlinereview.component.util.CommonUtils.getLong;
-import static com.topcoder.onlinereview.component.util.CommonUtils.getString;
 
 /**
  * <p>
@@ -58,37 +48,6 @@ public class LateDeliverablePersistence {
      * </p>
      */
     private static final String CLASS_NAME = LateDeliverablePersistence.class.getName();
-
-    /**
-     * <p>
-     * Represents the SQL string to query late deliverable types.
-     * </p>
-     *
-     * @since 1.0.6
-     */
-    private static final String SQL_QUERY_LATE_DELIVERABLE_TYPE =
-        "SELECT late_deliverable_type_id, name, description FROM late_deliverable_type_lu";
-
-    /**
-     * <p>
-     * Represents the SQL string to update late deliverable.
-     * </p>
-     *
-     * <p>
-     * <em>Changes in version 1.0.6:</em>
-     * <ol>
-     * <li>Added field to update the late deliverable type id.</li>
-     * </ol>
-     * </p>
-     */
-    private static final String SQL_UPDATE_LATE_DELIVERABLE = "UPDATE late_deliverable SET project_phase_id = ?,"
-        + " resource_id = ?, deliverable_id = ?, deadline = ?, compensated_deadline = ?, create_date = ?,"
-        + " forgive_ind = ?, last_notified = ?, delay = ?, explanation = ?, explanation_date = ?, response = ?,"
-        + " response_user = ?, response_date = ?, late_deliverable_type_id = ? WHERE late_deliverable_id = ?";
-
-    @Autowired
-    @Qualifier("tcsJdbcTemplate")
-    private JdbcTemplate jdbcTemplate;
 
     @Autowired
     private DeliverableServiceRpc deliverableServiceRpc;
@@ -183,23 +142,6 @@ public class LateDeliverablePersistence {
         Helper.logEntrance(log, signature, null, null);
         try {
             List<LateDeliverableType> result = deliverableServiceRpc.getLateDeliverableTypes();
-            /* TODO GRPC
-            // Execute the query:
-            List<Map<String, Object>> resultSet = executeSql(jdbcTemplate, SQL_QUERY_LATE_DELIVERABLE_TYPE);
-            // Create a list for result:
-            List<LateDeliverableType> result = new ArrayList<LateDeliverableType>();
-            for (Map<String, Object> row: resultSet) {
-                // Create late deliverable type instance:
-                LateDeliverableType lateDeliverableType = new LateDeliverableType();
-
-                lateDeliverableType.setId(getLong(row, "late_deliverable_type_id"));
-                lateDeliverableType.setName(getString(row, "name"));
-                lateDeliverableType.setDescription(getString(row, "description"));
-
-                // Add late deliverable type to the list:
-                result.add(lateDeliverableType);
-            }
-            */
             // Log method exit
             Helper.logExit(log, signature, new Object[] {result}, enterTimestamp);
             return result;
@@ -232,29 +174,6 @@ public class LateDeliverablePersistence {
             throw new LateDeliverableNotFoundException(Helper.concat("The late deliverable with ID '",
                     lateDeliverable.getId(), "' doesn't exist in persistence."), lateDeliverable.getId());
         }
-        /* TODO GRPC
-        List<Object> params = newArrayList(lateDeliverable.getProjectPhaseId(),
-                lateDeliverable.getResourceId(),
-                lateDeliverable.getDeliverableId(),
-                lateDeliverable.getDeadline(),
-                lateDeliverable.getCompensatedDeadline(),
-                lateDeliverable.getCreateDate(),
-                lateDeliverable.isForgiven() ? 1 : 0,
-                lateDeliverable.getLastNotified(),
-                lateDeliverable.getDelay(),
-                lateDeliverable.getExplanation(),
-                lateDeliverable.getExplanationDate(),
-                lateDeliverable.getResponse(),
-                lateDeliverable.getResponseUser(),
-                lateDeliverable.getResponseDate(),
-                lateDeliverable.getType().getId(),
-                lateDeliverable.getId());
-        // Execute the UPDATE statement
-        if (executeUpdateSql(jdbcTemplate, SQL_UPDATE_LATE_DELIVERABLE, params) == 0) {
-            throw new LateDeliverableNotFoundException(Helper.concat("The late deliverable with ID '",
-                    lateDeliverable.getId(), "' doesn't exist in persistence."), lateDeliverable.getId());
-        }
-        */
     }
     /**
      * <p>

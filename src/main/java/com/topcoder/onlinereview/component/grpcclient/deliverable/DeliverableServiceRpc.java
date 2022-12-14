@@ -191,9 +191,9 @@ public class DeliverableServiceRpc {
         AggregationDeliverableCheckRequest.Builder builder = AggregationDeliverableCheckRequest.newBuilder();
         builder.setResourceId(deliverable.getResource());
         AggregationDeliverableCheckResponse response = stub.aggregationDeliverableCheck(builder.build());
-        if (response.getModifyDatesCount() > 0) {
+        if (response.getModifyDatesCount() > 0 && response.getModifyDates(0).hasModifyDate()) {
             deliverable
-                    .setCompletionDate(new Date(response.getModifyDates(0).getSeconds() * 1000));
+                    .setCompletionDate(new Date(response.getModifyDates(0).getModifyDate().getSeconds() * 1000));
         }
 
     }
@@ -208,7 +208,7 @@ public class DeliverableServiceRpc {
         if (response.getModifyDatesCount() == 0) {
             deliverable.setCompletionDate(new Date());
         } else {
-            response.getModifyDatesList().stream().map(x -> new Date(x.getSeconds() * 1000))
+            response.getModifyDatesList().stream().map(x -> new Date(x.getModifyDate().getSeconds() * 1000))
                     .max(Comparator.comparing(x -> x)).ifPresent(d -> deliverable.setCompletionDate(d));
         }
     }
@@ -222,9 +222,9 @@ public class DeliverableServiceRpc {
             builder.setSubmissionId(deliverable.getSubmission());
         }
         CommittedReviewDeliverableCheckResponse response = stub.committedReviewDeliverableCheck(builder.build());
-        if (response.getModifyDatesCount() > 0) {
+        if (response.getModifyDatesCount() > 0 && response.getModifyDates(0).hasModifyDate()) {
             deliverable
-                    .setCompletionDate(new Date(response.getModifyDates(0).getSeconds() * 1000));
+                    .setCompletionDate(new Date(response.getModifyDates(0).getModifyDate().getSeconds() * 1000));
         }
     }
 
@@ -233,9 +233,9 @@ public class DeliverableServiceRpc {
         builder.setResourceId(deliverable.getResource());
         builder.setProjectPhaseId(deliverable.getPhase());
         FinalFixesDeliverableCheckResponse response = stub.finalFixesDeliverableCheck(builder.build());
-        if (response.getModifyDatesCount() > 0) {
+        if (response.getModifyDatesCount() > 0 && response.getModifyDates(0).hasModifyDate()) {
             deliverable
-                    .setCompletionDate(new Date(response.getModifyDates(0).getSeconds() * 1000));
+                    .setCompletionDate(new Date(response.getModifyDates(0).getModifyDate().getSeconds() * 1000));
         }
     }
 
@@ -278,26 +278,28 @@ public class DeliverableServiceRpc {
         builder.setProjectPhaseId(deliverable.getPhase());
         SpecificationSubmissionDeliverableCheckResponse response = stub
                 .specificationSubmissionDeliverableCheck(builder.build());
-        if (response.getModifyDatesCount() > 0) {
+        if (response.getModifyDatesCount() > 0 && response.getModifyDates(0).hasModifyDate()) {
             deliverable
-                    .setCompletionDate(new Date(response.getModifyDates(0).getSeconds() * 1000));
+                    .setCompletionDate(new Date(response.getModifyDates(0).getModifyDate().getSeconds() * 1000));
         }
     }
 
     public void submissionDeliverableCheck(Deliverable deliverable) {
         SubmissionDeliverableCheckRequest.Builder builder = SubmissionDeliverableCheckRequest.newBuilder();
         builder.setResourceId(deliverable.getResource());
-        builder.setProjectPhaseId(deliverable.getPhase());
+        // TODO: this is wrong
+        builder.setSubmissionTypeId(1);
         SubmissionDeliverableCheckResponse response = stub.submissionDeliverableCheck(builder.build());
-        if (response.getModifyDatesCount() > 0) {
+        if (response.getModifyDatesCount() > 0 && response.getModifyDates(0).hasModifyDate()) {
             deliverable
-                    .setCompletionDate(new Date(response.getModifyDates(0).getSeconds() * 1000));
+                    .setCompletionDate(new Date(response.getModifyDates(0).getModifyDate().getSeconds() * 1000));
         }
     }
 
     public void submitterCommentDeliverableCheck(Deliverable deliverable) {
         SubmitterCommentDeliverableCheckRequest.Builder builder = SubmitterCommentDeliverableCheckRequest.newBuilder();
         builder.setResourceId(deliverable.getResource());
+        builder.setProjectPhaseId(deliverable.getPhase());
         SubmitterCommentDeliverableCheckResponse response = stub.submitterCommentDeliverableCheck(builder.build());
         if (response.getResultsCount() > 0) {
             SubmitterCommentDeliverableCheckResponseMessage result = response.getResults(0);
@@ -316,9 +318,9 @@ public class DeliverableServiceRpc {
         builder.setResourceId(deliverable.getResource());
         builder.setProjectPhaseId(deliverable.getPhase());
         TestCasesDeliverableCheckResponse response = stub.testCasesDeliverableCheck(builder.build());
-        if (response.getModifyDatesCount() > 0) {
+        if (response.getModifyDatesCount() > 0 && response.getModifyDates(0).hasModifyDate()) {
             deliverable
-                    .setCompletionDate(new Date(response.getModifyDates(0).getSeconds() * 1000));
+                    .setCompletionDate(new Date(response.getModifyDates(0).getModifyDate().getSeconds() * 1000));
         }
     }
 
@@ -331,13 +333,13 @@ public class DeliverableServiceRpc {
         for (int i = 0; i < response.getDeliverablesCount(); i++) {
             SearchDeliverablesProto dp = deliverableList.get(i);
             if (dp.hasDeliverableId()) {
-                res[0][i] = deliverableList.get(i).getDeliverableId();
+                res[0][i] = dp.getDeliverableId();
             }
             if (dp.hasResourceId()) {
-                res[1][i] = deliverableList.get(i).getResourceId();
+                res[1][i] = dp.getResourceId();
             }
             if (dp.hasProjectPhaseId()) {
-                res[2][i] = deliverableList.get(i).getProjectPhaseId();
+                res[2][i] = dp.getProjectPhaseId();
             }
         }
         return res;
@@ -348,20 +350,20 @@ public class DeliverableServiceRpc {
                 .setFilter(ByteString.copyFrom(SerializationUtils.serialize(filter))).build();
         SearchDeliverablesWithSubmissionResponse response = stub.searchDeliverablesWithSubmission(request);
         List<SearchDeliverablesWithSubmissionProto> deliverableList = response.getDeliverablesList();
-        Long[][] res = new Long[3][response.getDeliverablesCount()];
+        Long[][] res = new Long[4][response.getDeliverablesCount()];
         for (int i = 0; i < response.getDeliverablesCount(); i++) {
             SearchDeliverablesWithSubmissionProto dp = deliverableList.get(i);
             if (dp.hasDeliverableId()) {
-                res[0][i] = deliverableList.get(i).getDeliverableId();
+                res[0][i] = dp.getDeliverableId();
             }
             if (dp.hasResourceId()) {
-                res[1][i] = deliverableList.get(i).getResourceId();
+                res[1][i] = dp.getResourceId();
             }
             if (dp.hasProjectPhaseId()) {
-                res[2][i] = deliverableList.get(i).getProjectPhaseId();
+                res[2][i] = dp.getProjectPhaseId();
             }
             if (dp.hasSubmissionId()) {
-                res[2][i] = deliverableList.get(i).getSubmissionId();
+                res[3][i] = dp.getSubmissionId();
             }
         }
         return res;

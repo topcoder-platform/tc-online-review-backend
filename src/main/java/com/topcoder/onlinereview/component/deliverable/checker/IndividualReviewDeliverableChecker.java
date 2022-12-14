@@ -9,17 +9,7 @@ import com.topcoder.onlinereview.component.deliverable.DeliverableCheckingExcept
 import com.topcoder.onlinereview.component.grpcclient.deliverable.DeliverableServiceRpc;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
-
-import java.util.List;
-import java.util.Map;
-
-import static com.google.common.collect.Lists.newArrayList;
-import static com.topcoder.onlinereview.component.util.CommonUtils.executeSqlWithParam;
-import static com.topcoder.onlinereview.component.util.CommonUtils.getDate;
-import static com.topcoder.onlinereview.component.util.CommonUtils.getLong;
 
 /**
  * The IndividualReviewDeliverableChecker class subclasses the SingleQuerySqlDeliverableChecker
@@ -38,10 +28,6 @@ import static com.topcoder.onlinereview.component.util.CommonUtils.getLong;
 public class IndividualReviewDeliverableChecker implements DeliverableChecker {
 
   @Autowired
-  @Qualifier("tcsJdbcTemplate")
-  private JdbcTemplate jdbcTemplate;
-
-  @Autowired
   private DeliverableServiceRpc deliverableServiceRpc;
 
   public void check(Deliverable deliverable) throws DeliverableCheckingException {
@@ -50,31 +36,8 @@ public class IndividualReviewDeliverableChecker implements DeliverableChecker {
     }
     try {
       deliverableServiceRpc.individualReviewDeliverableCheck(deliverable);
-      /* TODO GRPC
-      List<Map<String, Object>> rs =
-          executeSqlWithParam(jdbcTemplate, getSqlQuery(), newArrayList(deliverable.getResource()));
-      if (!rs.isEmpty()) {
-        if (rs.get(0).get("modify_date") != null) {
-          deliverable.setCompletionDate(getDate(rs.get(0), "modify_date"));
-          deliverable.setSubmission(getLong(rs.get(0), "submission_id"));
-        }
-      }
-      */
     } catch (Exception ex) {
       throw new DeliverableCheckingException("Error occurs while database check operation.", ex);
     }
-  }
-
-  /**
-   * Gets the SQL query string to select the last modification date for the review scorecard for the
-   * resource(reviewer). Returned query will have 1 placeholder for the resource_id value.
-   *
-   * @return The SQL query string to execute.
-   */
-  protected String getSqlQuery() {
-    return "SELECT review.modify_date, resource_submission.submission_id FROM resource_submission "
-        + "LEFT JOIN review ON review.resource_id = resource_submission.resource_id "
-        + "AND review.submission_id = resource_submission.submission_id AND committed = 1 "
-        + "WHERE resource_submission.resource_id = ?";
   }
 }
