@@ -9,12 +9,8 @@ import com.topcoder.onlinereview.component.id.IDGenerationException;
 import com.topcoder.onlinereview.component.id.IDGenerator;
 import com.topcoder.onlinereview.component.project.management.LogMessage;
 import com.topcoder.onlinereview.component.search.SearchBuilderException;
-import com.topcoder.onlinereview.component.search.SearchBundle;
-import com.topcoder.onlinereview.component.search.SearchBundleManager;
 import com.topcoder.onlinereview.component.search.filter.Filter;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -22,8 +18,6 @@ import javax.annotation.PostConstruct;
 import java.text.MessageFormat;
 import java.util.Arrays;
 import java.util.Date;
-import java.util.List;
-import java.util.Map;
 
 /**
  * The PersistenceUploadManager class implements the UploadManager interface. It ties together a
@@ -275,19 +269,6 @@ public class UploadManager {
    */
   public static final String SUBMISSION_TYPE_ID_GENERATOR_NAME = "submission_type_id_seq";
 
-  /**
-   * Logger instance using the class name as category.
-   *
-   * <p>Is initialized during class loading and never changed after that.
-   *
-   * <p><em>Changes in 1.1:</em>
-   *
-   * <ul>
-   *   <li>Changed attribute name to upper case to meet Java and TopCoder standards.
-   * </ul>
-   */
-  private static final Logger LOGGER = LoggerFactory.getLogger(UploadManager.class.getName());
-
   /** The flag which indicate the caller of persistenceUploadManagerHelper. */
   private static final int CREATE_FLAG = 0;
 
@@ -304,18 +285,6 @@ public class UploadManager {
   //  @Autowired private UploadPersistence persistence;
 
   @Autowired private SqlUploadPersistence persistence;
-
-  /**
-   * The search bundle that is used when searching for uploads. This field is set in the
-   * constructor, is immutable, and can never be null.
-   */
-  private SearchBundle uploadSearchBundle;
-
-  /**
-   * The search bundle that is used when searching for submissions. This field is set in the
-   * constructor, is immutable, and can never be null.
-   */
-  private SearchBundle submissionSearchBundle;
 
   /**
    * The generator used to create ids for new Uploads. This field is set in the constructor, is
@@ -358,8 +327,6 @@ public class UploadManager {
    */
   private IDGenerator submissionTypeIdGenerator;
 
-  @Autowired private SearchBundleManager searchBundleManager;
-
   @Autowired private DBHelper dbHelper;
 
   @Autowired
@@ -367,12 +334,6 @@ public class UploadManager {
 
   @PostConstruct
   public void postRun() throws IDGenerationException {
-    uploadSearchBundle = searchBundleManager.getSearchBundle(UPLOAD_SEARCH_BUNDLE_NAME);
-    submissionSearchBundle = searchBundleManager.getSearchBundle(SUBMISSION_SEARCH_BUNDLE_NAME);
-    DeliverableHelper.setSearchableFields(
-            uploadSearchBundle, DeliverableHelper.UPLOAD_SEARCH_BUNDLE);
-    DeliverableHelper.setSearchableFields(
-            submissionSearchBundle, DeliverableHelper.SUBMISSION_SEARCH_BUNDLE);
     uploadIdGenerator = new IDGenerator(UPLOAD_ID_GENERATOR_NAME, dbHelper);
     uploadTypeIdGenerator = new IDGenerator(UPLOAD_TYPE_ID_GENERATOR_NAME, dbHelper);
     uploadStatusIdGenerator = new IDGenerator(UPLOAD_STATUS_ID_GENERATOR_NAME, dbHelper);
@@ -463,15 +424,6 @@ public class UploadManager {
       throws UploadPersistenceException, SearchBuilderException {
     DeliverableHelper.checkObjectNotNull(filter, "filter");
     return uploadServiceRpc.searchUploads(filter);
-    /* TODO GRPC
-    List<Map<String, Object>> resultSet = uploadSearchBundle.search(filter);
-    log.debug(
-        new LogMessage(null, null, "search uploads with filter.") + " found: " + resultSet.size());
-    // Check if the object is a CustomResultSet with a single column consisting of long ids.
-    // The parameter 1 indicate that there should be a single column in the CustomResultSet.
-    // The return type is long[][], what we need is the first array.
-    return persistence.loadUploads(resultSet);
-    */
   }
 
   /**
@@ -707,16 +659,6 @@ public class UploadManager {
       throws UploadPersistenceException, SearchBuilderException {
     DeliverableHelper.checkObjectNotNull(filter, "filter");
     Submission[] submissions = uploadServiceRpc.searchSubmissions(filter);
-    /* TODO GRPC
-    List<Map<String, Object>> customResult = submissionSearchBundle.search(filter);
-
-    log.debug(
-        new LogMessage(null, null, "search submissions with filter.")
-            + " found: "
-            + customResult.size());
-    Submission[] submissions = persistence.loadSubmissions(customResult);
-    */
-    // retrieve the uploads and submission images separately for each submission
     for (Submission submission : submissions) {
       submission.setImages(Arrays.asList(persistence.getImagesForSubmission(submission.getId())));
     }

@@ -72,38 +72,32 @@ public class UploadServiceRpc {
     }
 
     public void removeUploadType(long id) {
-        IdProto entitiyRemoveRequest = IdProto.newBuilder()
-                .setId(id).build();
+        IdProto entitiyRemoveRequest = IdProto.newBuilder().setId(id).build();
         stub.removeUploadType(entitiyRemoveRequest);
     }
 
     public void removeUploadStatus(long id) {
-        IdProto entitiyRemoveRequest = IdProto.newBuilder()
-                .setId(id).build();
+        IdProto entitiyRemoveRequest = IdProto.newBuilder().setId(id).build();
         stub.removeUploadStatus(entitiyRemoveRequest);
     }
 
     public void removeSubmissionType(long id) {
-        IdProto entitiyRemoveRequest = IdProto.newBuilder()
-                .setId(id).build();
+        IdProto entitiyRemoveRequest = IdProto.newBuilder().setId(id).build();
         stub.removeSubmissionType(entitiyRemoveRequest);
     }
 
     public void removeSubmissionStatus(long id) {
-        IdProto entitiyRemoveRequest = IdProto.newBuilder()
-                .setId(id).build();
+        IdProto entitiyRemoveRequest = IdProto.newBuilder().setId(id).build();
         stub.removeSubmissionStatus(entitiyRemoveRequest);
     }
 
     public void removeUpload(long id) {
-        IdProto entitiyRemoveRequest = IdProto.newBuilder()
-                .setId(id).build();
+        IdProto entitiyRemoveRequest = IdProto.newBuilder().setId(id).build();
         stub.removeUpload(entitiyRemoveRequest);
     }
 
     public void removeSubmission(long id) {
-        IdProto entitiyRemoveRequest = IdProto.newBuilder()
-                .setId(id).build();
+        IdProto entitiyRemoveRequest = IdProto.newBuilder().setId(id).build();
         stub.removeSubmission(entitiyRemoveRequest);
     }
 
