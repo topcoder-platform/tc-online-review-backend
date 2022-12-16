@@ -8167,8 +8167,14 @@ INSERT INTO submission (submission_id, upload_id, submission_status_id, screenin
 VALUES ("20301", "20301", 1, NULL, NULL, 80, 6, "1", "124856", '2022-10-16 08:03:51', "124856", '2022-10-16 08:03:51');
 INSERT INTO upload (upload_id, project_id, project_phase_id, resource_id, upload_type_id, upload_status_id, parameter, create_user, create_date, modify_user, modify_date)
 VALUES ("20302", "2029", "202915", "20296", 1, 1, 'no_file.txt', "124856", '2022-10-16 08:03:51', "124856", '2022-10-16 08:03:51');
+-- DELETED upload from wyzmo user
+INSERT INTO upload (upload_id, project_id, project_phase_id, resource_id, upload_type_id, upload_status_id, parameter, create_user, create_date, modify_user, modify_date)
+VALUES ("20402", "2029", "202915", "20296", 1, 1, 'no_file.txt', "124856", '2022-10-16 08:03:51', "124856", '2022-10-16 08:03:51');
 INSERT INTO submission (submission_id, upload_id, submission_status_id, screening_score, initial_score, final_score, placement, submission_type_id, create_user, create_date, modify_user, modify_date)
 VALUES ("20302", "20302", 1, NULL, NULL, 80, 6, "3", "124856", '2022-10-16 08:03:51', "124856", '2022-10-16 08:03:51');
+-- DELETED submission from wyzmo user
+INSERT INTO submission (submission_id, upload_id, submission_status_id, screening_score, initial_score, final_score, placement, submission_type_id, create_user, create_date, modify_user, modify_date)
+VALUES ("20402", "20402", 5, NULL, NULL, 80, 6, "3", "124856", '2022-10-16 08:03:51', "124856", '2022-10-16 08:03:51');
 INSERT INTO resource (resource_id, resource_role_id, project_id, project_phase_id, user_id, create_user, create_date, modify_user, modify_date)
 VALUES ('20297', '1', '2029', NULL, 124916, '124916', '2022-10-16 08:03:51', '124916', '2022-10-16 08:03:51');
 INSERT INTO resource_info (resource_id, resource_info_type_id, value, create_user, create_date, modify_user, modify_date)
