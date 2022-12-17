@@ -8175,6 +8175,9 @@ VALUES ("20302", "20302", 1, NULL, NULL, 80, 6, "3", "124856", '2022-10-16 08:03
 -- DELETED submission from wyzmo user
 INSERT INTO submission (submission_id, upload_id, submission_status_id, screening_score, initial_score, final_score, placement, submission_type_id, create_user, create_date, modify_user, modify_date)
 VALUES ("20402", "20402", 5, NULL, NULL, 80, 6, "3", "124856", '2022-10-16 08:03:51', "124856", '2022-10-16 08:03:51');
+-- DELETED submission from wyzmo user
+INSERT INTO submission (submission_id, upload_id, submission_status_id, screening_score, initial_score, final_score, placement, submission_type_id, create_user, create_date, modify_user, modify_date)
+VALUES ("20401", "20402", 5, NULL, NULL, 80, 6, "1", "124856", '2022-10-16 08:03:51', "124856", '2022-10-16 08:03:51');
 INSERT INTO resource (resource_id, resource_role_id, project_id, project_phase_id, user_id, create_user, create_date, modify_user, modify_date)
 VALUES ('20297', '1', '2029', NULL, 124916, '124916', '2022-10-16 08:03:51', '124916', '2022-10-16 08:03:51');
 INSERT INTO resource_info (resource_id, resource_info_type_id, value, create_user, create_date, modify_user, modify_date)
@@ -8465,3 +8468,4 @@ INSERT INTO tcs_catalog:informix.project_payment (project_payment_type_id, resou
 VALUES ('3', '20307', NULL, '100.00', '177361', '132456', '2022-11-25 00:33:53.233', '132456', '2022-11-25 00:33:53.233');
 INSERT INTO tcs_catalog:informix.project_payment (project_payment_type_id, resource_id, submission_id, amount, pacts_payment_id, create_user, create_date, modify_user, modify_date)
 VALUES ('3', '20310', NULL, '100.00', '177362', '132456', '2022-11-25 00:33:53.238', '132456', '2022-11-25 00:33:53.238');
+INSERT INTO tcs_catalog:informix.late_deliverable(late_deliverable_id, late_deliverable_type_id, project_phase_id, resource_id, deliverable_id, deadline, create_date, forgive_ind, last_notified, explanation, response, delay) VALUES(1, 1, 202911, 20302, 4, TO_DATE('2010-11-22 09:05:00', '%Y-%m-%d %H:%M:%S'), TO_DATE('2010-11-20 09:05:00', '%Y-%m-%d %H:%M:%S'), 0, TO_DATE('2010-11-20 09:05:00', '%Y-%m-%d %H:%M:%S'), 'explaination', 'response', 10000);
