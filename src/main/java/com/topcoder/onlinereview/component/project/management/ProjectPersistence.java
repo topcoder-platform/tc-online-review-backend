@@ -3,9 +3,12 @@
  */
 package com.topcoder.onlinereview.component.project.management;
 
+import com.topcoder.onlinereview.component.grpcclient.project.ProjectServiceRpc;
 import com.topcoder.onlinereview.component.id.DBHelper;
 import com.topcoder.onlinereview.component.id.IDGenerationException;
 import com.topcoder.onlinereview.component.id.IDGenerator;
+import com.topcoder.onlinereview.grpc.project.proto.ProjectPropertyProto;
+
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -18,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -29,10 +31,8 @@ import java.util.stream.Collectors;
 import static com.google.common.collect.Lists.newArrayList;
 import static com.topcoder.onlinereview.component.util.CommonUtils.executeSql;
 import static com.topcoder.onlinereview.component.util.CommonUtils.executeSqlWithParam;
-import static com.topcoder.onlinereview.component.util.CommonUtils.executeUpdateSql;
 import static com.topcoder.onlinereview.component.util.CommonUtils.getBoolean;
 import static com.topcoder.onlinereview.component.util.CommonUtils.getDate;
-import static com.topcoder.onlinereview.component.util.CommonUtils.getDouble;
 import static com.topcoder.onlinereview.component.util.CommonUtils.getInt;
 import static com.topcoder.onlinereview.component.util.CommonUtils.getLong;
 import static com.topcoder.onlinereview.component.util.CommonUtils.getString;
@@ -186,6 +186,10 @@ import static com.topcoder.onlinereview.component.util.CommonUtils.getString;
 @Slf4j
 @Component
 public class ProjectPersistence {
+
+    @Autowired
+    private ProjectServiceRpc projectServiceRpc;
+
   /** Represents the sql statement to query all project types. */
   private static final String QUERY_ALL_PROJECT_TYPES_SQL =
       "SELECT " + "project_type_id, name, description, is_generic FROM project_type_lu";
@@ -208,28 +212,6 @@ public class ProjectPersistence {
   private static final String QUERY_ALL_PROJECT_PROPERTY_TYPES_SQL =
       "SELECT " + "project_info_type_id, name, description FROM project_info_type_lu";
 
-  /** Represents the sql statement to query projects. */
-  private static final String QUERY_PROJECTS_SQL =
-      "SELECT "
-          + "project.project_id, status.project_status_id, status.name as status_name, "
-          + "category.project_category_id, category.name as category_name, type.project_type_id, type.name as type_name, "
-          + "project.create_user, project.create_date, project.modify_user, project.modify_date, category.description,"
-          + " project.tc_direct_project_id, tcdp.name as tc_direct_project_name "
-          + "FROM project JOIN project_status_lu AS status ON project.project_status_id=status.project_status_id "
-          + "JOIN project_category_lu AS category ON project.project_category_id=category.project_category_id "
-          + "JOIN project_type_lu AS type ON category.project_type_id=type.project_type_id "
-          + "LEFT OUTER JOIN tc_direct_project AS tcdp ON tcdp.project_id=project.tc_direct_project_id "
-          + "WHERE project.project_id IN ";
-
-  /** Represents the sql statement to query project properties. */
-  private static final String QUERY_PROJECT_PROPERTIES_SQL =
-      "SELECT "
-          + "info.project_id, info_type.name, info.value "
-          + "FROM project_info AS info "
-          + "JOIN project_info_type_lu AS info_type "
-          + "ON info.project_info_type_id=info_type.project_info_type_id "
-          + "WHERE info.project_id IN ";
-
   /** Represents the sql statement to query project properties. */
   private static final String QUERY_ONE_PROJECT_PROPERTIES_SQL =
       "SELECT "
@@ -238,51 +220,6 @@ public class ProjectPersistence {
           + "JOIN project_info_type_lu AS info_type "
           + "ON info.project_info_type_id=info_type.project_info_type_id "
           + "WHERE info.project_id = ?";
-
-  /** Represents the sql statement to query project property ids. */
-  private static final String QUERY_PROJECT_PROPERTY_IDS_SQL =
-      "SELECT " + "project_info_type_id FROM project_info WHERE project_id=?";
-
-  /** Represents the sql statement to query project property ids and values. */
-  private static final String QUERY_PROJECT_PROPERTY_IDS_AND_VALUES_SQL =
-      "SELECT " + "project_info_type_id, value FROM project_info WHERE project_id=?";
-
-  /** Represents the sql statement to create project. */
-  private static final String CREATE_PROJECT_SQL =
-      "INSERT INTO project "
-          + "(project_id, project_status_id, project_category_id, "
-          + "create_user, create_date, modify_user, modify_date, tc_direct_project_id) "
-          + "VALUES (?, ?, ?, ?, CURRENT, ?, CURRENT, ?)";
-
-  /** Represents the sql statement to create project property. */
-  private static final String CREATE_PROJECT_PROPERTY_SQL =
-      "INSERT INTO project_info "
-          + "(project_id, project_info_type_id, value, "
-          + "create_user, create_date, modify_user, modify_date) "
-          + "VALUES (?, ?, ?, ?, CURRENT, ?, CURRENT)";
-
-  /** Represents the sql statement to create project audit. */
-  private static final String CREATE_PROJECT_AUDIT_SQL =
-      "INSERT INTO project_audit "
-          + "(project_audit_id, project_id, update_reason, "
-          + "create_user, create_date, modify_user, modify_date) "
-          + "VALUES (?, ?, ?, ?, CURRENT, ?, CURRENT)";
-
-  /** Represents the sql statement to update project. */
-  private static final String UPDATE_PROJECT_SQL =
-      "UPDATE project "
-          + "SET project_status_id=?, project_category_id=?, modify_user=?, modify_date=?, tc_direct_project_id=? "
-          + "WHERE project_id=?";
-
-  /** Represents the sql statement to update project property. */
-  private static final String UPDATE_PROJECT_PROPERTY_SQL =
-      "UPDATE project_info "
-          + "SET value=?, modify_user=?, modify_date=CURRENT "
-          + "WHERE project_id=? AND project_info_type_id=?";
-
-  /** Represents the sql statement to delete project properties. */
-  private static final String DELETE_PROJECT_PROPERTIES_SQL =
-      "DELETE FROM project_info " + "WHERE project_id=? AND project_info_type_id IN ";
 
   /** Represents the sql statement to query projects count */
   private static final String QUERY_LIST_PROJECTS_COUNT =
@@ -321,69 +258,6 @@ public class ProjectPersistence {
   private static final int AUDIT_UPDATE_TYPE = 3;
 
   /**
-   * Represents the SQL statement to audit project info.
-   *
-   * @since 1.1.2
-   */
-  private static final String PROJECT_INFO_AUDIT_INSERT_SQL =
-      "INSERT INTO project_info_audit "
-          + "(project_id, project_info_type_id, value, audit_action_type_id, action_date, action_user_id) "
-          + "VALUES (?, ?, ?, ?, ?, ?)";
-
-  /**
-   * Represents the sql statement to query file types.
-   *
-   * @since 1.2
-   */
-  private static final String QUERY_FILE_TYPES_SQL =
-      "SELECT "
-          + "type.file_type_id, type.description, type.sort, type.image_file,"
-          + " type.extension, type.bundled_file "
-          + "FROM file_type_lu AS type "
-          + "JOIN project_file_type_xref AS xref "
-          + "ON type.file_type_id=xref.file_type_id "
-          + "WHERE xref.project_id=";
-
-  /**
-   * Represents the sql statement to query prizes.
-   *
-   * @since 1.2
-   */
-  private static final String QUERY_PRIZES_SQL =
-      "SELECT "
-          + "prize.prize_id, prize.place, prize.prize_amount, prize.number_of_submissions, "
-          + "prize_type.prize_type_id, prize_type.prize_type_desc "
-          + "FROM prize AS prize "
-          + "JOIN prize_type_lu AS prize_type ON prize.prize_type_id=prize_type.prize_type_id "
-          + "WHERE prize.project_id=";
-
-  /**
-   * Represents the sql statement to insert prize to the prize table.
-   *
-   * @since 1.2
-   */
-  private static final String CREATE_PRIZE_SQL =
-      "INSERT INTO prize "
-          + "(prize_id, project_id, place, prize_amount, prize_type_id, number_of_submissions, "
-          + "create_user, create_date, modify_user, modify_date) "
-          + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-  /**
-   * Represents the sql statement to update prize to the prize table.
-   *
-   * @since 1.2
-   */
-  private static final String UPDATE_PRIZE_SQL =
-      "UPDATE prize "
-          + "SET place=?, prize_amount=?, prize_type_id=?, number_of_submissions=?, modify_user=?, modify_date=?, "
-          + "project_id=? WHERE prize_id=";
-
-  /**
-   * Represents the sql statement to delete the prize by the specified prize id.
-   *
-   * @since 1.2
-   */
-  private static final String DELETE_PRIZE_SQL = "DELETE FROM prize WHERE prize_id=?";
-  /**
    * Represents the sql statement to query prize types from the prize_type_lu table.
    *
    * @since 1.2
@@ -415,99 +289,6 @@ public class ProjectPersistence {
    */
   private static final String DELETE_FILE_TYPE_SQL =
       "DELETE FROM file_type_lu WHERE file_type_id=?";
-  /**
-   * Represents the sql statement to update the file types by the specified file type id.
-   *
-   * @since 1.2
-   */
-  private static final String UPDATE_FILE_TYPE_SQL =
-      "UPDATE file_type_lu "
-          + "SET description=?, sort=?, image_file=?, extension=?, bundled_file=?, modify_user=?, modify_date=? "
-          + "WHERE file_type_id=";
-  /**
-   * Represents the sql statement to create the file type.
-   *
-   * @since 1.2
-   */
-  private static final String CREATE_FILE_TYPE_SQL =
-      "INSERT INTO file_type_lu "
-          + "(file_type_id, description, sort, image_file, extension, bundled_file, "
-          + "create_user, create_date, modify_user, modify_date) "
-          + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-
-  /**
-   * Represents the sql statement to insert the project file types reference with the provided
-   * project id.
-   *
-   * @since 1.2
-   */
-  private static final String DELETE_PROJECT_FILE_TYPES_XREF__WITH_PROJECT_ID_SQL =
-      "DELETE FROM project_file_type_xref " + "WHERE project_id=?";
-  /**
-   * Represents the sql statement to insert the project file types reference data.
-   *
-   * @since 1.2
-   */
-  private static final String INSERT_PROJECT_FILE_TYPES_XREF_SQL =
-      "INSERT INTO project_file_type_xref (project_id, file_type_id) VALUES (?, ?)";
-
-  /**
-   * Represents the sql statement to create studio specification data.
-   *
-   * @since 1.2
-   */
-  private static final String CREATE_STUDIO_SPEC_SQL =
-      "INSERT INTO project_studio_specification (project_studio_spec_id, "
-          + "goals, target_audience, branding_guidelines, disliked_design_websites, other_instructions, "
-          + "winning_criteria, submitters_locked_between_rounds, round_one_introduction, round_two_introduction, "
-          + "colors, fonts, layout_and_size, create_user, create_date, modify_user, modify_date)"
-          + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-
-  /**
-   * Represents the sql statement to update studio specification data.
-   *
-   * @since 1.2
-   */
-  private static final String UPDATE_STUDIO_SPEC_SQL =
-      "UPDATE project_studio_specification "
-          + "SET goals=?, target_audience=?, branding_guidelines=?, disliked_design_websites=?, "
-          + "other_instructions=?, winning_criteria=?, submitters_locked_between_rounds=?, "
-          + "round_one_introduction=?, round_two_introduction=?, colors=?, fonts=?, "
-          + "layout_and_size=?, modify_user=?, modify_date=? "
-          + "WHERE project_studio_spec_id=";
-
-  /**
-   * Represents the sql statement to delete studio specification data with the specified project
-   * studio specification id.
-   *
-   * @since 1.2
-   */
-  private static final String DELETE_STUDIO_SPEC_SQL =
-      "DELETE FROM project_studio_specification " + "WHERE project_studio_spec_id=?";
-
-  /**
-   * Represents the sql statement to set studio specification id to null for project table with the
-   * specified project studio specification id.
-   *
-   * @since 1.2
-   */
-  private static final String SET_PROJECT_STUDIO_SPEC_SQL =
-      "UPDATE project SET project_studio_spec_id=" + "NULL WHERE project_studio_spec_id=?";
-  /**
-   * Represents the sql statement to query studio specification data with the specified project id.
-   *
-   * @since 1.2
-   */
-  private static final String QUERY_STUDIO_SPEC_SQL =
-      "SELECT "
-          + "spec.project_studio_spec_id, spec.goals, spec.target_audience, "
-          + "spec.branding_guidelines, spec.disliked_design_websites, spec.other_instructions, "
-          + "spec.winning_criteria, spec.submitters_locked_between_rounds, "
-          + "spec.round_one_introduction, spec.round_two_introduction, spec.colors, "
-          + "spec.fonts, spec.layout_and_size "
-          + "FROM project_studio_specification AS spec JOIN project AS project "
-          + "ON project.project_studio_spec_id=spec.project_studio_spec_id "
-          + "WHERE project.project_id=";
 
   /**
    * Represents the sql statement to set studio specification id for project table with the
@@ -519,24 +300,6 @@ public class ProjectPersistence {
       "UPDATE project SET project_studio_spec_id=" + "? WHERE project.project_id=";
 
   /**
-   * Represents the sql statement to query project id for project table with the specified tc direct
-   * project id.
-   *
-   * @since 1.2
-   */
-  private static final String QUERY_PROJECT_IDS_SQL =
-      "SELECT DISTINCT project_id FROM project WHERE tc_direct_project_id=";
-
-  /**
-   * Represents the sql statement to query project id for project table with the specified studio
-   * specification id.
-   *
-   * @since 1.2
-   */
-  private static final String QUERY_PROJECT_IDS_WITH_STUDIO_SPEC_SQL =
-      "SELECT DISTINCT project_id FROM project WHERE project_studio_spec_id=";
-
-  /**
    * Represents the sql statement to query project id for project table with the specified file type
    * id.
    *
@@ -544,13 +307,6 @@ public class ProjectPersistence {
    */
   private static final String QUERY_PROJECT_IDS_WITH_FILE_TYPE_SQL =
       "SELECT DISTINCT project_id FROM project_file_type_xref WHERE file_type_id=";
-  /**
-   * Represents the sql statement to query project id for project table with the specified prize id.
-   *
-   * @since 1.2
-   */
-  private static final String QUERY_PROJECT_IDS_WITH_PRIZE_SQL =
-      "SELECT project_id FROM prize WHERE prize_id=";
 
   /** Represents the sql condition statement to list user's projects */
   private static final String QUERY_LIST_PROJECTS_FOR_USER =
@@ -679,7 +435,7 @@ public class ProjectPersistence {
     try {
       // check whether the project id is already in the database
       if (project.getId() > 0) {
-        if (Helper.checkEntityExists("project", "project_id", project.getId(), jdbcTemplate)) {
+        if (projectServiceRpc.isProjectExists(project.getId())) {
           throw new PersistenceException(
               "The project with the same id [" + project.getId() + "] already exists.");
         }
@@ -754,20 +510,13 @@ public class ProjectPersistence {
             .toString());
     try {
       // check whether the project id is already in the database
-      if (!Helper.checkEntityExists("project", "project_id", project.getId(), jdbcTemplate)) {
+      if (!projectServiceRpc.isProjectExists(project.getId())) {
         throw new PersistenceException(
             "The project id [" + project.getId() + "] does not exist in the database.");
       }
       Date modifyDate = new Date();
       // update the project
       updateProject(project, reason, operator, modifyDate);
-
-      log.debug(
-          new LogMessage(
-                  project.getId(),
-                  operator,
-                  "execute sql:" + "SELECT modify_date " + "FROM project WHERE project_id=?")
-              .toString());
       // set the file types
       createOrUpdateProjectFileTypes(
           project.getId(), project.getProjectFileTypes(), operator, true);
@@ -819,15 +568,11 @@ public class ProjectPersistence {
     Helper.assertLongPositive(directProjectId, "directProjectId");
     log.debug("get projects with the direct project id: " + directProjectId);
     try {
-      List<Map<String, Object>> result =
-          executeSql(jdbcTemplate, QUERY_PROJECT_IDS_SQL + directProjectId);
+      List<Long> result = projectServiceRpc.getProjectIdsByDirectId(directProjectId);
       if (result.isEmpty()) {
         return new Project[0];
       }
-      Long[] ids = new Long[result.size()];
-      for (int i = 0; i < result.size(); i++) {
-        ids[i] = getLong(result.get(i), "project_id");
-      }
+      Long[] ids = result.toArray(new Long[0]);
       // get the project objects
       Project[] projects = getProjects(ids);
       return projects;
@@ -857,26 +602,11 @@ public class ProjectPersistence {
     log.debug("get Project file types with the project id: " + projectId);
     try {
       // check whether the project id is already in the database
-      if (!Helper.checkEntityExists("project", "project_id", projectId, jdbcTemplate)) {
+      if (!projectServiceRpc.isProjectExists(projectId)) {
         throw new PersistenceException(
             "The project with id " + projectId + " does not exist in the database.");
       }
-      List<Map<String, Object>> result = executeSql(jdbcTemplate, QUERY_FILE_TYPES_SQL + projectId);
-      FileType[] fileTypes = new FileType[result.size()];
-      // enumerate each row
-      for (int i = 0; i < result.size(); ++i) {
-        Map<String, Object> row = result.get(i);
-        FileType fileType = new FileType();
-        fileType.setId(getLong(row, "file_type_id"));
-        fileType.setDescription(getString(row, "description"));
-        fileType.setSort(getInt(row, "sort"));
-        fileType.setImageFile(getBoolean(row, "image_file"));
-        fileType.setExtension(getString(row, "extension"));
-        fileType.setBundledFile(getBoolean(row, "bundled_file"));
-        fileTypes[i] = fileType;
-      }
-
-      return fileTypes;
+      return projectServiceRpc.getProjectFileTypes(projectId);
     } catch (PersistenceException e) {
       log.error(
           new LogMessage(
@@ -954,7 +684,6 @@ public class ProjectPersistence {
     if (fileTypes == null) {
       return;
     }
-    Object[] queryArgs;
 
     if (update) {
 
@@ -962,16 +691,12 @@ public class ProjectPersistence {
           "delete the project file typs reference from database with the specified project id: "
               + projectId);
       // delete the project file types reference from database with the specified project id
-      queryArgs = new Object[] {projectId};
-      Helper.doDMLQuery(
-          jdbcTemplate, DELETE_PROJECT_FILE_TYPES_XREF__WITH_PROJECT_ID_SQL, queryArgs);
+      projectServiceRpc.deleteProjectFileType(projectId);
     }
 
     for (FileType fileType : fileTypes) {
       // the file type with the specified file type id exists, just update it
-      if (fileType.getId() > 0
-          && Helper.checkEntityExists(
-              "file_type_lu", "file_type_id", fileType.getId(), jdbcTemplate)) {
+      if (fileType.getId() > 0 && projectServiceRpc.isFileTypeExists(fileType.getId())) {
         updateFileType(fileType, operator);
       } else { // the file type with the specified file types id does not exist, insert it to the
         // database
@@ -986,8 +711,7 @@ public class ProjectPersistence {
               + fileType.getId()
               + " into project_file_type_xref table");
 
-      queryArgs = new Object[] {projectId, fileType.getId()};
-      Helper.doDMLQuery(jdbcTemplate, INSERT_PROJECT_FILE_TYPES_XREF_SQL, queryArgs);
+      projectServiceRpc.createProjectFileType(projectId, fileType.getId());
     }
   }
 
@@ -1005,29 +729,11 @@ public class ProjectPersistence {
     log.debug("get project prizes with the project id: " + projectId);
     try {
       // check whether the project id is already in the database
-      if (!Helper.checkEntityExists("project", "project_id", projectId, jdbcTemplate)) {
+      if (!projectServiceRpc.isProjectExists(projectId)) {
         throw new PersistenceException(
             "The project with id " + projectId + " does not exist in the database.");
       }
-      List<Map<String, Object>> result = executeSql(jdbcTemplate, QUERY_PRIZES_SQL + projectId);
-      Prize[] prizes = new Prize[result.size()];
-      // enumerate each row
-      for (int i = 0; i < result.size(); ++i) {
-        Map<String, Object> row = result.get(i);
-
-        Prize prize = new Prize();
-        prize.setId(getLong(row, "prize_id"));
-        prize.setProjectId(projectId);
-        prize.setPlace(getInt(row, "place"));
-        prize.setPrizeAmount(getDouble(row, "prize_amount"));
-        prize.setNumberOfSubmissions(getInt(row, "number_of_submissions"));
-        PrizeType prizeType = new PrizeType();
-        prizeType.setId(getLong(row, "prize_type_id"));
-        prizeType.setDescription(getString(row, "prize_type_desc"));
-        prize.setPrizeType(prizeType);
-        prizes[i] = prize;
-      }
-      return prizes;
+      return projectServiceRpc.getProjectPrizes(projectId);
     } catch (PersistenceException e) {
       log.error(
           new LogMessage(
@@ -1100,8 +806,7 @@ public class ProjectPersistence {
 
     for (Prize prize : prizes) {
       // the prize with the specified prize id exists, just update it
-      if (prize.getId() > 0
-          && Helper.checkEntityExists("prize", "prize_id", prize.getId(), jdbcTemplate)) {
+      if (prize.getId() > 0 && projectServiceRpc.isPrizeExists(prize.getId())) {
         updatePrize(prize, operator);
       } else { // the prize with the specified prize id does not exist, insert it to the database
         createPrize(prize, operator);
@@ -1127,8 +832,7 @@ public class ProjectPersistence {
     try {
       // check whether the file type id is already in the database
       if (fileType.getId() > 0) {
-        if (Helper.checkEntityExists(
-            "file_type_lu", "file_type_id", fileType.getId(), jdbcTemplate)) {
+        if (projectServiceRpc.isFileTypeExists(fileType.getId())) {
           throw new PersistenceException(
               "The file type with the same id [" + fileType.getId() + "] already exists.");
         }
@@ -1139,28 +843,13 @@ public class ProjectPersistence {
       // create the file type
       log.debug("insert record into file type with id:" + newId);
       Date createDate = new Date();
-      // insert the file type into database
-      Object[] queryArgs =
-          new Object[] {
-            newId,
-            fileType.getDescription(),
-            fileType.getSort(),
-            convertBooleanToString(fileType.isImageFile()),
-            fileType.getExtension(),
-            convertBooleanToString(fileType.isBundledFile()),
-            operator,
-            createDate,
-            operator,
-            createDate
-          };
-      Helper.doDMLQuery(jdbcTemplate, CREATE_FILE_TYPE_SQL, queryArgs);
       fileType.setCreationUser(operator);
-      fileType.setCreationTimestamp(createDate);
       fileType.setModificationUser(operator);
+      fileType.setCreationTimestamp(createDate);
       fileType.setModificationTimestamp(createDate);
-
-      // set the newId when no exception occurred
       fileType.setId(newId);
+      // insert the file type into database
+      projectServiceRpc.createFileType(fileType);      
     } catch (IDGenerationException e) {
       throw new PersistenceException("Unable to generate id for the file type.", e);
     } catch (PersistenceException e) {
@@ -1168,18 +857,6 @@ public class ProjectPersistence {
       throw e;
     }
     return fileType;
-  }
-
-  /**
-   * Converts the boolean value to a string representation. For true, we use 't'; For false, we use
-   * 'f'.
-   *
-   * @param booleanVal the boolean value to convert
-   * @return 't' if the paramter is true; otherwise, returns 'f'
-   * @since 1.2
-   */
-  private Object convertBooleanToString(boolean booleanVal) {
-    return booleanVal ? "t" : "f";
   }
 
   /**
@@ -1201,31 +878,19 @@ public class ProjectPersistence {
     Date modifyDate = new Date();
     try {
       // check whether the file type id is already in the database
-      if (!Helper.checkEntityExists(
-          "file_type_lu", "file_type_id", fileType.getId(), jdbcTemplate)) {
+      if (!projectServiceRpc.isFileTypeExists(fileType.getId())) {
         throw new PersistenceException(
             "The file type id [" + fileType.getId() + "] does not exist in the database.");
       }
 
-      // update the file type into database
-      Object[] queryArgs =
-          new Object[] {
-            fileType.getDescription(),
-            fileType.getSort(),
-            convertBooleanToString(fileType.isImageFile()),
-            fileType.getExtension(),
-            convertBooleanToString(fileType.isBundledFile()),
-            operator,
-            modifyDate
-          };
-      Helper.doDMLQuery(jdbcTemplate, UPDATE_FILE_TYPE_SQL + fileType.getId(), queryArgs);
+      fileType.setModificationUser(operator);
+      fileType.setModificationTimestamp(modifyDate);
+      projectServiceRpc.updateFileType(fileType);
     } catch (PersistenceException e) {
       log.error(
           new LogMessage(null, operator, "Fails to update file type " + fileType, e).toString());
       throw e;
     }
-    fileType.setModificationUser(operator);
-    fileType.setModificationTimestamp(modifyDate);
   }
 
   /**
@@ -1344,7 +1009,7 @@ public class ProjectPersistence {
     try {
       // check whether the prize id is already in the database
       if (prize.getId() > 0) {
-        if (Helper.checkEntityExists("prize", "prize_id", prize.getId(), jdbcTemplate)) {
+        if (projectServiceRpc.isPrizeExists(prize.getId())) {
           throw new PersistenceException(
               "The prize with the same id [" + prize.getId() + "] already exists.");
         }
@@ -1356,27 +1021,13 @@ public class ProjectPersistence {
       // create the prize
       log.debug("insert record into prize with id:" + newId);
       Date createDate = new Date();
-      // insert the prize into database
-      Object[] queryArgs =
-          new Object[] {
-            newId,
-            prize.getProjectId(),
-            (long) prize.getPlace(),
-            prize.getPrizeAmount(),
-            prize.getPrizeType().getId(),
-            prize.getNumberOfSubmissions(),
-            operator,
-            createDate,
-            operator,
-            createDate
-          };
-      Helper.doDMLQuery(jdbcTemplate, CREATE_PRIZE_SQL, queryArgs);
       prize.setCreationUser(operator);
       prize.setCreationTimestamp(createDate);
       prize.setModificationUser(operator);
       prize.setModificationTimestamp(createDate);
-      // set the newId when no exception occurred
       prize.setId(newId);
+      // insert the prize into database
+      projectServiceRpc.createPrize(prize);
     } catch (IDGenerationException e) {
       throw new PersistenceException("Unable to generate id for the prize.", e);
     } catch (PersistenceException e) {
@@ -1406,25 +1057,14 @@ public class ProjectPersistence {
     Date modifyDate = new Date();
     try {
       // check whether the prize id is already in the database
-      if (!Helper.checkEntityExists("prize", "prize_id", prize.getId(), jdbcTemplate)) {
+      if (!projectServiceRpc.isPrizeExists(prize.getId())) {
         throw new PersistenceException(
             "The prize id [" + prize.getId() + "] does not exist in the database.");
       }
-
-      // insert the prize into database
-      Object[] queryArgs =
-          new Object[] {
-            (long) prize.getPlace(),
-            prize.getPrizeAmount(),
-            prize.getPrizeType().getId(),
-            prize.getNumberOfSubmissions(),
-            operator,
-            modifyDate,
-            prize.getProjectId()
-          };
-      Helper.doDMLQuery(jdbcTemplate, UPDATE_PRIZE_SQL + prize.getId(), queryArgs);
       prize.setModificationUser(operator);
       prize.setModificationTimestamp(modifyDate);
+      // insert the prize into database
+      projectServiceRpc.updatePrize(prize);
     } catch (PersistenceException e) {
       log.error(new LogMessage(null, operator, "Fails to update prize " + prize, e).toString());
       throw e;
@@ -1448,20 +1088,15 @@ public class ProjectPersistence {
 
     try {
       // check whether the prize id is already in the database
-      if (!Helper.checkEntityExists("prize", "prize_id", prize.getId(), jdbcTemplate)) {
+      if (!projectServiceRpc.isPrizeExists(prize.getId())) {
         throw new PersistenceException(
             "The prize id [" + prize.getId() + "] does not exist in the database.");
       }
       // delete the project prize reference from database
-      List<Long> projectIds =
-          executeSql(jdbcTemplate, QUERY_PROJECT_IDS_WITH_PRIZE_SQL + prize.getId()).stream()
-              .map(m -> getLong(m, "project_id"))
-              .collect(Collectors.toList());
+      List<Long> projectIds = projectServiceRpc.getPrizeProjectIds(prize.getId());
       // create project audit record into project_audit table
       auditProjects(projectIds, "Removes the project prize", operator);
-      Object[] queryArgs = new Object[] {prize.getId()};
-      // delete the prize from database
-      Helper.doDMLQuery(jdbcTemplate, DELETE_PRIZE_SQL, queryArgs);
+      projectServiceRpc.deletePrize(prize.getId());
     } catch (PersistenceException e) {
       log.error(new LogMessage(null, operator, "Fails to delete prize " + prize, e).toString());
       throw e;
@@ -1489,8 +1124,7 @@ public class ProjectPersistence {
     try {
       // check whether the project studio specification id is already in the database
       if (spec.getId() > 0) {
-        if (Helper.checkEntityExists(
-            "project_studio_specification", "project_studio_spec_id", spec.getId(), jdbcTemplate)) {
+        if (projectServiceRpc.isStudioSpecExists(spec.getId())) {
           throw new PersistenceException(
               "The project studio specification with the same id ["
                   + spec.getId()
@@ -1508,27 +1142,7 @@ public class ProjectPersistence {
       Date createDate = new Date();
 
       // insert the project studio specification into database
-      Object[] queryArgs =
-          new Object[] {
-            newId,
-            spec.getGoals(),
-            spec.getTargetAudience(),
-            spec.getBrandingGuidelines(),
-            spec.getDislikedDesignWebSites(),
-            spec.getOtherInstructions(),
-            spec.getWinningCriteria(),
-            spec.isSubmittersLockedBetweenRounds(),
-            spec.getRoundOneIntroduction(),
-            spec.getRoundTwoIntroduction(),
-            spec.getColors(),
-            spec.getFonts(),
-            spec.getLayoutAndSize(),
-            operator,
-            createDate,
-            operator,
-            createDate
-          };
-      Helper.doDMLQuery(jdbcTemplate, CREATE_STUDIO_SPEC_SQL, queryArgs);
+      projectServiceRpc.createStudioSpec(newId, spec, operator, createDate);
       spec.setCreationUser(operator);
       spec.setCreationTimestamp(createDate);
       spec.setModificationUser(operator);
@@ -1571,32 +1185,14 @@ public class ProjectPersistence {
     Date modifyDate = new Date();
     try {
       // check whether the project studio specification id is already in the database
-      if (!Helper.checkEntityExists(
-          "project_studio_specification", "project_studio_spec_id", spec.getId(), jdbcTemplate)) {
+      if (!projectServiceRpc.isStudioSpecExists(spec.getId())) {
         throw new PersistenceException(
             "The project studio specification id ["
                 + spec.getId()
                 + "] does not exist in the database.");
       }
       // insert the project studio specification into database
-      Object[] queryArgs =
-          new Object[] {
-            spec.getGoals(),
-            spec.getTargetAudience(),
-            spec.getBrandingGuidelines(),
-            spec.getDislikedDesignWebSites(),
-            spec.getOtherInstructions(),
-            spec.getWinningCriteria(),
-            spec.isSubmittersLockedBetweenRounds(),
-            spec.getRoundOneIntroduction(),
-            spec.getRoundTwoIntroduction(),
-            spec.getColors(),
-            spec.getFonts(),
-            spec.getLayoutAndSize(),
-            operator,
-            modifyDate
-          };
-      Helper.doDMLQuery(jdbcTemplate, UPDATE_STUDIO_SPEC_SQL + spec.getId(), queryArgs);
+      projectServiceRpc.updateStudioSpec(spec, operator, modifyDate);
     } catch (PersistenceException e) {
       log.error(
           new LogMessage(
@@ -1630,8 +1226,7 @@ public class ProjectPersistence {
             .toString());
     try {
       // check whether the project studio specification id is already in the database
-      if (!Helper.checkEntityExists(
-          "project_studio_specification", "project_studio_spec_id", spec.getId(), jdbcTemplate)) {
+      if (!projectServiceRpc.isStudioSpecExists(spec.getId())) {
         throw new PersistenceException(
             "The project studio specification id ["
                 + spec.getId()
@@ -1639,16 +1234,12 @@ public class ProjectPersistence {
       }
 
       // delete the project project studio specification reference from database
-      Object[] queryArgs = new Object[] {spec.getId()};
-      List<Long> projectIds =
-          executeSql(jdbcTemplate, QUERY_PROJECT_IDS_WITH_STUDIO_SPEC_SQL + spec.getId()).stream()
-              .map(m -> getLong(m, "project_id"))
-              .collect(Collectors.toList());
+      List<Long> projectIds = projectServiceRpc.getStudioSpecProjectIds(spec.getId());
       // create project audit record into project_audit table
       auditProjects(projectIds, "Removes the project studio specification", operator);
-      Helper.doDMLQuery(jdbcTemplate, SET_PROJECT_STUDIO_SPEC_SQL, queryArgs);
+      projectServiceRpc.removeStudioSpecFromProjects(spec.getId());
       // delete the project studio specification from database
-      Helper.doDMLQuery(jdbcTemplate, DELETE_STUDIO_SPEC_SQL, queryArgs);
+      projectServiceRpc.deleteStudioSpec(spec.getId());
     } catch (PersistenceException e) {
       log.error(
           new LogMessage(
@@ -1669,7 +1260,7 @@ public class ProjectPersistence {
    */
   private void auditProjects(List<Long> rows, String reason, String operator)
       throws PersistenceException {
-    if (rows.isEmpty()) {
+    if (!rows.isEmpty()) {
       for (Long id : rows) {
         createProjectAudit(id, reason, operator);
       }
@@ -1691,33 +1282,11 @@ public class ProjectPersistence {
     log.debug("get project studio specification with the project id: " + projectId);
     try {
       // check whether the project id is already in the database
-      if (!Helper.checkEntityExists("project", "project_id", projectId, jdbcTemplate)) {
+      if (!projectServiceRpc.isProjectExists(projectId)) {
         throw new PersistenceException(
             "The project with id " + projectId + " does not exist in the database.");
       }
-      List<Map<String, Object>> result =
-          executeSql(jdbcTemplate, QUERY_STUDIO_SPEC_SQL + projectId);
-      if (result.isEmpty()) { // no project studio specification is found, return null
-        return null;
-      }
-      ProjectStudioSpecification studioSpec = new ProjectStudioSpecification();
-      Map<String, Object> rm = result.get(0);
-      // sets the properties for the studio specification
-      studioSpec.setId(getLong(rm, "project_studio_spec_id"));
-      studioSpec.setGoals(getString(rm, "goals"));
-      studioSpec.setTargetAudience(getString(rm, "target_audience"));
-      studioSpec.setBrandingGuidelines(getString(rm, "branding_guidelines"));
-      studioSpec.setDislikedDesignWebSites(getString(rm, "disliked_design_websites"));
-      studioSpec.setOtherInstructions(getString(rm, "other_instructions"));
-      studioSpec.setWinningCriteria(getString(rm, "winning_criteria"));
-      studioSpec.setSubmittersLockedBetweenRounds(
-          getBoolean(rm, "submitters_locked_between_rounds"));
-      studioSpec.setRoundOneIntroduction(getString(rm, "round_one_introduction"));
-      studioSpec.setRoundTwoIntroduction(getString(rm, "round_two_introduction"));
-      studioSpec.setColors(getString(rm, "colors"));
-      studioSpec.setFonts(getString(rm, "fonts"));
-      studioSpec.setLayoutAndSize(getString(rm, "layout_and_size"));
-      return studioSpec;
+      return projectServiceRpc.getProjectStudioSpec(projectId);
     } catch (PersistenceException e) {
       log.error(
           new LogMessage(
@@ -1795,9 +1364,7 @@ public class ProjectPersistence {
     }
 
     // the studio specification with the specified id exists, just update it
-    if (spec.getId() > 0
-        && Helper.checkEntityExists(
-            "project_studio_specification", "project_studio_spec_id", spec.getId(), jdbcTemplate)) {
+    if (spec.getId() > 0 && projectServiceRpc.isStudioSpecExists(spec.getId())) {
       updateProjectStudioSpecification(spec, operator);
     } else { // the studio specification with the specified id does not exist, insert it to the
       // database
@@ -1819,28 +1386,14 @@ public class ProjectPersistence {
    * @throws PersistenceException if error occurred while accessing the database.
    * @since 1.0
    */
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings("rawtypes")
   private void createProject(Long projectId, Project project, String operator)
       throws PersistenceException {
     log.debug("insert record into project with id:" + projectId);
     // insert the project into database
-    Object[] queryArgs =
-        new Object[] {
-          projectId,
-          project.getProjectStatus().getId(),
-          project.getProjectCategory().getId(),
-          operator,
-          operator,
-          project.getTcDirectProjectId()
-        };
-    Helper.doDMLQuery(jdbcTemplate, CREATE_PROJECT_SQL, queryArgs);
+    projectServiceRpc.createProject(projectId, project, operator);
     // get the creation date.
-    Date createDate =
-        getDate(
-            executeSql(
-                    jdbcTemplate, "SELECT create_date FROM project WHERE project_id=" + projectId)
-                .get(0),
-            "create_date");
+    Date createDate = projectServiceRpc.getProjectCreateDate(projectId);
     // set the creation/modification user and date when no exception
     // occurred
     project.setCreationUser(operator);
@@ -1861,7 +1414,7 @@ public class ProjectPersistence {
    * @param operator The modification user of this project.
    * @throws PersistenceException if error occurred while accessing the database.
    */
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings("rawtypes")
   private void updateProject(Project project, String reason, String operator, Date modifyDate)
       throws PersistenceException {
     Long projectId = project.getId();
@@ -1869,16 +1422,7 @@ public class ProjectPersistence {
         new LogMessage(projectId, operator, "update project with projectId:" + projectId)
             .toString());
     // update the project type and project category
-    Object[] queryArgs =
-        new Object[] {
-          project.getProjectStatus().getId(),
-          project.getProjectCategory().getId(),
-          operator,
-          modifyDate,
-          project.getTcDirectProjectId() == 0 ? null : project.getTcDirectProjectId(),
-          projectId
-        };
-    Helper.doDMLQuery(jdbcTemplate, UPDATE_PROJECT_SQL, queryArgs);
+    projectServiceRpc.updateProject(project, operator, modifyDate);
     // update the project object so this data's correct for audit purposes
     project.setModificationUser(operator);
     project.setModificationTimestamp(modifyDate);
@@ -1900,7 +1444,7 @@ public class ProjectPersistence {
    * @return a property id-property value map
    * @throws PersistenceException if error occurred while accessing the database.
    */
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings({"unchecked", "rawtypes"})
   private Map makePropertyIdPropertyValueMap(Map nameValueMap) throws PersistenceException {
     Map idValueMap = new HashMap();
     // get the property name-property id map
@@ -1997,7 +1541,6 @@ public class ProjectPersistence {
    * @return An array of project instances.
    * @throws PersistenceException if error occurred while accessing the database.
    */
-  @SuppressWarnings("unchecked")
   public Project[] getProjects(Long ids[]) throws PersistenceException {
     Helper.assertObjectNotNull(ids, "ids");
 
@@ -2006,85 +1549,31 @@ public class ProjectPersistence {
       throw new IllegalArgumentException("Array 'ids' should not be empty.");
     }
 
-    String idstring = "";
     // check if ids contains an id that is <= 0
     for (long id : ids) {
-      idstring += id + ",";
       if (id <= 0) {
         throw new IllegalArgumentException("Array 'ids' contains an id that is <= 0.");
       }
     }
-    // build the id list string
-    StringBuilder idListBuffer = new StringBuilder();
-    idListBuffer.append('(');
-    for (int i = 0; i < ids.length; ++i) {
-      if (i != 0) {
-        idListBuffer.append(',');
-      }
-      idListBuffer.append(ids[i]);
-    }
-    idListBuffer.append(')');
-    // get the id list string
-    String idList = idListBuffer.toString();
-
-    List<Map<String, Object>> result = executeSql(jdbcTemplate, QUERY_PROJECTS_SQL + idList);
-
     // create the Project array.
-    Project[] projects = new Project[result.size()];
-
-    for (int i = 0; i < result.size(); ++i) {
-      Map<String, Object> row = result.get(i);
-
-      // create the ProjectStatus object
-      ProjectStatus status =
-          new ProjectStatus(getLong(row, "project_status_id"), getString(row, "status_name"));
-
-      // create the ProjectType object
-      ProjectType type =
-          new ProjectType(getLong(row, "project_type_id"), getString(row, "type_name"));
-
-      // create the ProjectCategory object
-      ProjectCategory category =
-          new ProjectCategory(
-              getLong(row, "project_category_id"), getString(row, "category_name"), type);
-      category.setDescription(getString(row, "description"));
-
-      long projectId = getLong(row, "project_id");
-      // create a new instance of Project class
-      projects[i] = new Project(projectId, category, status);
-
-      // assign the audit information
-      projects[i].setCreationUser(getString(row, "create_user"));
-      projects[i].setCreationTimestamp(getDate(row, "create_date"));
-      projects[i].setModificationUser(getString(row, "modify_user"));
-      projects[i].setModificationTimestamp(getDate(row, "modify_date"));
-
-      // set the tc direct project id and name
-      projects[i].setTcDirectProjectId(Optional.ofNullable(getLong(row, "tc_direct_project_id")).orElse(0L));
-      projects[i].setTcDirectProjectName(getString(row, "tc_direct_project_name"));
-
-      // set the file types
-      projects[i].setProjectFileTypes(Arrays.asList(getProjectFileTypes(projectId)));
-
-      // set the prizes
-      projects[i].setPrizes(Arrays.asList(getProjectPrizes(projectId)));
-
-      // set the studio specification
-      projects[i].setProjectStudioSpecification(getProjectStudioSpecification(projectId));
+    Project[] projects = projectServiceRpc.getProjects(ids);
+    for (int i = 0; i < projects.length; i++) {
+        projects[i].setProjectFileTypes(Arrays.asList(getProjectFileTypes(projects[i].getId())));
+        projects[i].setPrizes(Arrays.asList(getProjectPrizes(projects[i].getId())));
+        projects[i].setProjectStudioSpecification(getProjectStudioSpecification(projects[i].getId()));
     }
 
     // get the Id-Project map
     Map<Long, Project> projectMap = makeIdProjectMap(projects);
-    List<Map<String, Object>> ppResult =
-        executeSql(jdbcTemplate, QUERY_PROJECT_PROPERTIES_SQL + idList);
+    List<ProjectPropertyProto> ppResult = projectServiceRpc.getProjectsProperties(ids);
 
     // enumerate each row
-    for (Map<String, Object> row : ppResult) {
+    for (ProjectPropertyProto pp : ppResult) {
       // get the corresponding Project object
-      Project project = projectMap.get(getLong(row, "project_id"));
+      Project project = projectMap.get(pp.getProjectId());
 
       // set the property to project
-      project.setProperty(getString(row, "name"), row.get("value"));
+      project.setProperty(pp.getName(), pp.hasValue() ? pp.getValue() : null);
     }
     return projects;
   }
@@ -2123,7 +1612,7 @@ public class ProjectPersistence {
    * @param operator The creation user of this project
    * @throws PersistenceException if error occurred while accessing the database.
    */
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings("rawtypes")
   private void createProjectProperties(
       Long projectId, Project project, Map idValueMap, String operator)
       throws PersistenceException {
@@ -2137,9 +1626,7 @@ public class ProjectPersistence {
       for (Object item : idValueMap.entrySet()) {
         Entry entry = (Entry) item;
         // insert the project property into database
-        Object[] queryArgs =
-            new Object[] {projectId, entry.getKey(), entry.getValue(), operator, operator};
-        Helper.doDMLQuery(jdbcTemplate, CREATE_PROJECT_PROPERTY_SQL, queryArgs);
+        projectServiceRpc.createProjectProperty(projectId, (Long) entry.getKey(), entry.getValue().toString(), operator);
         auditProjectInfo(
             projectId,
             project,
@@ -2149,7 +1636,7 @@ public class ProjectPersistence {
       }
     } catch (Exception e) {
       throw new PersistenceException(
-          "Unable to create prepared statement [" + CREATE_PROJECT_PROPERTY_SQL + "].", e);
+          "Unable to create prepared statement [create project property].", e);
     }
   }
 
@@ -2176,7 +1663,7 @@ public class ProjectPersistence {
    * @param operator the modification user of this project
    * @throws PersistenceException if error occurred while accessing the database.
    */
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings({"unchecked", "rawtypes"})
   private void updateProjectProperties(Project project, Map idValueMap, String operator)
       throws PersistenceException {
 
@@ -2207,8 +1694,7 @@ public class ProjectPersistence {
           // if the value hasn't been changed, we don't need to update anything
           if (!propertyMap.get(propertyId).equals((String) entry.getValue())) {
             // update the project property
-            Object[] queryArgs = new Object[] {entry.getValue(), operator, projectId, propertyId};
-            Helper.doDMLQuery(jdbcTemplate, UPDATE_PROJECT_PROPERTY_SQL, queryArgs);
+            projectServiceRpc.updateProjectProperty(projectId, propertyId, entry.getValue().toString(), operator);
 
             auditProjectInfo(project, AUDIT_UPDATE_TYPE, propertyId, (String) entry.getValue());
           }
@@ -2220,7 +1706,7 @@ public class ProjectPersistence {
       }
     } catch (Exception e) {
       throw new PersistenceException(
-          "Unable to create prepared statement [" + UPDATE_PROJECT_PROPERTY_SQL + "].", e);
+          "Unable to create prepared statement [update project property].", e);
     }
 
     // create the new properties
@@ -2232,27 +1718,6 @@ public class ProjectPersistence {
   }
 
   /**
-   * Gets all the property ids associated to this project.
-   *
-   * @param projectId The id of this project
-   * @return A set that contains the property ids
-   * @throws PersistenceException if error occurred while accessing the database.
-   */
-  private Set<Long> getProjectPropertyIds(Long projectId) {
-    Set<Long> idSet = new HashSet<Long>();
-    // find projects in the table.
-    List<Map<String, Object>> result =
-        executeSqlWithParam(jdbcTemplate, QUERY_PROJECT_PROPERTY_IDS_SQL, newArrayList(projectId));
-
-    // enumerator each row
-    for (Map<String, Object> row : result) {
-      // add the id to the set
-      idSet.add(getLong(row, "project_info_type_id"));
-    }
-    return idSet;
-  }
-
-  /**
    * Gets all the property ids and values associated to this project.
    *
    * @param projectId The id of this project
@@ -2260,17 +1725,7 @@ public class ProjectPersistence {
    * @throws PersistenceException if error occurred while accessing the database.
    */
   private Map<Long, String> getProjectPropertyIdsAndValues(Long projectId) {
-    Map<Long, String> idMap = new HashMap<>();
-    // find projects in the table.
-    List<Map<String, Object>> result =
-        executeSqlWithParam(
-            jdbcTemplate, QUERY_PROJECT_PROPERTY_IDS_AND_VALUES_SQL, newArrayList(projectId));
-    // enumerator each row
-    for (Map<String, Object> row : result) {
-      // add the id to the map
-      idMap.put(getLong(row, "project_info_type_id"), getString(row, "value"));
-    }
-    return idMap;
+    return projectServiceRpc.getProjectPropertyIdValue(projectId);
   }
 
   /**
@@ -2288,27 +1743,13 @@ public class ProjectPersistence {
     // check if the property id set is empty
     // do nothing if property id set is empty
     if (!propertyIdSet.isEmpty()) {
-
-      // build the id list string
-      StringBuilder idListBuffer = new StringBuilder();
-      idListBuffer.append('(');
-      int idx = 0;
-      for (Long id : propertyIdSet) {
-        if (idx++ != 0) {
-          idListBuffer.append(',');
-        }
-        idListBuffer.append(id);
-      }
-      idListBuffer.append(')');
-
       log.debug(
           new LogMessage(
                   projectId, null, "delete records from project_info with projectId:" + projectId)
               .toString());
 
       // delete the properties whose id is in the set
-      Helper.doDMLQuery(
-          jdbcTemplate, DELETE_PROJECT_PROPERTIES_SQL + idListBuffer, new Object[] {projectId});
+      projectServiceRpc.deleteProjectProperty(projectId, propertyIdSet);
 
       for (Long id : propertyIdSet) {
         auditProjectInfo(project, AUDIT_DELETE_TYPE, id, null);
@@ -2338,8 +1779,7 @@ public class ProjectPersistence {
     }
     log.debug("insert record into project_audit with projectId:" + projectId);
     // insert the update reason information to project_audit table
-    Object[] queryArgs = new Object[] {auditId, projectId, reason, operator, operator};
-    Helper.doDMLQuery(jdbcTemplate, CREATE_PROJECT_AUDIT_SQL, queryArgs);
+    projectServiceRpc.auditProject(auditId, projectId, reason, operator);
   }
 
   /**
@@ -2349,7 +1789,7 @@ public class ProjectPersistence {
    * @return a property name - property id map
    * @throws PersistenceException if duplicate property type names are found
    */
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings({"unchecked", "rawtypes"})
   private Map makePropertyNamePropertyIdMap(ProjectPropertyType[] propertyTypes)
       throws PersistenceException {
     Map map = new HashMap();
@@ -2447,16 +1887,8 @@ public class ProjectPersistence {
       Long projectId, Project project, int auditType, long projectInfoTypeId, String value)
       throws PersistenceException {
     try {
-      executeUpdateSql(
-          jdbcTemplate,
-          PROJECT_INFO_AUDIT_INSERT_SQL,
-          newArrayList(
-              projectId,
-              projectInfoTypeId,
-              value,
-              auditType,
-              new Date(),
-              project.getModificationUser()));
+        projectServiceRpc.auditProjectInfo(projectId, auditType, projectInfoTypeId, value,
+                project.getModificationUser());
     } catch (Exception e) {
       throw new PersistenceException("Unable to insert project_info_audit record.", e);
     }
