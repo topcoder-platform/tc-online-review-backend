@@ -436,6 +436,9 @@ public class PhaseManager {
     phase.setPhaseStatus(
         new PhaseStatus(PhaseStatusEnum.OPEN.getId(), PhaseStatusEnum.OPEN.getName()));
     phase.setActualStartDate(new Date());
+    if (phase.getFixedStartDate() != null) {
+        phase.setFixedStartDate(phase.getActualStartDate());
+    }
     try {
       Phase[] allPhases = phase.getProject().getAllPhases();
       recalculateScheduledDates(allPhases);
