@@ -1,28 +1,32 @@
 package com.topcoder.onlinereview.component.grpcclient.project;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
+import java.util.Map.Entry;
 
 import javax.annotation.PostConstruct;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Service;
+import org.springframework.util.SerializationUtils;
 
-import com.google.protobuf.Timestamp;
+import com.google.protobuf.ByteString;
 import com.topcoder.onlinereview.component.grpcclient.GrpcChannelManager;
 import com.topcoder.onlinereview.component.project.management.FileType;
 import com.topcoder.onlinereview.component.project.management.Prize;
 import com.topcoder.onlinereview.component.project.management.PrizeType;
 import com.topcoder.onlinereview.component.project.management.Project;
 import com.topcoder.onlinereview.component.project.management.ProjectCategory;
+import com.topcoder.onlinereview.component.project.management.ProjectPropertyType;
 import com.topcoder.onlinereview.component.project.management.ProjectStatus;
 import com.topcoder.onlinereview.component.project.management.ProjectStudioSpecification;
 import com.topcoder.onlinereview.component.project.management.ProjectType;
+import com.topcoder.onlinereview.component.project.management.UserProjectCategory;
+import com.topcoder.onlinereview.component.project.management.UserProjectType;
+import com.topcoder.onlinereview.component.search.filter.Filter;
 import com.topcoder.onlinereview.grpc.project.proto.*;
 
 @Service
@@ -45,32 +49,111 @@ public class ProjectServiceRpc {
         Project[] projects = new Project[response.getProjectsCount()];
         for (int i = 0; i < response.getProjectsCount(); i++) {
             ProjectProto p = response.getProjects(i);
-            ProjectStatus status = new ProjectStatus(p.getProjectStatusId(), p.getStatusName());
-            ProjectType type = new ProjectType(p.getProjectTypeId(), p.getTypeName());
-            ProjectCategory category = new ProjectCategory(p.getProjectCategoryId(), p.getCategoryName(), type);
-            if (p.hasDescription()) {
-                category.setDescription(p.getDescription());
+            Project project = loadProject(p);
+            project.setProjectFileTypes(loadProjectFileTypes(p.getFileTypesList()));
+            project.setPrizes(loadProjectPrizes(p.getPrizesList()));
+            if (p.hasProjectStudioSpec()) {
+                project.setProjectStudioSpecification(loadProjectStudioSpecification(p.getProjectStudioSpec()));
             }
-            Project project = new Project(p.getProjectId(), category, status);
-            if (p.hasCreateUser()) {
-                project.setCreationUser(p.getCreateUser());
-            }
-            if (p.hasCreateDate()) {
-                project.setCreationTimestamp(new Date(p.getCreateDate().getSeconds() * 1000));
-            }
-            if (p.hasModifyUser()) {
-                project.setModificationUser(p.getModifyUser());
-            }
-            if (p.hasModifyDate()) {
-                project.setModificationTimestamp(new Date(p.getModifyDate().getSeconds() * 1000));
-            }
-            project.setTcDirectProjectId(p.getDirectProjectId());
-            if (p.hasTcDirectProjectName()) {
-                project.setTcDirectProjectName(p.getTcDirectProjectName());
-            }
+            setProjectProperties(project, p.getPropertiesList());
             projects[i] = project;
         }
         return projects;
+    }
+
+    public List<UserProjectType> countUserProjects(Long userId, long statusId, boolean my, boolean hasManagerRole) {
+        CountUserProjectsRequest.Builder builder = CountUserProjectsRequest.newBuilder().setProjectStatusId(statusId)
+                .setIsMyProjects(my).setHasManagerRole(hasManagerRole);
+        if (userId != null) {
+            builder.setUserId(userId);
+        }
+        CountUserProjectsResponse response = stub.countUserProjects(builder.build());
+        List<UserProjectType> userProjectTypes = new ArrayList<>();
+        for (UserProjectTypeProto pt : response.getUserProjectTypesList()) {
+            UserProjectType userProjectType = new UserProjectType(pt.getId(), pt.getName());
+            userProjectType.setCount(pt.getCount());
+            for (UserProjectCategoryProto pc : pt.getCategoriesList()) {
+                userProjectType.addCategory(new UserProjectCategory(pc.getId(), pc.getName(), pc.getCount()));
+            }
+            userProjectTypes.add(userProjectType);
+        }
+        return userProjectTypes;
+    }
+
+    public Project[] getAllProjects(Long userId, ProjectStatus status, int page, int perPage, long categoryId,
+            boolean my, boolean hasManagerRole) {
+        GetAllProjectsRequest.Builder builder = GetAllProjectsRequest.newBuilder().setProjectStatusId(status.getId())
+                .setPage(page).setPerPage(perPage).setCategoryId(categoryId).setIsMyProjects(my)
+                .setHasManagerRole(hasManagerRole);
+        if (userId != null) {
+            builder.setUserId(userId);
+        }
+        GetAllProjectsResponse response = stub.getAllProjects(builder.build());
+        Project[] projects = new Project[response.getProjectsCount()];
+        for (int i = 0; i < response.getProjectsCount(); i++) {
+            ProjectProto p = response.getProjects(i);
+            Project project = new Project(p.getId(), status);
+            setProjectProperties(project, p.getPropertiesList());
+            projects[i] = project;
+        }
+        return projects;
+    }
+
+    public long[] searchProjectsForAutopilot() {
+        IdListProto response = stub.searchProjectsForAutopilot(null);
+        return response.getIdsList().stream().mapToLong(Long::longValue).toArray();
+    }
+
+    public Project[] searchProjects(Filter filter) {
+        FilterProto filterProto = FilterProto.newBuilder()
+                .setFilter(ByteString.copyFrom(SerializationUtils.serialize(filter))).build();
+        SearchProjectsResponse response = stub.searchProjects(filterProto);
+        Project[] projects = new Project[response.getProjectsCount()];
+        for (int i = 0; i < response.getProjectsCount(); i++) {
+            ProjectProto p = response.getProjects(i);
+            Project project = loadProject(p);
+            setProjectProperties(project, p.getPropertiesList());
+            projects[i] = project;
+        }
+        return projects;
+    }
+
+    public void createProject(Project project, String operator) {
+        CreateProjectRequest.Builder builder = CreateProjectRequest.newBuilder();
+        if (operator != null) {
+            builder.setOperator(operator);
+        }
+        builder.setProject(buildProject(project).build());
+        ProjectProto response = stub.createProject(builder.build());
+        project.setId(response.getId());
+        project.setCreationUser(response.getCreateUser());
+        project.setCreationTimestamp(new Date(response.getCreateDate().getSeconds() * 1000));
+        project.setModificationUser(response.getModifyUser());
+        project.setModificationTimestamp(new Date(response.getModifyDate().getSeconds() * 1000));
+        project.setProjectFileTypes(loadProjectFileTypes(response.getFileTypesList()));
+        project.setPrizes(loadProjectPrizes(response.getPrizesList()));
+        if (project.getProjectStudioSpecification() != null) {
+            project.setProjectStudioSpecification(loadProjectStudioSpecification(response.getProjectStudioSpec()));
+        }
+    }
+
+    public void updateProject(Project project, String operator, String reason) {
+        UpdateProjectRequest.Builder builder = UpdateProjectRequest.newBuilder();
+        if (operator != null) {
+            builder.setOperator(operator);
+        }
+        if (reason != null) {
+            builder.setReason(reason);
+        }
+        builder.setProject(buildProject(project).setId(project.getId()).build());
+        ProjectProto response = stub.updateProject(builder.build());
+        project.setModificationUser(response.getModifyUser());
+        project.setModificationTimestamp(new Date(response.getModifyDate().getSeconds() * 1000));
+        project.setProjectFileTypes(loadProjectFileTypes(response.getFileTypesList()));
+        project.setPrizes(loadProjectPrizes(response.getPrizesList()));
+        if (project.getProjectStudioSpecification() != null) {
+            project.setProjectStudioSpecification(loadProjectStudioSpecification(response.getProjectStudioSpec()));
+        }
     }
 
     public List<Long> getProjectIdsByDirectId(long directId) {
@@ -79,159 +162,324 @@ public class ProjectServiceRpc {
         return response.getProjectIdsList();
     }
 
-    public int createProject(Long projectId, Project project, String operator) {
-        CreateProjectRequest.Builder builder = CreateProjectRequest.newBuilder();
-        if (projectId != null) {
-            builder.setProjectId(projectId);
-        }
-        builder.setProjectStatusId(project.getProjectStatus().getId());
-        builder.setProjectCategoryId(project.getProjectCategory().getId());
-        if (operator != null) {
-            builder.setCreateUser(operator);
-            builder.setModifyUser(operator);
-        }
-        if (project.getTcDirectProjectId() != null) {
-            builder.setDirectProjectId(project.getTcDirectProjectId());
-        }
-        CountProto response = stub.createProject(builder.build());
-        return response.getCount();
-    }
-
-    public int updateProject(Project project, String operator, Date modifyDate) {
-        UpdateProjectRequest.Builder builder = UpdateProjectRequest.newBuilder();
-        builder.setProjectId(project.getId());
-        builder.setProjectStatusId(project.getProjectStatus().getId());
-        builder.setProjectCategoryId(project.getProjectCategory().getId());
-        if (operator != null) {
-            builder.setModifyUser(operator);
-        }
-        if (modifyDate != null) {
-            builder.setModifyDate(Timestamp.newBuilder().setSeconds(modifyDate.toInstant().getEpochSecond()));
-        }
-        if (project.getTcDirectProjectId() != null && project.getTcDirectProjectId() != 0) {
-            builder.setDirectProjectId(project.getTcDirectProjectId());
-        }
-        CountProto response = stub.updateProject(builder.build());
-        return response.getCount();
-    }
-
-    public Date getProjectCreateDate(Long projectId) {
-        ProjectIdProto.Builder builder = ProjectIdProto.newBuilder();
-        if (projectId != null) {
-            builder.setProjectId(projectId);
-        }
-        CreateDateProto response = stub.getProjectCreateDate(builder.build());
-        return new Date(response.getCreateDate().getSeconds() * 1000);
-    }
-
-    public Map<Long, String> getProjectPropertyIdValue(long projectId) {
-        IdProto request = IdProto.newBuilder().setId(projectId).build();
-        GetProjectPropertyIdValueResponse response = stub.getProjectPropertyIdValue(request);
-        return response.getProjectPropertiesList().stream()
-                .collect(Collectors.toMap(ProjectPropertyIdValue::getProjectInfoTypeId,
-                        ProjectPropertyIdValue::getValue));
-    }
-
-    public List<ProjectPropertyProto> getProjectsProperties(Long[] ids) {
-        GetProjectsPropertiesRequest request = GetProjectsPropertiesRequest.newBuilder()
-                .addAllProjectIds(Arrays.asList(ids)).build();
-        GetProjectsPropertiesResponse response = stub.getProjectsProperties(request);
-        return response.getPropertiesList();
-    }
-
-    public int createProjectProperty(Long projectId, Long key, String value, String operator) {
-        CreateProjectPropertyRequest.Builder builder = CreateProjectPropertyRequest.newBuilder();
-        if (projectId != null) {
-            builder.setProjectId(projectId);
-        }
-        if (key != null) {
-            builder.setProjectInfoTypeId(key);
-        }
-        if (value != null) {
-            builder.setValue(value);
-        }
-        if (operator != null) {
-            builder.setCreateUser(operator);
-            builder.setModifyUser(operator);
-        }
-        CountProto response = stub.createProjectProperty(builder.build());
-        return response.getCount();
-    }
-
-    public int updateProjectProperty(Long projectId, Long key, String value, String operator) {
-        UpdateProjectPropertyRequest.Builder builder = UpdateProjectPropertyRequest.newBuilder();
-        if (projectId != null) {
-            builder.setProjectId(projectId);
-        }
-        if (key != null) {
-            builder.setProjectInfoTypeId(key);
-        }
-        if (value != null) {
-            builder.setValue(value);
-        }
-        if (operator != null) {
-            builder.setModifyUser(operator);
-        }
-        CountProto response = stub.updateProjectProperty(builder.build());
-        return response.getCount();
-    }
-
-    public int deleteProjectProperty(Long projectId, Set<Long> typeIds) {
-        DeleteProjectPropertyRequest.Builder builder = DeleteProjectPropertyRequest.newBuilder();
-        if (projectId != null) {
-            builder.setProjectId(projectId);
-        }
-        if (typeIds != null && typeIds.size() > 0) {
-            builder.addAllProjectInfoTypeIds(typeIds);
-        }
-        CountProto response = stub.deleteProjectProperty(builder.build());
-        return response.getCount();
-    }
-
-    public int auditProjectInfo(Long projectId, int auditType, long projectInfoTypeId, String value, String operator) {
-        AuditProjectInfoRequest.Builder builder = AuditProjectInfoRequest.newBuilder();
-        if (projectId != null) {
-            builder.setProjectId(projectId);
-        }
-        builder.setAuditType(auditType);
-        builder.setProjectInfoTypeId(projectInfoTypeId);
-        if (value != null) {
-            builder.setValue(value);
-        }
-        if (operator != null) {
-            builder.setActionUserId(operator);
-        }
-        CountProto response = stub.auditProjectInfo(builder.build());
-        return response.getCount();
-    }
-
-    public int auditProject(Long auditId, Long projectId, String reason, String operator) {
-        AuditProjectRequest.Builder builder = AuditProjectRequest.newBuilder();
-        if (auditId != null) {
-            builder.setProjectAuditId(auditId);
-        }
-        if (projectId != null) {
-            builder.setProjectId(projectId);
-        }
-        if (reason != null) {
-            builder.setUpdateReason(reason);
-        }
-        if (operator != null) {
-            builder.setCreateUser(operator);
-            builder.setModifyUser(operator);
-        }
-        CountProto response = stub.auditProject(builder.build());
-        return response.getCount();
-    }
-
     public FileType[] getProjectFileTypes(long projectId) {
         ProjectIdProto request = ProjectIdProto.newBuilder().setProjectId(projectId).build();
         GetProjectFileTypesResponse response = stub.getProjectFileTypes(request);
-        FileType[] fileTypes = new FileType[response.getFileTypesCount()];
-        for (int i = 0; i < response.getFileTypesCount(); i++) {
-            FileTypeProto f = response.getFileTypes(i);
+        return loadProjectFileTypes(response.getFileTypesList()).toArray(new FileType[0]);
+    }
+
+    public void updateProjectFileTypes(long projectId, List<FileType> fileTypes, String operator) {
+        UpdateProjectFileTypesRequest.Builder builder = UpdateProjectFileTypesRequest.newBuilder();
+        builder.setProjectId(projectId);
+        if (operator != null) {
+            builder.setOperator(operator);
+        }
+        for (FileType filetype : fileTypes) {
+            builder.addFileTypes(buildFileType(filetype));
+        }
+        UpdateProjectFileTypesResponse response = stub.updateProjectFileTypes(builder.build());
+        fileTypes.clear();
+        fileTypes.addAll(loadProjectFileTypes(response.getFileTypesList()));
+    }
+
+    public Prize[] getProjectPrizes(long projectId) {
+        ProjectIdProto request = ProjectIdProto.newBuilder().setProjectId(projectId).build();
+        GetProjectPrizesResponse response = stub.getProjectPrizes(request);
+        return loadProjectPrizes(response.getPrizesList()).toArray(new Prize[0]);
+    }
+
+    public void updateProjectPrizes(long projectId, List<Prize> prizes, String operator) {
+        UpdateProjectPrizesRequest.Builder builder = UpdateProjectPrizesRequest.newBuilder();
+        builder.setProjectId(projectId);
+        if (operator != null) {
+            builder.setOperator(operator);
+        }
+        for (Prize prize : prizes) {
+            builder.addPrizes(buildPrize(prize));
+        }
+        UpdateProjectPrizesResponse response = stub.updateProjectPrizes(builder.build());
+        prizes.clear();
+        prizes.addAll(loadProjectPrizes(response.getPrizesList()));
+    }
+
+    public ProjectStudioSpecification getProjectStudioSpec(long projectId) {
+        ProjectIdProto request = ProjectIdProto.newBuilder().setProjectId(projectId).build();
+        GetProjectStudioSpecResponse response = stub.getProjectStudioSpec(request);
+        if (!response.hasProjectStudioSpec()) {
+            return null;
+        }
+        return loadProjectStudioSpecification(response.getProjectStudioSpec());
+    }
+
+    public void updateProjectStudioSpec(long projectId, ProjectStudioSpecification spec, String operator) {
+        UpdateProjectStudioSpecRequest.Builder builder = UpdateProjectStudioSpecRequest.newBuilder();
+        builder.setProjectId(projectId);
+        if (operator != null) {
+            builder.setOperator(operator);
+        }
+        builder.setProjectStudioSpec(buildStudioSpec(spec));
+        ProjectStudioSpecProto response = stub.updateProjectStudioSpec(builder.build());
+        spec.setModificationUser(response.getModifyUser());
+        spec.setModificationTimestamp(new Date(response.getModifyDate().getSeconds() * 1000));
+    }
+
+    public FileType createFileType(FileType fileType, String operator) {
+        CreateFileTypeRequest.Builder builder = CreateFileTypeRequest.newBuilder();
+        if (operator != null) {
+            builder.setOperator(operator);
+        }
+        builder.setFileType(buildFileType(fileType));
+        FileTypeProto response = stub.createFileType(builder.build());
+        fileType.setId(response.getId());
+        fileType.setCreationUser(response.getCreateUser());
+        fileType.setCreationTimestamp(new Date(response.getCreateDate().getSeconds() * 1000));
+        fileType.setModificationUser(response.getModifyUser());
+        fileType.setModificationTimestamp(new Date(response.getModifyDate().getSeconds() * 1000));
+        return fileType;
+    }
+
+    public FileType updateFileType(FileType fileType, String operator) {
+        UpdateFileTypeRequest.Builder builder = UpdateFileTypeRequest.newBuilder();
+        if (operator != null) {
+            builder.setOperator(operator);
+        }
+        builder.setFileType(buildFileType(fileType));
+        FileTypeProto response = stub.updateFileType(builder.build());
+        fileType.setModificationUser(response.getModifyUser());
+        fileType.setModificationTimestamp(new Date(response.getModifyDate().getSeconds() * 1000));
+        return fileType;
+    }
+
+    public int deleteFileType(long fileTypeId, String operator) {
+        DeleteFileTypeRequest.Builder builder = DeleteFileTypeRequest.newBuilder();
+        builder.setFileTypeId(fileTypeId);
+        if (operator != null) {
+            builder.setOperator(operator);
+        }
+        CountProto response = stub.deleteFileType(builder.build());
+        return response.getCount();
+    }
+
+    public Prize createPrize(Prize prize, String operator) {
+        CreatePrizeRequest.Builder builder = CreatePrizeRequest.newBuilder();
+        if (operator != null) {
+            builder.setOperator(operator);
+        }
+        builder.setPrize(buildPrize(prize));
+        PrizeProto response = stub.createPrize(builder.build());
+        prize.setId(response.getId());
+        prize.setCreationUser(response.getCreateUser());
+        prize.setCreationTimestamp(new Date(response.getCreateDate().getSeconds() * 1000));
+        prize.setModificationUser(response.getModifyUser());
+        prize.setModificationTimestamp(new Date(response.getModifyDate().getSeconds() * 1000));
+        return prize;
+    }
+
+    public Prize updatePrize(Prize prize, String operator) {
+        UpdatePrizeRequest.Builder builder = UpdatePrizeRequest.newBuilder();
+        if (operator != null) {
+            builder.setOperator(operator);
+        }
+        builder.setPrize(buildPrize(prize));
+        PrizeProto response = stub.updatePrize(builder.build());
+        prize.setModificationUser(response.getModifyUser());
+        prize.setModificationTimestamp(new Date(response.getModifyDate().getSeconds() * 1000));
+        return prize;
+    }
+
+    public int deletePrize(long prizeId, String operator) {
+        DeletePrizeRequest.Builder builder = DeletePrizeRequest.newBuilder();
+        if (operator != null) {
+            builder.setOperator(operator);
+        }
+        builder.setPrizeId(prizeId);
+        CountProto response = stub.deletePrize(builder.build());
+        return response.getCount();
+    }
+
+    public ProjectStudioSpecification createStudioSpec(ProjectStudioSpecification spec, String operator) {
+        CreateStudioSpecRequest.Builder builder = CreateStudioSpecRequest.newBuilder();
+        if (operator != null) {
+            builder.setOperator(operator);
+        }
+        builder.setProjectStudioSpec(buildStudioSpec(spec));
+        ProjectStudioSpecProto response = stub.createStudioSpec(builder.build());
+        spec.setId(response.getId());
+        spec.setCreationUser(response.getCreateUser());
+        spec.setCreationTimestamp(new Date(response.getCreateDate().getSeconds() * 1000));
+        spec.setModificationUser(response.getModifyUser());
+        spec.setModificationTimestamp(new Date(response.getModifyDate().getSeconds() * 1000));
+        return spec;
+    }
+
+    public ProjectStudioSpecification updateStudioSpec(ProjectStudioSpecification spec, String operator) {
+        UpdateStudioSpecRequest.Builder builder = UpdateStudioSpecRequest.newBuilder();
+        if (operator != null) {
+            builder.setOperator(operator);
+        }
+        builder.setProjectStudioSpec(buildStudioSpec(spec));
+        ProjectStudioSpecProto response = stub.updateStudioSpec(builder.build());
+        spec.setModificationUser(response.getModifyUser());
+        spec.setModificationTimestamp(new Date(response.getModifyDate().getSeconds() * 1000));
+        return spec;
+    }
+
+    public int deleteStudioSpec(long specId, String operator) {
+        DeleteStudioSpecRequest.Builder builder = DeleteStudioSpecRequest.newBuilder();
+        if (operator != null) {
+            builder.setOperator(operator);
+        }
+        builder.setProjectStudioSpecId(specId);
+        CountProto response = stub.deleteStudioSpec(builder.build());
+        return response.getCount();
+    }
+
+    public ProjectPropertyType[] getAllProjectPropertyTypes() {
+        GetAllProjectPropertyTypesResponse response = stub.getAllProjectPropertyTypes(null);
+        ProjectPropertyType[] propertyTypes = new ProjectPropertyType[response.getPropertyTypesCount()];
+        for (int i = 0; i < response.getPropertyTypesCount(); ++i) {
+            ProjectPropertyTypeProto p = response.getPropertyTypes(i);
+            ProjectPropertyType propertyType = new ProjectPropertyType(p.getId(), p.getName());
+            if (p.hasDescription()) {
+                propertyType.setDescription(p.getDescription());
+            }
+            propertyTypes[i] = propertyType;
+        }
+        return propertyTypes;
+    }
+
+    public ProjectType[] getAllProjectTypes() {
+        GetAllProjectTypesResponse response = stub.getAllProjectTypes(null);
+        ProjectType[] projectTypes = new ProjectType[response.getProjectTypesCount()];
+        for (int i = 0; i < response.getProjectTypesCount(); ++i) {
+            ProjectTypeProto p = response.getProjectTypes(i);
+            ProjectType projectType = new ProjectType();
+            if (p.hasId()) {
+                projectType.setId(p.getId());
+            }
+            if (p.hasName()) {
+                projectType.setName(p.getName());
+            }
+            if (p.hasDescription()) {
+                projectType.setDescription(p.getDescription());
+            }
+            if (p.hasGeneric()) {
+                projectType.setGeneric(p.getGeneric());
+            }
+            projectTypes[i] = projectType;
+        }
+        return projectTypes;
+    }
+
+    public ProjectCategory[] getAllProjectCategories() {
+        GetAllProjectCategoriesResponse response = stub.getAllProjectCategories(null);
+        ProjectCategory[] projectCategories = new ProjectCategory[response.getProjectCategoriesCount()];
+        for (int i = 0; i < response.getProjectCategoriesCount(); ++i) {
+            ProjectCategoryProto p = response.getProjectCategories(i);
+            ProjectCategory projectCategory = new ProjectCategory();
+            if (p.hasId()) {
+                projectCategory.setId(p.getId());
+            }
+            if (p.hasName()) {
+                projectCategory.setName(p.getName());
+            }
+            if (p.hasDescription()) {
+                projectCategory.setDescription(p.getDescription());
+            }
+            if (p.hasProjectType()) {
+                ProjectTypeProto pt = p.getProjectType();
+                ProjectType projectType = new ProjectType();
+                if (pt.hasId()) {
+                    projectType.setId(pt.getId());
+                }
+                if (pt.hasName()) {
+                    projectType.setName(pt.getName());
+                }
+                if (pt.hasDescription()) {
+                    projectType.setDescription(pt.getDescription());
+                }
+                if (pt.hasGeneric()) {
+                    projectType.setGeneric(pt.getGeneric());
+                }
+                projectCategory.setProjectType(projectType);
+            }
+            projectCategories[i] = projectCategory;
+        }
+        return projectCategories;
+    }
+
+    public ProjectStatus[] getAllProjectStatuses() {
+        GetAllProjectStatusesResponse response = stub.getAllProjectStatuses(null);
+        ProjectStatus[] projectStatuses = new ProjectStatus[response.getProjectStatusesCount()];
+        for (int i = 0; i < response.getProjectStatusesCount(); ++i) {
+            ProjectStatusProto p = response.getProjectStatuses(i);
+            ProjectStatus status = new ProjectStatus(p.getId(), p.getName());
+            if (p.hasDescription()) {
+                status.setDescription(p.getDescription());
+            }
+            projectStatuses[i] = status;
+        }
+        return projectStatuses;
+    }
+
+    public FileType[] getAllFileTypes() {
+        GetAllFileTypesResponse response = stub.getAllFileTypes(null);
+        return loadProjectFileTypes(response.getFileTypesList()).toArray(new FileType[0]);
+    }
+
+    public PrizeType[] getAllPrizeTypes() {
+        GetAllPrizeTypesResponse response = stub.getAllPrizeTypes(null);
+        PrizeType[] prizeTypes = new PrizeType[response.getPrizeTypesCount()];
+        for (int i = 0; i < response.getPrizeTypesCount(); ++i) {
+            PrizeTypeProto p = response.getPrizeTypes(i);
+            PrizeType prizeType = new PrizeType();
+            if (p.hasId()) {
+                prizeType.setId(p.getId());
+            }
+            if (p.hasDescription()) {
+                prizeType.setDescription(p.getDescription());
+            }
+            prizeTypes[i] = prizeType;
+        }
+        return prizeTypes;
+    }
+
+    private Project loadProject(ProjectProto p) {
+        ProjectStatus status = new ProjectStatus(p.getProjectStatus().getId(), p.getProjectStatus().getName());
+        ProjectType type = new ProjectType(p.getProjectCategory().getProjectType().getId(),
+                p.getProjectCategory().getProjectType().getName());
+        ProjectCategory category = new ProjectCategory(p.getProjectCategory().getId(),
+                p.getProjectCategory().getName(), type);
+        if (p.getProjectCategory().hasDescription()) {
+            category.setDescription(p.getProjectCategory().getDescription());
+        }
+        Project project = new Project(p.getId(), category, status);
+        if (p.hasCreateUser()) {
+            project.setCreationUser(p.getCreateUser());
+        }
+        if (p.hasCreateDate()) {
+            project.setCreationTimestamp(new Date(p.getCreateDate().getSeconds() * 1000));
+        }
+        if (p.hasModifyUser()) {
+            project.setModificationUser(p.getModifyUser());
+        }
+        if (p.hasModifyDate()) {
+            project.setModificationTimestamp(new Date(p.getModifyDate().getSeconds() * 1000));
+        }
+        if (p.hasDirectProjectId()) {
+            project.setTcDirectProjectId(p.getDirectProjectId());
+        }
+        if (p.hasTcDirectProjectName()) {
+            project.setTcDirectProjectName(p.getTcDirectProjectName());
+        }
+        return project;
+    }
+
+    private List<FileType> loadProjectFileTypes(List<FileTypeProto> fileTypeProtos) {
+        List<FileType> fileTypes = new ArrayList<>();
+        for (FileTypeProto f : fileTypeProtos) {
             FileType fileType = new FileType();
-            fileType.setId(f.getFileTypeId());
+            fileType.setId(f.getId());
             if (f.hasDescription()) {
                 fileType.setDescription(f.getDescription());
             }
@@ -241,346 +489,168 @@ public class ProjectServiceRpc {
                 fileType.setExtension(f.getExtension());
             }
             fileType.setBundledFile(f.getBundledFile());
-            fileTypes[i] = fileType;
+            fileTypes.add(fileType);
         }
         return fileTypes;
     }
 
-    public int createProjectFileType(long projectId, long fileTypeId) {
-        CreateProjectFileTypeRequest request = CreateProjectFileTypeRequest.newBuilder().setProjectId(projectId)
-                .setFileTypeId(fileTypeId).build();
-        CountProto response = stub.createProjectFileType(request);
-        return response.getCount();
-    }
-
-    public int deleteProjectFileType(long projectId) {
-        DeleteProjectFileTypeRequest request = DeleteProjectFileTypeRequest.newBuilder().setProjectId(projectId)
-                .build();
-        CountProto response = stub.deleteProjectFileType(request);
-        return response.getCount();
-    }
-
-    public int createFileType(FileType fileType) {
-        CreateFileTypeRequest.Builder builder = CreateFileTypeRequest.newBuilder();
-        builder.setFileTypeId(fileType.getId());
-        if (fileType.getDescription() != null) {
-            builder.setDescription(fileType.getDescription());
-        }
-        builder.setSort(fileType.getSort());
-        builder.setImageFile(fileType.isImageFile());
-        if (fileType.getExtension() != null) {
-            builder.setExtension(fileType.getExtension());
-        }
-        builder.setBundledFile(fileType.isBundledFile());
-        if (fileType.getCreationUser() != null) {
-            builder.setCreateUser(fileType.getCreationUser());
-        }
-        if (fileType.getModificationUser() != null) {
-            builder.setModifyUser(fileType.getModificationUser());
-        }
-        if (fileType.getCreationTimestamp() != null) {
-            builder.setCreateDate(
-                    Timestamp.newBuilder().setSeconds(fileType.getCreationTimestamp().toInstant().getEpochSecond()));
-        }
-        if (fileType.getModificationTimestamp() != null) {
-            builder.setModifyDate(
-                    Timestamp.newBuilder()
-                            .setSeconds(fileType.getModificationTimestamp().toInstant().getEpochSecond()));
-        }
-        CountProto response = stub.createFileType(builder.build());
-        return response.getCount();
-    }
-
-    public int updateFileType(FileType fileType) {
-        UpdateFileTypeRequest.Builder builder = UpdateFileTypeRequest.newBuilder();
-        builder.setFileTypeId(fileType.getId());
-        if (fileType.getDescription() != null) {
-            builder.setDescription(fileType.getDescription());
-        }
-        builder.setSort(fileType.getSort());
-        builder.setImageFile(fileType.isImageFile());
-        if (fileType.getExtension() != null) {
-            builder.setExtension(fileType.getExtension());
-        }
-        builder.setBundledFile(fileType.isBundledFile());
-        if (fileType.getModificationUser() != null) {
-            builder.setModifyUser(fileType.getModificationUser());
-        }
-        if (fileType.getModificationTimestamp() != null) {
-            builder.setModifyDate(
-                    Timestamp.newBuilder()
-                            .setSeconds(fileType.getModificationTimestamp().toInstant().getEpochSecond()));
-        }
-        CountProto response = stub.updateFileType(builder.build());
-        return response.getCount();
-    }
-
-    public boolean isProjectExists(long id) {
-        IdProto request = IdProto.newBuilder().setId(id).build();
-        ExistsProto response = stub.isProjectExists(request);
-        return response.getExists();
-    }
-
-    public boolean isFileTypeExists(long id) {
-        IdProto request = IdProto.newBuilder().setId(id).build();
-        ExistsProto response = stub.isFileTypeExists(request);
-        return response.getExists();
-    }
-
-    public boolean isPrizeExists(long id) {
-        IdProto request = IdProto.newBuilder().setId(id).build();
-        ExistsProto response = stub.isPrizeExists(request);
-        return response.getExists();
-    }
-
-    public boolean isStudioSpecExists(long id) {
-        IdProto request = IdProto.newBuilder().setId(id).build();
-        ExistsProto response = stub.isStudioSpecExists(request);
-        return response.getExists();
-    }
-
-    public Prize[] getProjectPrizes(long projectId) {
-        ProjectIdProto request = ProjectIdProto.newBuilder().setProjectId(projectId).build();
-        GetProjectPrizesResponse response = stub.getProjectPrizes(request);
-        Prize[] prizes = new Prize[response.getPrizesCount()];
-        for (int i = 0; i < response.getPrizesCount(); i++) {
-            ProjectPrizeProto p = response.getPrizes(i);
+    private List<Prize> loadProjectPrizes(List<PrizeProto> prizeProtos) {
+        List<Prize> prizes = new ArrayList<>();
+        for (PrizeProto pp : prizeProtos) {
             Prize prize = new Prize();
-            prize.setId(p.getPrizeId());
-            prize.setProjectId(p.getProjectId());
-            prize.setPlace(p.getPlace());
-            prize.setPrizeAmount(p.getPrizeAmount());
-            prize.setNumberOfSubmissions(p.getNumberOfSubmissions());
-            PrizeType prizeType = new PrizeType();
-            prizeType.setId(p.getPrizeTypeId());
-            if (p.hasPrizeTypeDesc()) {
-                prizeType.setDescription(p.getPrizeTypeDesc());
+            prize.setId(pp.getId());
+            prize.setProjectId(pp.getProjectId());
+            prize.setPlace(pp.getPlace());
+            prize.setPrizeAmount(pp.getPrizeAmount());
+            prize.setNumberOfSubmissions(pp.getNumberOfSubmissions());
+            if (pp.hasPrizeType()) {
+                PrizeType prizeType = new PrizeType();
+                prizeType.setId(pp.getPrizeType().getId());
+                if (pp.getPrizeType().hasDescription()) {
+                    prizeType.setDescription(pp.getPrizeType().getDescription());
+                }
+                prize.setPrizeType(prizeType);
             }
-            prize.setPrizeType(prizeType);
-            prizes[i] = prize;
+            prizes.add(prize);
         }
         return prizes;
     }
 
-    public int createPrize(Prize prize) {
-        CreatePrizeRequest.Builder builder = CreatePrizeRequest.newBuilder();
-        builder.setPrizeId(prize.getId());
-        builder.setProjectId(prize.getProjectId());
-        builder.setPlace(prize.getPlace());
-        builder.setPrizeAmount(prize.getPrizeAmount());
-        builder.setPrizeTypeId(prize.getPrizeType().getId());
-        builder.setNumberOfSubmissions(prize.getNumberOfSubmissions());
-        if (prize.getCreationUser() != null) {
-            builder.setCreateUser(prize.getCreationUser());
-        }
-        if (prize.getCreationTimestamp() != null) {
-            builder.setCreateDate(
-                    Timestamp.newBuilder().setSeconds(prize.getCreationTimestamp().toInstant().getEpochSecond()));
-        }
-        if (prize.getModificationUser() != null) {
-            builder.setModifyUser(prize.getModificationUser());
-        }
-        if (prize.getModificationTimestamp() != null) {
-            builder.setModifyDate(
-                    Timestamp.newBuilder().setSeconds(prize.getModificationTimestamp().toInstant().getEpochSecond()));
-        }
-        CountProto response = stub.createPrize(builder.build());
-        return response.getCount();
-    }
-
-    public int updatePrize(Prize prize) {
-        UpdatePrizeRequest.Builder builder = UpdatePrizeRequest.newBuilder();
-        builder.setPrizeId(prize.getId());
-        builder.setProjectId(prize.getProjectId());
-        builder.setPlace(prize.getPlace());
-        builder.setPrizeAmount(prize.getPrizeAmount());
-        builder.setPrizeTypeId(prize.getPrizeType().getId());
-        builder.setNumberOfSubmissions(prize.getNumberOfSubmissions());
-        if (prize.getModificationUser() != null) {
-            builder.setModifyUser(prize.getModificationUser());
-        }
-        if (prize.getModificationTimestamp() != null) {
-            builder.setModifyDate(
-                    Timestamp.newBuilder().setSeconds(prize.getModificationTimestamp().toInstant().getEpochSecond()));
-        }
-        CountProto response = stub.updatePrize(builder.build());
-        return response.getCount();
-    }
-
-    public int deletePrize(long prizeId) {
-        DeletePrizeRequest request = DeletePrizeRequest.newBuilder().setPrizeId(prizeId).build();
-        CountProto response = stub.deletePrize(request);
-        return response.getCount();
-    }
-
-    public List<Long> getPrizeProjectIds(long prizeId) {
-        GetPrizeProjectIdsRequest request = GetPrizeProjectIdsRequest.newBuilder().setPrizeId(prizeId).build();
-        GetPrizeProjectIdsResponse response = stub.getPrizeProjectIds(request);
-        return response.getIdsList();
-    }
-
-    public ProjectStudioSpecification getProjectStudioSpec(long projectId) {
-        ProjectIdProto request = ProjectIdProto.newBuilder().setProjectId(projectId).build();
-        GetProjectStudioSpecResponse response = stub.getProjectStudioSpec(request);
-        if (!response.hasProjectStudioSpecId()) {
-            return null;
-        }
+    private ProjectStudioSpecification loadProjectStudioSpecification(ProjectStudioSpecProto ps) {
         ProjectStudioSpecification studioSpec = new ProjectStudioSpecification();
-        studioSpec.setId(response.getProjectStudioSpecId());
-        if (response.hasGoals()) {
-            studioSpec.setGoals(response.getGoals());
+        studioSpec.setId(ps.getId());
+        if (ps.hasGoals()) {
+            studioSpec.setGoals(ps.getGoals());
         }
-        if (response.hasTargetAudience()) {
-            studioSpec.setTargetAudience(response.getTargetAudience());
+        if (ps.hasTargetAudience()) {
+            studioSpec.setTargetAudience(ps.getTargetAudience());
         }
-        if (response.hasBrandingGuidelines()) {
-            studioSpec.setBrandingGuidelines(response.getBrandingGuidelines());
+        if (ps.hasBrandingGuidelines()) {
+            studioSpec.setBrandingGuidelines(ps.getBrandingGuidelines());
         }
-        if (response.hasDislikedDesignWebsites()) {
-            studioSpec.setDislikedDesignWebSites(response.getDislikedDesignWebsites());
+        if (ps.hasDislikedDesignWebsites()) {
+            studioSpec.setDislikedDesignWebSites(ps.getDislikedDesignWebsites());
         }
-        if (response.hasOtherInstructions()) {
-            studioSpec.setOtherInstructions(response.getOtherInstructions());
+        if (ps.hasOtherInstructions()) {
+            studioSpec.setOtherInstructions(ps.getOtherInstructions());
         }
-        if (response.hasWinningCriteria()) {
-            studioSpec.setWinningCriteria(response.getWinningCriteria());
+        if (ps.hasWinningCriteria()) {
+            studioSpec.setWinningCriteria(ps.getWinningCriteria());
         }
-        if (response.hasSubmittersLockedBetweenRounds()) {
-            studioSpec.setSubmittersLockedBetweenRounds(response.getSubmittersLockedBetweenRounds());
+        if (ps.hasSubmittersLockedBetweenRounds()) {
+            studioSpec.setSubmittersLockedBetweenRounds(ps.getSubmittersLockedBetweenRounds());
         }
-        if (response.hasRoundOneIntroduction()) {
-            studioSpec.setRoundOneIntroduction(response.getRoundOneIntroduction());
+        if (ps.hasRoundOneIntroduction()) {
+            studioSpec.setRoundOneIntroduction(ps.getRoundOneIntroduction());
         }
-        if (response.hasRoundTwoIntroduction()) {
-            studioSpec.setRoundTwoIntroduction(response.getRoundTwoIntroduction());
+        if (ps.hasRoundTwoIntroduction()) {
+            studioSpec.setRoundTwoIntroduction(ps.getRoundTwoIntroduction());
         }
-        if (response.hasColors()) {
-            studioSpec.setColors(response.getColors());
+        if (ps.hasColors()) {
+            studioSpec.setColors(ps.getColors());
         }
-        if (response.hasFonts()) {
-            studioSpec.setFonts(response.getFonts());
+        if (ps.hasFonts()) {
+            studioSpec.setFonts(ps.getFonts());
         }
-        if (response.hasLayoutAndSize()) {
-            studioSpec.setLayoutAndSize(response.getLayoutAndSize());
+        if (ps.hasLayoutAndSize()) {
+            studioSpec.setLayoutAndSize(ps.getLayoutAndSize());
         }
         return studioSpec;
     }
 
-    public int createStudioSpec(Long id, ProjectStudioSpecification spec, String operator, Date date) {
-        CreateStudioSpecRequest.Builder builder = CreateStudioSpecRequest.newBuilder();
-        if (id != null) {
-            builder.setProjectStudioSpecId(id);
+    private void setProjectProperties(Project project, List<ProjectPropertyProto> properties) {
+        for (ProjectPropertyProto pp : properties) {
+            project.setProperty(pp.getName(), pp.hasValue() ? pp.getValue() : null);
         }
+    }
+
+    private ProjectProto.Builder buildProject(Project project) {
+        ProjectProto.Builder p = ProjectProto.newBuilder();
+        if (project.getTcDirectProjectId() != null) {
+            p.setDirectProjectId(project.getTcDirectProjectId());
+        }
+        if (project.getProjectCategory() != null) {
+            p.setProjectCategory(ProjectCategoryProto.newBuilder().setId(project.getProjectCategory().getId()));
+        }
+        if (project.getProjectStatus() != null) {
+            p.setProjectStatus(ProjectStatusProto.newBuilder().setId(project.getProjectStatus().getId()));
+        }
+        for (Object item : project.getAllProperties().entrySet()) {
+            Entry entry = (Entry) item;
+            p.addProperties(ProjectPropertyProto.newBuilder().setName(entry.getKey().toString())
+                    .setValue(entry.getValue().toString()));
+        }
+        for (Prize prize : project.getPrizes()) {
+            p.addPrizes(buildPrize(prize));
+        }
+        if (project.getProjectStudioSpecification() != null) {
+            p.setProjectStudioSpec(buildStudioSpec(project.getProjectStudioSpecification()));
+        }
+        for (FileType filetype : project.getProjectFileTypes()) {
+            p.addFileTypes(buildFileType(filetype));
+        }
+        return p;
+    }
+
+    private FileTypeProto buildFileType(FileType filetype) {
+        FileTypeProto.Builder fBuilder = FileTypeProto.newBuilder().setId(filetype.getId())
+                .setSort(filetype.getSort()).setBundledFile(filetype.isBundledFile())
+                .setImageFile(filetype.isImageFile());
+        if (filetype.getDescription() != null) {
+            fBuilder.setDescription(filetype.getDescription());
+        }
+        if (filetype.getExtension() != null) {
+            fBuilder.setExtension(filetype.getExtension());
+        }
+        return fBuilder.build();
+    }
+
+    private PrizeProto buildPrize(Prize prize) {
+        PrizeProto.Builder prizeBuilder = PrizeProto.newBuilder().setId(prize.getId()).setPlace(prize.getPlace())
+                .setPrizeAmount(prize.getPrizeAmount()).setNumberOfSubmissions(prize.getNumberOfSubmissions());
+        if (prize.getPrizeType() != null) {
+            prizeBuilder.setPrizeType(PrizeTypeProto.newBuilder().setId(prize.getPrizeType().getId()));
+        }
+        return prizeBuilder.build();
+    }
+
+    private ProjectStudioSpecProto buildStudioSpec(ProjectStudioSpecification spec) {
+        ProjectStudioSpecProto.Builder specProto = ProjectStudioSpecProto.newBuilder();
+        specProto.setId(spec.getId());
         if (spec.getGoals() != null) {
-            builder.setGoals(spec.getGoals());
+            specProto.setGoals(spec.getGoals());
         }
         if (spec.getTargetAudience() != null) {
-            builder.setTargetAudience(spec.getTargetAudience());
+            specProto.setTargetAudience(spec.getTargetAudience());
         }
         if (spec.getBrandingGuidelines() != null) {
-            builder.setBrandingGuidelines(spec.getBrandingGuidelines());
+            specProto.setBrandingGuidelines(spec.getBrandingGuidelines());
         }
         if (spec.getDislikedDesignWebSites() != null) {
-            builder.setDislikedDesignWebsites(spec.getDislikedDesignWebSites());
+            specProto.setDislikedDesignWebsites(spec.getDislikedDesignWebSites());
         }
         if (spec.getOtherInstructions() != null) {
-            builder.setOtherInstructions(spec.getOtherInstructions());
+            specProto.setOtherInstructions(spec.getOtherInstructions());
         }
         if (spec.getWinningCriteria() != null) {
-            builder.setWinningCriteria(spec.getWinningCriteria());
+            specProto.setWinningCriteria(spec.getWinningCriteria());
         }
-        builder.setSubmittersLockedBetweenRounds(spec.isSubmittersLockedBetweenRounds());
+        specProto.setSubmittersLockedBetweenRounds(spec.isSubmittersLockedBetweenRounds());
         if (spec.getRoundOneIntroduction() != null) {
-            builder.setRoundOneIntroduction(spec.getRoundOneIntroduction());
+            specProto.setRoundOneIntroduction(spec.getRoundOneIntroduction());
         }
         if (spec.getRoundTwoIntroduction() != null) {
-            builder.setRoundTwoIntroduction(spec.getRoundTwoIntroduction());
+            specProto.setRoundTwoIntroduction(spec.getRoundTwoIntroduction());
         }
         if (spec.getColors() != null) {
-            builder.setColors(spec.getColors());
+            specProto.setColors(spec.getColors());
         }
         if (spec.getFonts() != null) {
-            builder.setFonts(spec.getFonts());
+            specProto.setFonts(spec.getFonts());
         }
         if (spec.getLayoutAndSize() != null) {
-            builder.setLayoutAndSize(spec.getLayoutAndSize());
+            specProto.setLayoutAndSize(spec.getLayoutAndSize());
         }
-        if (operator != null) {
-            builder.setCreateUser(operator);
-            builder.setModifyUser(operator);
-        }
-        if (date != null) {
-            builder.setCreateDate(Timestamp.newBuilder().setSeconds(date.toInstant().getEpochSecond()));
-            builder.setModifyDate(Timestamp.newBuilder().setSeconds(date.toInstant().getEpochSecond()));
-        }
-        CountProto response = stub.createStudioSpec(builder.build());
-        return response.getCount();
-    }
-
-    public int updateStudioSpec(ProjectStudioSpecification spec, String operator, Date date) {
-        UpdateStudioSpecRequest.Builder builder = UpdateStudioSpecRequest.newBuilder();
-        builder.setProjectStudioSpecId(spec.getId());
-        if (spec.getGoals() != null) {
-            builder.setGoals(spec.getGoals());
-        }
-        if (spec.getTargetAudience() != null) {
-            builder.setTargetAudience(spec.getTargetAudience());
-        }
-        if (spec.getBrandingGuidelines() != null) {
-            builder.setBrandingGuidelines(spec.getBrandingGuidelines());
-        }
-        if (spec.getDislikedDesignWebSites() != null) {
-            builder.setDislikedDesignWebsites(spec.getDislikedDesignWebSites());
-        }
-        if (spec.getOtherInstructions() != null) {
-            builder.setOtherInstructions(spec.getOtherInstructions());
-        }
-        if (spec.getWinningCriteria() != null) {
-            builder.setWinningCriteria(spec.getWinningCriteria());
-        }
-        builder.setSubmittersLockedBetweenRounds(spec.isSubmittersLockedBetweenRounds());
-        if (spec.getRoundOneIntroduction() != null) {
-            builder.setRoundOneIntroduction(spec.getRoundOneIntroduction());
-        }
-        if (spec.getRoundTwoIntroduction() != null) {
-            builder.setRoundTwoIntroduction(spec.getRoundTwoIntroduction());
-        }
-        if (spec.getColors() != null) {
-            builder.setColors(spec.getColors());
-        }
-        if (spec.getFonts() != null) {
-            builder.setFonts(spec.getFonts());
-        }
-        if (spec.getLayoutAndSize() != null) {
-            builder.setLayoutAndSize(spec.getLayoutAndSize());
-        }
-        if (operator != null) {
-            builder.setModifyUser(operator);
-        }
-        if (date != null) {
-            builder.setModifyDate(Timestamp.newBuilder().setSeconds(date.toInstant().getEpochSecond()));
-        }
-        CountProto response = stub.updateStudioSpec(builder.build());
-        return response.getCount();
-    }
-
-    public int deleteStudioSpec(long id) {
-        DeleteStudioSpecRequest request = DeleteStudioSpecRequest.newBuilder().setProjectStudioSpecId(id).build();
-        CountProto response = stub.deleteStudioSpec(request);
-        return response.getCount();
-    }
-
-    public List<Long> getStudioSpecProjectIds(long specId) {
-        GetStudioSpecProjectIdsRequest request = GetStudioSpecProjectIdsRequest.newBuilder()
-                .setProjectStudioSpecId(specId).build();
-        GetStudioSpecProjectIdsResponse response = stub.getStudioSpecProjectIds(request);
-        return response.getProjectIdsList();
-    }
-
-    public int removeStudioSpecFromProjects(long id) {
-        RemoveStudioSpecFromProjectsRequest request = RemoveStudioSpecFromProjectsRequest.newBuilder()
-                .setProjectStudioSpecId(id).build();
-        CountProto response = stub.removeStudioSpecFromProjects(request);
-        return response.getCount();
+        return specProto.build();
     }
 }
