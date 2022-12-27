@@ -3,23 +3,17 @@
  */
 package com.topcoder.onlinereview.component.project.phase;
 
-import com.topcoder.onlinereview.component.id.DBHelper;
-import com.topcoder.onlinereview.component.id.IDGenerationException;
-import com.topcoder.onlinereview.component.id.IDGenerator;
+import com.topcoder.onlinereview.component.grpcclient.phase.PhaseServiceRpc;
 import com.topcoder.onlinereview.component.workday.Workdays;
 import com.topcoder.onlinereview.component.workday.WorkdaysFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
+import com.topcoder.onlinereview.grpc.phase.proto.PhaseCriteriaProto;
+import com.topcoder.onlinereview.grpc.phase.proto.PhaseDependencyProto;
+import com.topcoder.onlinereview.grpc.phase.proto.PhaseProto;
 
-import javax.annotation.PostConstruct;
-import java.sql.PreparedStatement;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
 import java.sql.SQLException;
-import java.sql.Timestamp;
-import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -33,14 +27,6 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static com.google.common.collect.Lists.newArrayList;
-import static com.topcoder.onlinereview.component.util.CommonUtils.executeSql;
-import static com.topcoder.onlinereview.component.util.CommonUtils.executeSqlWithParam;
-import static com.topcoder.onlinereview.component.util.CommonUtils.executeUpdateSql;
-import static com.topcoder.onlinereview.component.util.CommonUtils.getBoolean;
-import static com.topcoder.onlinereview.component.util.CommonUtils.getDate;
-import static com.topcoder.onlinereview.component.util.CommonUtils.getLong;
-import static com.topcoder.onlinereview.component.util.CommonUtils.getString;
 import static java.util.stream.Collectors.toMap;
 
 /**
@@ -81,179 +67,10 @@ import static java.util.stream.Collectors.toMap;
 @Component
 public class PhasePersistence {
 
-  /** Checks if the dependency exists in the database. */
-  private static final String CHECK_DEPENDENCY =
-      "SELECT 1 FROM phase_dependency WHERE dependency_phase_id = ? "
-          + "AND dependent_phase_id = ?";
-
-  /** The second part of the delete query for the dependencies. */
-  private static final String DELETE_FROM_PHASE_DEPENDENCY_OR = " OR dependent_phase_id IN ";
-
-  /** Delete the dependencies for particular phase. */
-  private static final String DELETE_FROM_PHASE_DEPENDENCY =
-      "DELETE FROM phase_dependency WHERE " + "dependency_phase_id IN ";
-
-  /** Delete the phase criteria for the given phases. */
-  private static final String DELETE_PHASE_CRITERIA_FOR_PHASES =
-      "DELETE FROM phase_criteria " + "WHERE project_phase_id IN ";
-
-  /** Delete the project phases given by id list. */
-  private static final String DELETE_PROJECT_PHASE =
-      "DELETE FROM project_phase WHERE project_phase_id IN ";
-
-  /** Select the complete phase criteria for a phases. */
-  private static final String SELECT_PHASE_CRITERIA_FOR_PHASE =
-      "SELECT phase_criteria.phase_criteria_type_id, "
-          + "name, parameter FROM phase_criteria JOIN phase_criteria_type_lu "
-          + "ON phase_criteria_type_lu.phase_criteria_type_id = phase_criteria.phase_criteria_type_id "
-          + "WHERE project_phase_id = ?";
-
-  /** Update the phase criteria. */
-  private static final String UPDATE_PHASE_CRITERIA =
-      "UPDATE phase_criteria SET parameter = ?, "
-          + "modify_user = ?, modify_date = ? WHERE project_phase_id = ? AND phase_criteria_type_id = ?";
-
-  /** Delete the criteria for phase. */
-  private static final String DELETE_PHASE_CRITERIA =
-      "DELETE FROM phase_criteria " + "WHERE project_phase_id = ? AND phase_criteria_type_id IN ";
-
-  /** Deletes the concrete dependecies for a phase. */
-  private static final String DELETE_PHASE_DEPENDENCY =
-      "DELETE FROM phase_dependency " + "WHERE dependent_phase_id = ? AND dependency_phase_id IN ";
-
-  /** Updates the phases dependencies. */
-  private static final String UPDATE_PHASE_DEPENDENCY =
-      "UPDATE phase_dependency "
-          + "SET dependency_start = ?, dependent_start = ?, lag_time = ?, modify_user = ?, modify_date = ? "
-          + "WHERE dependency_phase_id = ? AND dependent_phase_id = ?";
-
-  /** Selects the phase criteria for phases. */
-  private static final String SELECT_PHASE_CRITERIA_FOR_PROJECTS =
-      "SELECT phase_criteria.project_phase_id, name, parameter "
-          + "FROM phase_criteria JOIN phase_criteria_type_lu "
-          + "ON phase_criteria_type_lu.phase_criteria_type_id = phase_criteria.phase_criteria_type_id "
-          + "JOIN project_phase ON phase_criteria.project_phase_id = project_phase.project_phase_id "
-          + "WHERE project_id IN ";
-
-  /** Select the project id - phase id mappings. */
-  private static final String SELECT_PROJECT_PHASE_ID =
-      "SELECT project_phase_id, project_id FROM project_phase " + "WHERE project_phase_id IN ";
-
-  /** Select all the criteria id and name. */
-  private static final String SELECT_PHASE_CRITERIA =
-      "SELECT phase_criteria_type_id, name " + "FROM phase_criteria_type_lu";
-
-  /** Inserts the phase criteria into table. */
-  private static final String INSERT_PHASE_CRITERIA =
-      "INSERT INTO phase_criteria(project_phase_id, "
-          + "phase_criteria_type_id, parameter, create_user, create_date, modify_user, modify_date) "
-          + "VALUES (?, ?, ?, ?, ?, ?, ?)";
-
-  /** Updates the phase table. */
-  private static final String UPDATE_PHASE =
-      "UPDATE project_phase SET project_id = ?, phase_type_id = ?, "
-          + "phase_status_id = ?, fixed_start_time = ?, scheduled_start_time = ?, scheduled_end_time = ?, "
-          + "actual_start_time = ?, actual_end_time = ?, duration = ?, modify_user = ?, modify_date = ? "
-          + "WHERE project_phase_id = ?";
-
-  /** Selects all depedencies for phase. */
-  private static final String SELECT_DEPENDENCY =
-      "SELECT dependency_phase_id, dependent_phase_id, "
-          + "dependency_start, dependent_start, lag_time FROM phase_dependency WHERE dependent_phase_id = ?";
-
-  /** Selects all depedencies for projects. */
-  private static final String SELECT_DEPENDENCY_FOR_PROJECTS =
-      "SELECT dependency_phase_id, dependent_phase_id, "
-          + "dependency_start, dependent_start, lag_time FROM phase_dependency "
-          + "JOIN project_phase ON dependent_phase_id = project_phase_id "
-          + "WHERE project_id IN ";
-
-  /** Selects phase data. */
-  private static final String SELECT_PHASE_FOR_PROJECTS =
-      "SELECT project_phase_id, project_id, fixed_start_time, "
-          + "scheduled_start_time, scheduled_end_time, actual_start_time, actual_end_time, duration, "
-          + "project_phase.modify_date, "
-          + "phase_type_lu.phase_type_id, phase_type_lu.name phase_type_name, "
-          + "phase_status_lu.phase_status_id, phase_status_lu.name phase_status_name "
-          + "FROM project_phase JOIN phase_type_lu ON phase_type_lu.phase_type_id = project_phase.phase_type_id "
-          + "JOIN phase_status_lu ON phase_status_lu.phase_status_id = "
-          + "project_phase.phase_status_id WHERE project_id IN ";
-
-  /** Inserts data into phase depedencies. */
-  private static final String INSERT_PHASE_DEPENDENCY =
-      "INSERT INTO phase_dependency "
-          + "(dependency_phase_id, dependent_phase_id, dependency_start, dependent_start, "
-          + "lag_time, create_user, create_date, modify_user, modify_date) "
-          + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) ";
-
-  /** Inserts the phase. */
-  private static final String INSERT_PHASE =
-      "INSERT INTO project_phase (project_phase_id, project_id, "
-          + "phase_type_id, "
-          + "phase_status_id, fixed_start_time, scheduled_start_time, scheduled_end_time, "
-          + "actual_start_time, actual_end_time, duration, create_user, create_date, modify_user, modify_date) "
-          + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-
-  /** Selects all phase statuses. */
-  private static final String SELECT_PHASE_STATUS_IDS =
-      "SELECT phase_status_id, name phase_status_name " + "FROM phase_status_lu";
-
-  /** Selects all phases types. */
-  private static final String SELECT_PHASE_TYPES =
-      "SELECT phase_type_id, name phase_type_name FROM phase_type_lu";
-
-  /** Selects all projects - checks if all exists in database. */
-  private static final String SELECT_PROJECT_IDS =
-      "SELECT project_id FROM project WHERE project_id IN ";
-
-  /**
-   * Represents the audit creation type.
-   *
-   * @since 1.0.2
-   */
-  private static final int AUDIT_CREATE_TYPE = 1;
-
-  /**
-   * Represents the audit update type.
-   *
-   * @since 1.0.2
-   */
-  private static final int AUDIT_UPDATE_TYPE = 3;
-
-  /**
-   * Represents the SQL statement to audit project info.
-   *
-   * @since 1.0.2
-   */
-  private static final String PROJECT_PHASE_AUDIT_INSERT_SQL =
-      "INSERT INTO project_phase_audit "
-          + "(project_phase_id, scheduled_start_time, scheduled_end_time, audit_action_type_id, action_date, action_user_id) "
-          + "VALUES (?, ?, ?, ?, ?, ?)";
-
-  /**
-   * Represents the SQL statement to delete the audio info.
-   *
-   * @since 1.0.3
-   */
-  private static final String PROJECT_PHASE_AUDIT_DELETE_SQL =
-      "DELETE FROM project_phase_audit WHERE project_phase_id IN ";
+  @Autowired
+  private PhaseServiceRpc phaseServiceRpc;
 
   @Autowired private WorkdaysFactory workdaysFactory;
-
-  @Value("${phase.persistence.id-sequence-name:project_phase_id_seq}")
-  private String idSeqName;
-
-  @Autowired private DBHelper dbHelper;
-  private IDGenerator idGenerator;
-
-  @Autowired
-  @Qualifier("tcsJdbcTemplate")
-  private JdbcTemplate jdbcTemplate;
-
-  @PostConstruct
-  public void postRun() throws IDGenerationException {
-    idGenerator = new IDGenerator(idSeqName, dbHelper);
-  }
 
   /**
    * Will return project instance for the given id. If the project can not be found then a null is
@@ -307,28 +124,26 @@ public class PhasePersistence {
     // create workdays to be used to create the project
     Workdays workdays = workdaysFactory.createWorkdaysInstance();
 
-    List<Map<String, Object>> result =
-        executeSql(jdbcTemplate, SELECT_PROJECT_IDS + createQuestionMarks(projectIds));
+    List<Long> result = phaseServiceRpc.getProjectIds(projectIds);
     Map<Long, Project> projectsMap =
         result.stream()
             .collect(
                 toMap(
-                    m -> getLong(m, "project_id"),
+                    m -> m,
                     m -> {
                       Project project = new Project(new Date(Long.MAX_VALUE), workdays);
-                      project.setId(getLong(m, "project_id"));
+                      project.setId(m);
                       return project;
                     }));
 
-    List<Map<String, Object>> phaseResult =
-        executeSql(jdbcTemplate, SELECT_PHASE_FOR_PROJECTS + createQuestionMarks(projectIds));
+    List<PhaseProto> phaseResult = phaseServiceRpc.getPhasesByProjectIds(projectIds);
     Map<Long, Phase> phasesMap =
         phaseResult.stream()
             .collect(
                 toMap(
-                    m -> getLong(m, "project_phase_id"),
+                    m -> m.getProjectId(),
                     m -> {
-                      Project project = projectsMap.get(getLong(m, "project_id"));
+                      Project project = projectsMap.get(m.getProjectId());
                       Phase phase = populatePhase(m, project);
                       return phase;
                     }));
@@ -370,10 +185,7 @@ public class PhasePersistence {
    */
   public PhaseType[] getAllPhaseTypes() throws PhasePersistenceException {
     // create the types
-    List<PhaseType> result =
-        executeSql(jdbcTemplate, SELECT_PHASE_TYPES).stream()
-            .map(this::populatePhaseType)
-            .collect(Collectors.toList());
+    List<PhaseType> result = phaseServiceRpc.getAllPhaseTypes();
     // convert list to array and return
     return result.toArray(new PhaseType[result.size()]);
   }
@@ -385,8 +197,8 @@ public class PhasePersistence {
    * @return the PhaseType instance created from the ResultSet row.
    * @throws SQLException if errors occurs while accessing the ResultSet.
    */
-  private PhaseType populatePhaseType(Map<String, Object> rs) {
-    return new PhaseType(getLong(rs, "phase_type_id"), getString(rs, "phase_type_name"));
+  private PhaseType populatePhaseType(PhaseProto p) {
+    return new PhaseType(p.getPhaseTypeId(), p.getPhaseTypeName());
   }
 
   /**
@@ -399,10 +211,7 @@ public class PhasePersistence {
    */
   public PhaseStatus[] getAllPhaseStatuses() throws PhasePersistenceException {
     // create the statuses
-    List<PhaseStatus> result =
-        executeSql(jdbcTemplate, SELECT_PHASE_STATUS_IDS).stream()
-            .map(this::populatePhaseStatus)
-            .collect(Collectors.toList());
+    List<PhaseStatus> result = phaseServiceRpc.getAllPhaseStatuses();
     // convert result to array and return
     return result.toArray(new PhaseStatus[result.size()]);
   }
@@ -414,8 +223,8 @@ public class PhasePersistence {
    * @return the PhaseStatus created from the ResultSet.
    * @throws SQLException if error occurs while accessing the ResultSet.
    */
-  private PhaseStatus populatePhaseStatus(Map<String, Object> rs) {
-    return new PhaseStatus(getLong(rs, "phase_status_id"), getString(rs, "phase_status_name"));
+  private PhaseStatus populatePhaseStatus(PhaseProto p) {
+    return new PhaseStatus(p.getPhaseStatusId(), p.getPhaseStatusName());
   }
 
   /**
@@ -446,7 +255,6 @@ public class PhasePersistence {
    *     or the array contains null value.
    * @throws PhasePersistenceException if database relates error occurs.
    */
-  @Transactional
   public void createPhases(Phase[] phases, String operator) throws PhasePersistenceException {
     checkPhases(phases);
     if (operator == null) {
@@ -480,43 +288,13 @@ public class PhasePersistence {
       throws PhasePersistenceException {
     // the list of phases dependencies
     List<Dependency> dependencies = new ArrayList<>();
-    // create insert statement
-    Date now = new Date();
     // iterate over the phases array
     for (int i = 0; i < phases.length; i++) {
       Phase phase = phases[i];
-      // generate the new id for phase
-      phase.setId(nextId());
-      phase.setModifyDate(now);
       // add all phase dependencies to the list
       dependencies.addAll(Arrays.asList(phase.getAllDependencies()));
 
-      executeUpdateSql(
-          jdbcTemplate,
-          INSERT_PHASE,
-          newArrayList(
-              phase.getId(),
-              phase.getProject().getId(),
-              phase.getPhaseType().getId(),
-              phase.getPhaseStatus().getId(),
-              phase.getFixedStartDate(),
-              phase.getScheduledStartDate(),
-              phase.getScheduledEndDate(),
-              phase.getActualStartDate(),
-              phase.getActualEndDate(),
-              phase.getLength(),
-              operator,
-              now,
-              operator,
-              now));
-
-      auditProjectPhase(
-          phases[i],
-          AUDIT_CREATE_TYPE,
-          phase.getScheduledStartDate(),
-          phase.getScheduledEndDate(),
-          Long.parseLong(operator),
-          now);
+      phaseServiceRpc.createPhase(phase, operator);
 
       // create the criteria for phase
       createPhaseCriteria(phases[i], filterAttributes(phases[i].getAttributes()), operator, lookUp);
@@ -527,28 +305,14 @@ public class PhasePersistence {
   }
 
   /**
-   * Returns the new unique ID.
-   *
-   * @return the unique ID.
-   * @throws PhasePersistenceException if error occurs while generating the id.
-   */
-  public long nextId() throws PhasePersistenceException {
-    try {
-      return idGenerator.getNextID();
-    } catch (IDGenerationException ex) {
-      throw new PhasePersistenceException("Error occurs while generating new ids.", ex);
-    }
-  }
-
-  /**
    * Returns all the criteria types for lookup proposes. This will speed up the creation process.
    *
    * @return a map where the key is the criteria name and the value is the criteria type id.
    * @throws SQLException if any database error occurs.
    */
   private Map<String, Long> getCriteriaTypes() {
-    return executeSql(jdbcTemplate, SELECT_PHASE_CRITERIA).stream()
-        .collect(toMap(m -> getString(m, "name"), m -> getLong(m, "phase_criteria_type_id")));
+    return phaseServiceRpc.getAllPhaseCriteriaTypes().stream()
+        .collect(toMap(m -> m.getName(), m -> m.getPhaseCriteriaTypeId()));
   }
 
   /**
@@ -568,14 +332,10 @@ public class PhasePersistence {
     if (attribs.size() == 0) {
       return;
     }
-    Date time = new Date();
     for (Object key : attribs.keySet()) {
       Long id = lookUp.get(key);
       if (id != null) {
-        executeUpdateSql(
-            jdbcTemplate,
-            INSERT_PHASE_CRITERIA,
-            newArrayList(phase.getId(), id, attribs.get(key), operator, time, operator, time));
+        phaseServiceRpc.createPhaseCriteria(phase.getId(), id, attribs.get(key).toString(), operator);
       }
     }
   }
@@ -599,24 +359,6 @@ public class PhasePersistence {
   }
 
   /**
-   * Inserts date into PreparedStatement. If the date is null, null will be set according to JDBC
-   * specification.
-   *
-   * @param pstmt the statement where value will be set.
-   * @param idx the position is statement where values need to be set.
-   * @param date the value to be set.
-   * @throws SQLException if error occurs while setting the date.
-   */
-  private static void insertValueOrNull(PreparedStatement pstmt, int idx, Date date)
-      throws SQLException {
-    if (date == null) {
-      pstmt.setNull(idx, Types.DATE);
-    } else {
-      pstmt.setTimestamp(idx, new Timestamp(date.getTime()));
-    }
-  }
-
-  /**
    * Creates the given list of dependencies in the database. All the phases must already be
    * persisted.
    *
@@ -625,21 +367,8 @@ public class PhasePersistence {
    * @throws SQLException if any database error happens.
    */
   private void createDependency(Collection<Dependency> dependencies, String operator) {
-    Date time = new Date();
     for (Dependency dep : dependencies) {
-      executeUpdateSql(
-          jdbcTemplate,
-          INSERT_PHASE_DEPENDENCY,
-          newArrayList(
-              dep.getDependency().getId(),
-              dep.getDependent().getId(),
-              dep.isDependencyStart(),
-              dep.isDependentStart(),
-              dep.getLagTime(),
-              operator,
-              time,
-              operator,
-              time));
+      phaseServiceRpc.createPhaseDependency(dep, operator);
     }
   }
 
@@ -687,8 +416,8 @@ public class PhasePersistence {
   private Phase[] getPhasesImpl(Long[] phaseIds) throws PhasePersistenceException {
     // this map will hold current phases. the key is phase id, value - phase instance
     Map<Long, Long> phaseProjects =
-        executeSql(jdbcTemplate, SELECT_PROJECT_PHASE_ID + createQuestionMarks(phaseIds)).stream()
-            .collect(toMap(m -> getLong(m, "project_phase_id"), m -> getLong(m, "project_id")));
+        phaseServiceRpc.getProjectIdsByPhaseIds(phaseIds).stream()
+            .collect(toMap(m -> m.getProjectPhaseId(), m -> m.getProjectId()));
     Map<Long, Project> projects =
         Stream.of(getProjectPhasesImpl(phaseProjects.values().stream().distinct().toArray(Long[]::new)))
             .collect(toMap(Project::getId, p -> p));
@@ -718,12 +447,10 @@ public class PhasePersistence {
    * @throws SQLException if any database error occurs.
    */
   private void fillCriteria(Map<Long, Phase> phases, Long[] projectIds) {
-    List<Map<String, Object>> result =
-        executeSql(
-            jdbcTemplate, SELECT_PHASE_CRITERIA_FOR_PROJECTS + createQuestionMarks(projectIds));
-    for (Map<String, Object> map : result) {
-      Phase phase = phases.get(getLong(map, "project_phase_id"));
-      phase.setAttribute(getString(map, "name"), getString(map, "parameter"));
+    List<PhaseCriteriaProto> result = phaseServiceRpc.getPhaseCriteriasByProjectIds(projectIds);
+    for (PhaseCriteriaProto p : result) {
+      Phase phase = phases.get(p.getProjectPhaseId());
+      phase.setAttribute(p.getCriteriaName(), p.getParameter());
     }
   }
 
@@ -737,15 +464,14 @@ public class PhasePersistence {
    */
   private void fillDependencies(Map<Long, Phase> phases, Long[] projectIds)
       throws PhasePersistenceException {
-    List<Map<String, Object>> result =
-        executeSql(jdbcTemplate, SELECT_DEPENDENCY_FOR_PROJECTS + createQuestionMarks(projectIds));
-    for (Map<String, Object> map : result) {
+    List<PhaseDependencyProto> result = phaseServiceRpc.getPhaseDependenciesByProjectId(projectIds);
+    for (PhaseDependencyProto p : result) {
       // get the depedency
-      Long dependentId = getLong(map, "dependent_phase_id");
-      Long dependencyId = getLong(map, "dependency_phase_id");
+      Long dependentId = p.getDependentPhaseId();
+      Long dependencyId = p.getDependencyPhaseId();
       if (phases.containsKey(dependentId) && phases.containsKey(dependencyId)) {
         Phase phase = phases.get(dependentId);
-        Dependency dependency = createDependency(map, phases, phase);
+        Dependency dependency = createDependency(p, phases, phase);
         phase.addDependency(dependency);
       } else {
         // because we have retrieved all the phases for project before, this should never happen
@@ -765,16 +491,15 @@ public class PhasePersistence {
    * @throws SQLException if database error occures.
    */
   private static Dependency createDependency(
-      Map<String, Object> rs, Map<Long, Phase> phases, Phase dependantPhase) {
-    Phase dependencyPhase = phases.get(getLong(rs, "dependency_phase_id"));
-    long lagTime = getLong(rs, "lag_time");
+      PhaseDependencyProto p, Map<Long, Phase> phases, Phase dependantPhase) {
+    Phase dependencyPhase = phases.get(p.getDependencyPhaseId());
 
     return new Dependency(
         dependencyPhase,
         dependantPhase,
-        getBoolean(rs, "dependency_start"),
-        getBoolean(rs, "dependent_start"),
-        lagTime);
+        p.getDependencyStart(),
+        p.getDependentStart(),
+        p.getLagTime());
   }
 
   /**
@@ -785,18 +510,18 @@ public class PhasePersistence {
    * @return the Phase instance.
    * @throws SQLException if database error occurs.
    */
-  private Phase populatePhase(Map<String, Object> rs, Project project) {
-    Phase phase = new Phase(project, getLong(rs, "duration"));
-    phase.setActualEndDate(getDate(rs, "actual_end_time"));
-    phase.setActualStartDate(getDate(rs, "actual_start_time"));
-    phase.setFixedStartDate(getDate(rs, "fixed_start_time"));
-    phase.setId(getLong(rs, "project_phase_id"));
+  private Phase populatePhase(PhaseProto p, Project project) {
+    Phase phase = new Phase(project, p.getDuration());
+    phase.setActualEndDate(p.hasActualEndTime() ? new Date(p.getActualEndTime().getSeconds() * 1000) : null);
+    phase.setActualStartDate(p.hasActualStartTime() ? new Date(p.getActualStartTime().getSeconds() * 1000) : null);
+    phase.setFixedStartDate(p.hasFixedStartTime() ? new Date(p.getFixedStartTime().getSeconds() * 1000) : null);
+    phase.setId(p.getProjectPhaseId());
 
-    phase.setPhaseStatus(populatePhaseStatus(rs));
-    phase.setPhaseType(populatePhaseType(rs));
-    phase.setScheduledEndDate(getDate(rs, "scheduled_end_time"));
-    phase.setScheduledStartDate(getDate(rs, "scheduled_start_time"));
-    phase.setModifyDate(getDate(rs, "modify_date"));
+    phase.setPhaseStatus(populatePhaseStatus(p));
+    phase.setPhaseType(populatePhaseType(p));
+    phase.setScheduledEndDate(new Date(p.getScheduledEndTime().getSeconds() * 1000));
+    phase.setScheduledStartDate(new Date(p.getScheduledStartTime().getSeconds() * 1000));
+    phase.setModifyDate(new Date(p.getModifyDate().getSeconds() * 1000));
 
     return phase;
   }
@@ -828,7 +553,6 @@ public class PhasePersistence {
    * @throws IllegalArgumentException if phaseIds array is null or operator is null or the the
    *     operator is empty string.
    */
-  @Transactional
   public void updatePhases(Phase[] phases, String operator) throws PhasePersistenceException {
     checkPhases(phases);
     if (operator == null) {
@@ -841,68 +565,24 @@ public class PhasePersistence {
     if (phases.length == 0) {
       return;
     }
-    // Retrieve the original phases to check for modifications.
-    Long[] phaseIds = new Long[phases.length];
-    for (int i = 0; i < phases.length; ++i) {
-      phaseIds[i] = phases[i].getId();
-    }
-    Phase[] oldPhases = getPhases(phaseIds);
-    Map<Long, Phase> oldPhasesMap = new HashMap<Long, Phase>();
-    for (Phase p : oldPhases) {
-      oldPhasesMap.put(p.getId(), p);
-    }
     // it will contain the new phases that should be created
     List<Phase> toCreate = new ArrayList<Phase>();
+    List<Phase> toUpdate = new ArrayList<Phase>();
     // get the phases criteria lookups
     Map<String, Long> lookUps = getCriteriaTypes();
-    Date updateTime = new Date();
     // iterate over all phases
     for (Phase phase : phases) {
-      phase.setModifyDate(updateTime);
       // check if is a new phase - if so add it to list
       if (isNewPhase(phase)) {
         toCreate.add(phase);
       } else {
-        executeUpdateSql(
-            jdbcTemplate,
-            UPDATE_PHASE,
-            newArrayList(
-                phase.getProject().getId(),
-                phase.getPhaseType().getId(),
-                phase.getPhaseStatus().getId(),
-                phase.getFixedStartDate(),
-                phase.getScheduledStartDate(),
-                phase.getScheduledEndDate(),
-                phase.getActualStartDate(),
-                phase.getActualEndDate(),
-                phase.getLength(),
-                operator,
-                updateTime,
-                phase.getId()));
-        // if phase exists - update the criteria and dependencies
-        updatePhaseCriteria(phase, operator, lookUps);
-        updateDependencies(phase, operator);
-
-        Phase oldPhase = oldPhasesMap.get(phase.getId());
-        Date auditScheduledStartTime =
-            oldPhase.getScheduledStartDate().equals(phase.getScheduledStartDate())
-                ? null
-                : phase.getScheduledStartDate();
-        Date auditScheduledEndTime =
-            oldPhase.getScheduledEndDate().equals(phase.getScheduledEndDate())
-                ? null
-                : phase.getScheduledEndDate();
-        // only audit if one of the scheduled times changed
-        if (auditScheduledStartTime != null || auditScheduledEndTime != null) {
-          auditProjectPhase(
-              phase,
-              AUDIT_UPDATE_TYPE,
-              auditScheduledStartTime,
-              auditScheduledEndTime,
-              Long.parseLong(operator),
-              updateTime);
-        }
+        toUpdate.add(phase);
       }
+    }
+    phaseServiceRpc.updatePhase(toUpdate, operator);
+    for (Phase phase : toUpdate) {
+      updatePhaseCriteria(phase, operator, lookUps);
+      updateDependencies(phase, operator);
     }
 
     // create the new phases
@@ -919,27 +599,26 @@ public class PhasePersistence {
    */
   private void updateDependencies(Phase phase, String operator) {
     // put all the dependencies to the map: key: dependency id, value: Dependency object.
-    Map<Long, Dependency> dependencies = new HashMap();
+    Map<Long, Dependency> dependencies = new HashMap<>();
     Dependency[] deps = phase.getAllDependencies();
     for (int i = 0; i < deps.length; i++) {
       dependencies.put(deps[i].getDependency().getId(), deps[i]);
     }
     // this list will keep dependecies to remove and to update
-    List<Long> depsToRemove = new ArrayList();
-    List<Dependency> depsToUpdate = new ArrayList();
+    List<Long> depsToRemove = new ArrayList<>();
+    List<Dependency> depsToUpdate = new ArrayList<>();
     // select dependencies for the phase
-    List<Map<String, Object>> result =
-        executeSqlWithParam(jdbcTemplate, SELECT_DEPENDENCY, newArrayList(phase.getId()));
-    for (Map<String, Object> map : result) {
-      Long dependencyId = getLong(map, "dependency_phase_id");
+    List<PhaseDependencyProto> result = phaseServiceRpc.getPhaseDependenciesByDependentPhaseId(phase.getId());
+    for (PhaseDependencyProto p : result) {
+      Long dependencyId = p.getDependencyPhaseId();
       if (dependencies.containsKey(dependencyId)) {
         // if yes
         // check to update (we don't need another db call of the row not need to be updated.
         Dependency dep = dependencies.get(dependencyId);
         // check the value
-        if ((dep.isDependencyStart() != getBoolean(map, "dependency_start"))
-            || (dep.isDependentStart() != getBoolean(map, "dependent_start"))
-            || (dep.getLagTime() != getLong(map, "lag_time"))) {
+        if ((dep.isDependencyStart() != p.getDependencyStart())
+            || (dep.isDependentStart() != p.getDependentStart())
+            || (dep.getLagTime() != p.getLagTime())) {
 
           // if any is different - update the dependency
           depsToUpdate.add(dep);
@@ -976,17 +655,7 @@ public class PhasePersistence {
    */
   private void updateDependencies(List<Dependency> deps, String operator) {
     for (Dependency dep : deps) {
-      executeUpdateSql(
-          jdbcTemplate,
-          UPDATE_PHASE_DEPENDENCY,
-          newArrayList(
-              dep.isDependencyStart(),
-              dep.isDependentStart(),
-              dep.getLagTime(),
-              operator,
-              new Date(),
-              dep.getDependency().getId(),
-              dep.getDependent().getId()));
+      phaseServiceRpc.updatePhaseDependency(dep, operator);
     }
   }
 
@@ -998,11 +667,7 @@ public class PhasePersistence {
    * @throws SQLException if any database error occurs.
    */
   private void deleteDependencies(List<Long> ids, long dependantId) {
-    Long[] idArr = new Long[ids.size()];
-    ids.toArray(idArr);
-    // execute update
-    executeUpdateSql(
-        jdbcTemplate, DELETE_PHASE_DEPENDENCY + createQuestionMarks(idArr), newArrayList(dependantId));
+    phaseServiceRpc.deletePhaseDependencies(dependantId, ids);
   }
 
   /**
@@ -1018,13 +683,10 @@ public class PhasePersistence {
     // get all the properties that only string key - they are potential criteria
     Map newCriteria = filterAttributes(phase.getAttributes());
     // the map for the old criteria
-    Map<String, String> oldCriteria =
-        executeSqlWithParam(
-                jdbcTemplate, SELECT_PHASE_CRITERIA_FOR_PHASE, newArrayList(phase.getId()))
-            .stream()
-            .collect(toMap(m -> getString(m, "name"), m -> getString(m, "parameter")));
+    Map<String, String> oldCriteria = phaseServiceRpc.getPhaseCriteriasByPhaseId(phase.getId())
+        .stream()
+        .collect(toMap(m -> m.getCriteriaName(), m -> m.getParameter()));
     // current update time
-    Date now = new Date();
     List<String> oldKey = new ArrayList<>();
     // iterate over the new attributes taken from the updated phase
     for (Object key : newCriteria.keySet()) {
@@ -1032,10 +694,7 @@ public class PhasePersistence {
       String oldValue = oldCriteria.remove(key);
       if (oldValue != null && !oldValue.equals(newCriteria.get(key))) {
         // update if the values are different - update the criteria
-        executeUpdateSql(
-            jdbcTemplate,
-            UPDATE_PHASE_CRITERIA,
-            newArrayList(newCriteria.get(key), operator, now, phase.getId(), lookUp.get(key)));
+        phaseServiceRpc.updatePhaseCriteria(phase.getId(), lookUp.get(key), newCriteria.get(key).toString(), operator);
       }
       if (oldValue != null) {
         // remove the criteria from list
@@ -1051,13 +710,11 @@ public class PhasePersistence {
     }
     // if any value left in old criteria - they need to be removed.
     if (oldCriteria.size() > 0) {
-      Long[] ids =
+      List<Long> ids =
           oldCriteria.keySet().stream()
               .map(k -> lookUp.get(k))
-              .collect(Collectors.toList())
-              .toArray(new Long[0]);
-      executeUpdateSql(
-          jdbcTemplate, DELETE_PHASE_CRITERIA + createQuestionMarks(ids), newArrayList(phase.getId()));
+              .collect(Collectors.toList());
+      phaseServiceRpc.deletePhaseCriterias(phase.getId(), ids);
     }
   }
 
@@ -1085,27 +742,14 @@ public class PhasePersistence {
    * @throws PhasePersistenceException if database error occurs.
    * @throws IllegalArgumentException if array is null or contains null.
    */
-  @Transactional
   public void deletePhases(Phase[] phases) throws PhasePersistenceException {
     checkPhases(phases);
     // if no phases to delete - just return
     if (phases.length == 0) {
       return;
     }
-    Long[] ids =
-        Stream.of(phases).map(Phase::getId).collect(Collectors.toList()).toArray(new Long[0]);
-    String inSet = createQuestionMarks(ids);
-    // delete depedencies
-    executeUpdateSql(
-        jdbcTemplate,
-        DELETE_FROM_PHASE_DEPENDENCY + inSet + DELETE_FROM_PHASE_DEPENDENCY_OR + inSet,
-        newArrayList());
-    // delete criteria
-    executeUpdateSql(jdbcTemplate, DELETE_PHASE_CRITERIA_FOR_PHASES + inSet, newArrayList());
-    // delete audit
-    executeUpdateSql(jdbcTemplate, PROJECT_PHASE_AUDIT_DELETE_SQL + inSet, newArrayList());
-    // delete phases
-    executeUpdateSql(jdbcTemplate, DELETE_PROJECT_PHASE + inSet, newArrayList());
+    List<Long> ids = Stream.of(phases).map(Phase::getId).collect(Collectors.toList());
+    phaseServiceRpc.deletePhases(ids);
   }
 
   /**
@@ -1155,30 +799,8 @@ public class PhasePersistence {
     if (dependency == null) {
       throw new IllegalArgumentException("dependency cannot be null.");
     }
-    List<Map<String, Object>> result =
-        executeSqlWithParam(
-            jdbcTemplate,
-            CHECK_DEPENDENCY,
-            newArrayList(dependency.getDependency().getId(), dependency.getDependent().getId()));
-    // if has any result - phase is not new
-    return result.isEmpty();
-  }
-
-  /**
-   * Creates the string in the pattern (?,+) where count is the number of question marks. It is used
-   * th build prepared statements with IN condition.
-   *
-   * @param id number of marks.
-   * @return the string of question marks.
-   */
-  private String createQuestionMarks(Long[] id) {
-    StringBuffer buff = new StringBuffer();
-    buff.append("(").append(id[0]);
-    for (int i = 1; i < id.length; i++) {
-      buff.append(",").append(id[i]);
-    }
-    buff.append(")");
-    return buff.toString();
+    return phaseServiceRpc.checkIfDependencyExists(dependency.getDependency().getId(),
+        dependency.getDependent().getId());
   }
 
   /**
@@ -1201,34 +823,5 @@ public class PhasePersistence {
     public int compare(Object o1, Object o2) {
       return ((Phase) o1).getScheduledStartDate().compareTo(((Phase) o2).getScheduledStartDate());
     }
-  }
-
-  /**
-   * This method will a project phase's scheduled start and end time when they are inserted,
-   * deleted, or edited.
-   *
-   * @param phase the phase being audited
-   * @param scheduledStartTime the new scheduled start time for the phase
-   * @param scheduledEndTime the new scheduled end time for the phase
-   * @param auditType the audit type. Can be AUDIT_CREATE_TYPE, AUDIT_DELETE_TYPE, or
-   *     AUDIT_UPDATE_TYPE
-   * @param auditUser the user initiating the change
-   * @param auditTime the timestamp for the audit event
-   * @throws PhasePersistenceException if validation error occurs or any error occurs in the
-   *     underlying layer
-   * @since 1.0.2
-   */
-  private void auditProjectPhase(
-      Phase phase,
-      int auditType,
-      Date scheduledStartTime,
-      Date scheduledEndTime,
-      Long auditUser,
-      Date auditTime) {
-    executeUpdateSql(
-        jdbcTemplate,
-        PROJECT_PHASE_AUDIT_INSERT_SQL,
-        newArrayList(
-            phase.getId(), scheduledStartTime, scheduledEndTime, auditType, auditTime, auditUser));
   }
 }
