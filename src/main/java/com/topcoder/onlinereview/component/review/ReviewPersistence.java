@@ -6,6 +6,7 @@ package com.topcoder.onlinereview.component.review;
 import com.topcoder.onlinereview.component.datavalidator.NotValidator;
 import com.topcoder.onlinereview.component.datavalidator.NullValidator;
 import com.topcoder.onlinereview.component.datavalidator.ObjectValidator;
+import com.topcoder.onlinereview.component.grpcclient.review.ReviewServiceRpc;
 import com.topcoder.onlinereview.component.id.DBHelper;
 import com.topcoder.onlinereview.component.id.IDGenerationException;
 import com.topcoder.onlinereview.component.id.IDGenerator;
@@ -97,6 +98,9 @@ import static com.topcoder.onlinereview.component.util.CommonUtils.getString;
 @Slf4j
 @Component
 public class ReviewPersistence {
+
+  @Autowired
+  ReviewServiceRpc reviewServiceRpc;
 
   /** Represents the id generator name used to get reviewIDGenerator from IDGeneratorFactory. */
   public static final String REVIEW_ID_SEQ = "review_id_seq";
@@ -587,7 +591,7 @@ public class ReviewPersistence {
     try {
       // check whether the review id is already in the database
       if (review.getId() > 0) {
-        if (Helper.countEntities(REVIEW_TABLE, "review_id", review.getId(), jdbcTemplate) != 0) {
+        if (reviewServiceRpc.isReviewExists(review.getId())) {
           log.error(
               new LogMessage(
                       review.getId(),
@@ -853,7 +857,6 @@ public class ReviewPersistence {
     Helper.assertStringNotNullNorEmpty(operator, "operator");
     Helper.assertLongPositive(review.getId(), "review id");
     assertReviewValid(review);
-    Connection conn = null;
     // create a change table to record the new Ids for Review, Item or
     // Comment.
     Map<Object, Long> changeTable = new HashMap<Object, Long>();
@@ -863,7 +866,7 @@ public class ReviewPersistence {
     try {
       // create the connection
       // check whether the review id is already in the database
-      if (Helper.countEntities(REVIEW_TABLE, "review_id", review.getId(), jdbcTemplate) == 0) {
+      if (!reviewServiceRpc.isReviewExists(review.getId())) {
         log.error(
             new LogMessage(
                     review.getId(),
@@ -1342,11 +1345,10 @@ public class ReviewPersistence {
   @Transactional
   public Review getReview(long id) throws ReviewPersistenceException {
     Helper.assertLongPositive(id, "id");
-    Connection conn = null;
     log.debug(new LogMessage(id, null, "Retrieve Review.").toString());
     try {
       // check whether the review id is already in the database
-      if (Helper.countEntities(REVIEW_TABLE, "review_id", id, jdbcTemplate) == 0) {
+      if (!reviewServiceRpc.isReviewExists(id)) {
         log.error(
             new LogMessage(id, null, "The review id [" + id + "] does not exist in the database.")
                 .toString());
@@ -1447,7 +1449,7 @@ public class ReviewPersistence {
    * @return A Review array that contains the reviews get
    * @throws ReviewPersistenceException if any error occurs during the query
    */
-  private Review[] getReviews(String idList) {
+  private Review[] getReviews(List<Long> idList) {
     // find the reviews with review id in idList in the table
     List<Map<String, Object>> result =
         executeSql(
@@ -1485,7 +1487,7 @@ public class ReviewPersistence {
    * @return A Review array that contains the reviews get
    * @throws ReviewPersistenceException if any error occurs during the query
    */
-  private Review[] getReviewsComplete(String idList) throws ReviewPersistenceException {
+  private Review[] getReviewsComplete(List<Long> idList) throws ReviewPersistenceException {
     // get the reviews from the id list string
     Review[] reviews = getReviews(idList);
     // get the Id-CommentType map
@@ -1738,7 +1740,7 @@ public class ReviewPersistence {
     try {
       // create the connection
       // check if the review id exists
-      if (Helper.countEntities(REVIEW_TABLE, "review_id", reviewId, jdbcTemplate) == 0) {
+      if (!reviewServiceRpc.isReviewExists(reviewId)) {
         log.error(
             new LogMessage(
                     reviewId,
@@ -1751,7 +1753,7 @@ public class ReviewPersistence {
       }
       // get # of comments for this review in the database, which equals
       // to the position of the current comment in its review.
-      Long index = Helper.countEntities(REVIEW_COMMENT_TABLE, "review_id", reviewId, jdbcTemplate);
+      Long index = reviewServiceRpc.countReviewComments(reviewId);
       // create the comment
       createReviewComments(
           new Comment[] {comment}, new Long[] {index}, reviewId, operator, changeTable);
@@ -1793,7 +1795,7 @@ public class ReviewPersistence {
             .toString());
     try {
       // check if the review item id exists
-      if (Helper.countEntities(REVIEW_ITEM_TABLE, "review_item_id", itemId, jdbcTemplate) == 0) {
+      if (!reviewServiceRpc.isReviewItemExists(itemId)) {
         log.error(
             new LogMessage(
                     itemId,
@@ -1806,8 +1808,7 @@ public class ReviewPersistence {
       }
       // get # of comments for this item in the database, which equals
       // to the position of the current comment in its item.
-      Long index =
-          Helper.countEntities(REVIEW_ITEM_COMMENT_TABLE, "review_item_id", itemId, jdbcTemplate);
+      Long index = reviewServiceRpc.countReviewItemComments(itemId);
       // create the comment
       createReviewItemComments(
           new Comment[] {comment}, new Long[] {index}, itemId, operator, changeTable);
