@@ -11,6 +11,9 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.topcoder.onlinereview.component.grpcclient.reviewfeedback.ReviewFeedbackServiceRpc;
+import com.topcoder.onlinereview.grpc.reviewfeedback.proto.ReviewFeedbackDetailProto;
+
 import java.io.ByteArrayOutputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
@@ -27,6 +30,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static com.google.common.collect.Lists.newArrayList;
 import static com.topcoder.onlinereview.component.util.CommonUtils.executeSqlWithParam;
@@ -166,6 +170,9 @@ import static com.topcoder.onlinereview.component.util.CommonUtils.getString;
 @Slf4j
 @Component
 public class ReviewFeedbackManager {
+
+    @Autowired
+    ReviewFeedbackServiceRpc reviewFeedbackServiceRpc;
     /**
      * It is a constant for default configuration namespace. It is used in configuration file based constructors when no
      * configuration namespace is specified by user. It is not null and not empty.
@@ -585,19 +592,14 @@ public class ReviewFeedbackManager {
     public ReviewFeedback get(long id) throws ReviewFeedbackManagementPersistenceException {
         final String signature = "JDBCReviewFeedbackManager.get";
         logEntrance(signature, new String[] {"id"}, new Object[] {id});
-        List<Map<String, Object>> rows = executeSqlWithParam(jdbcTemplate, SELECT_REVIEW_FEEDBACK, newArrayList(id));
-        ReviewFeedback result = null;
-        if (!rows.isEmpty()) {
-            Long projectId = getLong(rows.get(0), "project_id");
-            result = populateReviewFeedback(rows.get(0), projectId, id);
-            for (Map<String, Object> row: rows) {
-                if (row.get("reviewer_user_id") != null) {
-                    result.getDetails().add(populateReviewFeedbackDetail(row));
-                }
-            }
+        ReviewFeedback reviewFeedback = reviewFeedbackServiceRpc.getReviewFeedback(id);
+        if (reviewFeedback == null) {
+            return reviewFeedback;
         }
-        logExit(signature, new Object[] {result});
-        return result;
+        List<ReviewFeedbackDetail> details = reviewFeedbackServiceRpc.getReviewFeedbackDetails(id);
+        reviewFeedback.setDetails(details);
+        logExit(signature, new Object[] {reviewFeedback});
+        return reviewFeedback;
     }
 
     /**
@@ -661,26 +663,30 @@ public class ReviewFeedbackManager {
      */
     public List<ReviewFeedback> getForProject(long projectId) throws ReviewFeedbackManagementPersistenceException {
         final String signature = "JDBCReviewFeedbackManager.getForProject";
-        logEntrance(signature, new String[] {"projectId"}, new Object[] {projectId});
-        List<Map<String, Object>> rs = executeSqlWithParam(jdbcTemplate, SELECT_REVIEW_FEEDBACK_BY_PROJECTID, newArrayList(projectId));
+        logEntrance(signature, new String[] { "projectId" }, new Object[] { projectId });
+        List<ReviewFeedback> reviewFeedbacks = reviewFeedbackServiceRpc.getReviewFeedbackByProjectId(projectId);
 
         // This map will store the retrieved review feedback entities;
         // key is ReviewFeedback.Id, value is corresponding ReviewFeedback entity
-        Map<Long, ReviewFeedback> reviewFeedbacksMap = new HashMap<Long, ReviewFeedback>();
+        Map<Long, ReviewFeedback> reviewFeedbacksMap = reviewFeedbacks.stream()
+                .collect(Collectors.toMap(ReviewFeedback::getId, x -> x));
+        List<ReviewFeedbackDetailProto> detailsP = reviewFeedbackServiceRpc
+                .getReviewFeedbackDetailsByProjectId(projectId);
 
-        for (Map<String, Object> r : rs) {
-            long reviewFeedbackId = getLong(r, "review_feedback_id");
-
-            ReviewFeedback entity = reviewFeedbacksMap.get(reviewFeedbackId);
-            if (entity == null) {
-                entity = populateReviewFeedback(r, projectId, reviewFeedbackId);
-
-                reviewFeedbacksMap.put(reviewFeedbackId, entity);
-            }
-
-            if (r.get("reviewer_user_id") != null) {
-                // Create ReviewFeedbackDetail
-                entity.getDetails().add(populateReviewFeedbackDetail(r));
+        for (ReviewFeedbackDetailProto detailP : detailsP) {
+            ReviewFeedback entity = reviewFeedbacksMap.get(detailP.getReviewFeedbackId());
+            if (entity != null) {
+                ReviewFeedbackDetail detail = new ReviewFeedbackDetail();
+                if (detailP.hasReviewerUserId()) {
+                    detail.setReviewerUserId(detailP.getReviewerUserId());
+                }
+                if (detailP.hasScore()) {
+                    detail.setScore(detailP.getScore());
+                }
+                if (detailP.hasFeedbackText()) {
+                    detail.setFeedbackText(detailP.getFeedbackText());
+                }
+                entity.getDetails().add(detail);
             }
         }
 
