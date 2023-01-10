@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Service;
 
+import com.google.protobuf.Timestamp;
 import com.topcoder.onlinereview.component.grpcclient.GrpcChannelManager;
 import com.topcoder.onlinereview.component.reviewfeedback.ReviewFeedback;
 import com.topcoder.onlinereview.component.reviewfeedback.ReviewFeedbackDetail;
@@ -61,6 +62,131 @@ public class ReviewFeedbackServiceRpc {
         ProjectIdProto request = ProjectIdProto.newBuilder().setProjectId(projectId).build();
         ReviewFeedbackDetailsProto response = stub.getReviewFeedbackDetailsByProjectId(request);
         return response.getReviewFeedbackDetailsList();
+    }
+
+    public List<Long> getReviewerIdsByFeedbackId(long reviewFeedbackId) {
+        ReviewFeedbackIdProto request = ReviewFeedbackIdProto.newBuilder().setReviewFeedbackId(reviewFeedbackId)
+                .build();
+        ReviewerIdsProto response = stub.getReviewerIdsByFeedbackId(request);
+        return response.getReviewerUserIdsList();
+    }
+
+    public long createReviewFeedback(ReviewFeedback reviewFeedback, String operator, Date date) {
+        ReviewFeedbackProto.Builder request = ReviewFeedbackProto.newBuilder();
+        request.setProjectId(reviewFeedback.getProjectId());
+        if (reviewFeedback.getComment() != null) {
+            request.setComment(reviewFeedback.getComment());
+        }
+        if (operator != null) {
+            request.setCreateUser(operator);
+            request.setModifyUser(operator);
+        }
+        if (date != null) {
+            request.setCreateDate(Timestamp.newBuilder().setSeconds(date.toInstant().getEpochSecond()).build());
+            request.setModifyDate(Timestamp.newBuilder().setSeconds(date.toInstant().getEpochSecond()).build());
+        }
+        ReviewFeedbackIdProto response = stub.createReviewFeedback(request.build());
+        return response.getReviewFeedbackId();
+    }
+
+    public int createReviewFeedbackDetail(ReviewFeedbackDetail reviewFeedbackDetail, long feedbackId) {
+        ReviewFeedbackDetailProto.Builder request = ReviewFeedbackDetailProto.newBuilder();
+        request.setReviewFeedbackId(feedbackId);
+        request.setReviewerUserId(reviewFeedbackDetail.getReviewerUserId());
+        if (reviewFeedbackDetail.getScore() != null) {
+            request.setScore(reviewFeedbackDetail.getScore());
+        }
+        if (reviewFeedbackDetail.getFeedbackText() != null) {
+            request.setFeedbackText(reviewFeedbackDetail.getFeedbackText());
+        }
+        CountProto response = stub.createReviewFeedbackDetail(request.build());
+        return response.getCount();
+    }
+
+    public int auditReviewFeedback(ReviewFeedback reviewFeedback, long auditActionTypeId, String operator,
+            Date actionDate) {
+        ReviewFeedbackAuditProto.Builder request = ReviewFeedbackAuditProto.newBuilder();
+        request.setReviewFeedbackId(reviewFeedback.getId());
+        request.setProjectId(reviewFeedback.getProjectId());
+        if (reviewFeedback.getComment() != null) {
+            request.setComment(reviewFeedback.getComment());
+        }
+        request.setAuditActionTypeId(auditActionTypeId);
+        if (operator != null) {
+            request.setActionUser(operator);
+        }
+        if (actionDate != null) {
+            request.setActionDate(Timestamp.newBuilder().setSeconds(actionDate.toInstant().getEpochSecond()).build());
+        }
+        CountProto response = stub.auditReviewFeedback(request.build());
+        return response.getCount();
+    }
+
+    public int auditReviewFeedbackDetail(ReviewFeedbackDetail detail, long reviewFeedbackId, long auditActionTypeId,
+            String operator, Date actionDate) {
+        ReviewFeedbackDetailAuditProto.Builder request = ReviewFeedbackDetailAuditProto.newBuilder();
+        request.setReviewFeedbackId(reviewFeedbackId);
+        request.setReviewerUserId(detail.getReviewerUserId());
+        if (detail.getScore() != null) {
+            request.setScore(detail.getScore());
+        }
+        if (detail.getFeedbackText() != null) {
+            request.setFeedbackText(detail.getFeedbackText());
+        }
+        request.setAuditActionTypeId(auditActionTypeId);
+        if (operator != null) {
+            request.setActionUser(operator);
+        }
+        if (actionDate != null) {
+            request.setActionDate(Timestamp.newBuilder().setSeconds(actionDate.toInstant().getEpochSecond()).build());
+        }
+        CountProto response = stub.auditReviewFeedbackDetail(request.build());
+        return response.getCount();
+    }
+
+    public int updateReviewFeedback(ReviewFeedback reviewFeedback, String operator, Date date) {
+        ReviewFeedbackProto.Builder request = ReviewFeedbackProto.newBuilder();
+        request.setReviewFeedbackId(reviewFeedback.getId());
+        request.setProjectId(reviewFeedback.getProjectId());
+        if (reviewFeedback.getComment() != null) {
+            request.setComment(reviewFeedback.getComment());
+        }
+        if (operator != null) {
+            request.setModifyUser(operator);
+        }
+        if (date != null) {
+            request.setModifyDate(Timestamp.newBuilder().setSeconds(date.toInstant().getEpochSecond()).build());
+        }
+        CountProto response = stub.updateReviewFeedback(request.build());
+        return response.getCount();
+    }
+
+    public int updateReviewFeedbackDetail(ReviewFeedbackDetail reviewFeedbackDetail, long feedbackId) {
+        ReviewFeedbackDetailProto.Builder request = ReviewFeedbackDetailProto.newBuilder();
+        request.setReviewFeedbackId(feedbackId);
+        request.setReviewerUserId(reviewFeedbackDetail.getReviewerUserId());
+        if (reviewFeedbackDetail.getScore() != null) {
+            request.setScore(reviewFeedbackDetail.getScore());
+        }
+        if (reviewFeedbackDetail.getFeedbackText() != null) {
+            request.setFeedbackText(reviewFeedbackDetail.getFeedbackText());
+        }
+        CountProto response = stub.updateReviewFeedbackDetail(request.build());
+        return response.getCount();
+    }
+
+    public int deleteReviewFeedback(long feedbackId) {
+        ReviewFeedbackIdProto request = ReviewFeedbackIdProto.newBuilder().setReviewFeedbackId(feedbackId)
+                .build();
+        CountProto response = stub.deleteReviewFeedback(request);
+        return response.getCount();
+    }
+
+    public int deleteReviewFeedbackDetail(long feedbackId, List<Long> reviewerUserIds) {
+        DeleteReviewFeedbackDetailRequest request = DeleteReviewFeedbackDetailRequest.newBuilder()
+                .setReviewFeedbackId(feedbackId).addAllReviewerUserIds(reviewerUserIds).build();
+        CountProto response = stub.deleteReviewFeedbackDetail(request);
+        return response.getCount();
     }
 
     private ReviewFeedback loadReviewFeedback(ReviewFeedbackProto r) {

@@ -5,9 +5,7 @@ package com.topcoder.onlinereview.component.reviewfeedback;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,29 +15,16 @@ import com.topcoder.onlinereview.grpc.reviewfeedback.proto.ReviewFeedbackDetailP
 import java.io.ByteArrayOutputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.sql.Timestamp;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-
-import static com.google.common.collect.Lists.newArrayList;
-import static com.topcoder.onlinereview.component.util.CommonUtils.executeSqlWithParam;
-import static com.topcoder.onlinereview.component.util.CommonUtils.executeUpdateSql;
-import static com.topcoder.onlinereview.component.util.CommonUtils.executeUpdateSqlWithReturn;
-import static com.topcoder.onlinereview.component.util.CommonUtils.getDate;
-import static com.topcoder.onlinereview.component.util.CommonUtils.getInt;
-import static com.topcoder.onlinereview.component.util.CommonUtils.getLong;
-import static com.topcoder.onlinereview.component.util.CommonUtils.getString;
 
 /**
  * <p>
@@ -182,152 +167,6 @@ public class ReviewFeedbackManager {
      * The default log date format.
      */
     private static final String DEFAULT_LOGDATE_FORMAT = "yyyy-MM-dd HH:mm:ss";
-    /**
-     * <p>
-     * The sql to create a review feedback.
-     * </p>
-     *
-     * <p>
-     * <em>Changes in 2.0:</em>
-     * <ol>
-     * <li>Updated according to the new data model.</li>
-     * </ol>
-     * </p>
-     */
-    private static final String CREATE_REVIEW_FEEDBACK = "INSERT INTO \"informix\".review_feedback"
-        + " (project_id, comment, create_user, create_date, modify_user, modify_date) VALUES (?,?,?,?,?,?)";
-
-    /**
-     * The sql to create a review feedback detail.
-     *
-     * @since 2.0
-     */
-    private static final String CREATE_REVIEW_FEEDBACK_DETAIL = "INSERT INTO \"informix\".review_feedback_detail"
-        + " (review_feedback_id, reviewer_user_id, score, feedback_text) VALUES (?,?,?,?)";
-
-    /**
-     * <p>
-     * The sql to update a review feedback.
-     * </p>
-     *
-     * <p>
-     * <em>Changes in 2.0:</em>
-     * <ol>
-     * <li>Updated according to the new data model.</li>
-     * </ol>
-     * </p>
-     */
-    private static final String UPDATE_REVIEW_FEEDBACK = "UPDATE \"informix\".review_feedback SET project_id = ?,"
-        + " comment = ?, modify_user = ?, modify_date = ? WHERE review_feedback_id = ?";
-
-    /**
-     * The sql to select review id.
-     *
-     * @since 2.0
-     */
-    private static final String SELECT_REVIEWER_ID_BY_FEEDBACK_ID = "SELECT reviewer_user_id"
-        + " FROM \"informix\".review_feedback_detail WHERE review_feedback_id = ?";
-    /**
-     * The sql to update a review feedback detail.
-     *
-     * @since 2.0
-     */
-    private static final String UPDATE_REVIEW_FEEDBACK_DETAIL = "UPDATE \"informix\".review_feedback_detail"
-        + " SET score = ?, feedback_text = ? WHERE review_feedback_id = ? AND reviewer_user_id = ?";
-
-    /**
-     * The sql to delete review feedback detail.
-     *
-     * @since 2.0
-     */
-    private static final String DELETE_REVIEW_FEEDBACK_DETAIL = "DELETE FROM \"informix\".review_feedback_detail"
-        + " WHERE review_feedback_id = ? AND reviewer_user_id IN (%1$s)";
-
-    /**
-     * <p>
-     * The sql to select a review feedback.
-     * </p>
-     *
-     * <p>
-     * <em>Changes in 2.0:</em>
-     * <ol>
-     * <li>Updated according to the new data model.</li>
-     * </ol>
-     * </p>
-     */
-    private static final String SELECT_REVIEW_FEEDBACK = "SELECT \"informix\".review_feedback.review_feedback_id,"
-        + " project_id, comment, create_user, create_date, modify_user, modify_date,"
-        + " reviewer_user_id, score, feedback_text FROM \"informix\".review_feedback"
-        + " LEFT JOIN \"informix\".review_feedback_detail"
-        + " ON \"informix\".review_feedback.review_feedback_id = \"informix\".review_feedback_detail.review_feedback_id"
-        + " WHERE \"informix\".review_feedback.review_feedback_id = ?";
-
-    /**
-     * <p>
-     * The sql to select review feedback entities by project ID.
-     * </p>
-     *
-     * <p>
-     * <em>Changes in 2.0:</em>
-     * <ol>
-     * <li>Updated according to the new data model.</li>
-     * </ol>
-     * </p>
-     */
-    private static final String SELECT_REVIEW_FEEDBACK_BY_PROJECTID = "SELECT"
-        + " \"informix\".review_feedback.review_feedback_id, comment,"
-        + " create_user, create_date, modify_user, modify_date, reviewer_user_id, score,"
-        + " feedback_text FROM \"informix\".review_feedback LEFT JOIN \"informix\".review_feedback_detail"
-        + " ON \"informix\".review_feedback.review_feedback_id = \"informix\".review_feedback_detail.review_feedback_id"
-        + " WHERE \"informix\".review_feedback.project_id = ?";
-
-    /**
-     * The sql to delete review feedback audit.
-     *
-     * @since 2.0
-     */
-    private static final String DELETE_REVIEW_FEEDBACK_AUDIT_BY_FEEDBACK_ID = "DELETE FROM"
-        + " \"informix\".review_feedback_audit WHERE review_feedback_id = ?";
-
-    /**
-     * The sql to delete review feedback detail audit.
-     *
-     * @since 2.0
-     */
-    private static final String DELETE_REVIEW_FEEDBACK_DETAIL_AUDIT_BY_FEEDBACK_ID = "DELETE FROM"
-        + " \"informix\".review_feedback_detail_audit WHERE review_feedback_id = ?";
-
-    /**
-     * The sql to delete review feedback detail.
-     *
-     * @since 2.0
-     */
-    private static final String DELETE_REVIEW_FEEDBACK_DETAIL_BY_FEEDBACK_ID = "DELETE FROM"
-        + " \"informix\".review_feedback_detail WHERE review_feedback_id = ?";
-
-    /**
-     * The sql to delete a review feedback.
-     */
-    private static final String DELETE_REVIEW_FEEDBACK_BY_ID = "DELETE FROM \"informix\".review_feedback"
-        + " WHERE review_feedback_id = ?";
-
-    /**
-     * The sql to insert a review feedback audit.
-     *
-     * @since 2.0
-     */
-    private static final String INSERT_REVIEW_FEEDBACK_AUDIT = "INSERT INTO \"informix\".review_feedback_audit"
-        + " (review_feedback_id, project_id, comment, audit_action_type_id, action_user, action_date)"
-        + " VALUES (?, ?, ?, ?, ?, ?)";
-
-    /**
-     * The sql to insert a review feedback detail audit.
-     *
-     * @since 2.0
-     */
-    private static final String INSERT_REVIEW_FEEDBACK_DETAIL_AUDIT = "INSERT INTO"
-        + " \"informix\".review_feedback_detail_audit (review_feedback_id, reviewer_user_id, score, feedback_text,"
-        + " audit_action_type_id, action_user, action_date) VALUES (?, ?, ?, ?, ?, ?, ?)";
 
     /**
      * The maximum length of the user id.
@@ -403,10 +242,6 @@ public class ReviewFeedbackManager {
     @Value("${deleteAuditActionTypeId:2}")
     private long deleteAuditActionTypeId;
 
-    @Autowired
-    @Qualifier("tcsJdbcTemplate")
-    private JdbcTemplate jdbcTemplate;
-
     /**
      * <p>
      * Creates given entity (along with its details records) in persistence.
@@ -456,11 +291,9 @@ public class ReviewFeedbackManager {
             checkEmptyIAE(operator, "operator");
 
             Date createDate = new Date();
-            Timestamp currentTimestamp = new Timestamp(createDate.getTime());
 
             // Create feedback record
-            long entityId = executeUpdate(true, CREATE_REVIEW_FEEDBACK, entity.getProjectId(),
-                entity.getComment(), operator, currentTimestamp, operator, currentTimestamp);
+            long entityId = reviewFeedbackServiceRpc.createReviewFeedback(entity, operator, createDate);
             entity.setId(entityId);
 
             // Create feedback detail records (if any)
@@ -468,9 +301,8 @@ public class ReviewFeedbackManager {
             createDetails(entityId, details);
 
             // Create audit records:
-            auditReviewFeedback(entity, createAuditActionTypeId, operator, currentTimestamp);
-            auditReviewFeedbackDetails(entityId, details, createAuditActionTypeId, operator,
-                currentTimestamp);
+            auditReviewFeedback(entity, createAuditActionTypeId, operator, createDate);
+            auditReviewFeedbackDetails(entityId, details, createAuditActionTypeId, operator, createDate);
             // Populate entity properties and return the populated entity:
             entity.setCreateUser(operator);
             entity.setCreateDate(createDate);
@@ -536,11 +368,9 @@ public class ReviewFeedbackManager {
 
             // Populate query parameters.
             Date modifyDate = new Date();
-            Timestamp currentTimestamp = new Timestamp(modifyDate.getTime());
 
             // Update feedback record
-            if (executeUpdate(false, UPDATE_REVIEW_FEEDBACK, entity.getProjectId(),
-                entity.getComment(), operator, currentTimestamp, feedbackId) == 0) {
+            if (reviewFeedbackServiceRpc.updateReviewFeedback(entity, operator, modifyDate) == 0) {
                 throw logException(signature, new ReviewFeedbackManagementEntityNotFoundException(
                     "The review feedback entity with specified identity is not found in persistence."));
             }
@@ -553,13 +383,13 @@ public class ReviewFeedbackManager {
                 deletedDetails);
 
             // Create audit records:
-            auditReviewFeedback(entity, updateAuditActionTypeId, operator, currentTimestamp);
+            auditReviewFeedback(entity, updateAuditActionTypeId, operator, modifyDate);
             auditReviewFeedbackDetails(feedbackId, createdDetails, createAuditActionTypeId, operator,
-                currentTimestamp);
+                    modifyDate);
             auditReviewFeedbackDetails(feedbackId, updatedDetails, updateAuditActionTypeId, operator,
-                currentTimestamp);
+                    modifyDate);
             auditReviewFeedbackDetails(feedbackId, deletedDetails, deleteAuditActionTypeId, operator,
-                currentTimestamp);
+                    modifyDate);
             // Update entity properties and return the updated entity:
             entity.setModifyUser(operator);
             entity.setModifyDate(modifyDate);
@@ -625,17 +455,9 @@ public class ReviewFeedbackManager {
     public boolean delete(long id) throws ReviewFeedbackManagementPersistenceException {
         final String signature = "JDBCReviewFeedbackManager.delete";
         logEntrance(signature, new String[] {"id"}, new Object[] {id});
-        // Delete audit records
-        executeUpdate(false, DELETE_REVIEW_FEEDBACK_AUDIT_BY_FEEDBACK_ID, id);
-
-        // Delete detail audit records
-        executeUpdate(false, DELETE_REVIEW_FEEDBACK_DETAIL_AUDIT_BY_FEEDBACK_ID, id);
-
-        // Delete detail records
-        executeUpdate(false, DELETE_REVIEW_FEEDBACK_DETAIL_BY_FEEDBACK_ID, id);
 
         // Delete feedback record
-        boolean ret = (executeUpdate(false, DELETE_REVIEW_FEEDBACK_BY_ID, id) > 0);
+        boolean ret = (reviewFeedbackServiceRpc.deleteReviewFeedback(id) > 0);
 
         logExit(signature, new Object[] {ret});
         return ret;
@@ -765,7 +587,7 @@ public class ReviewFeedbackManager {
      */
     private void createDetails(long feedbackId, List<ReviewFeedbackDetail> details) {
         for (ReviewFeedbackDetail detail : details) {
-            executeUpdateSql(jdbcTemplate, CREATE_REVIEW_FEEDBACK_DETAIL, newArrayList(feedbackId, detail.getReviewerUserId(), detail.getScore(), detail.getFeedbackText()));
+            reviewFeedbackServiceRpc.createReviewFeedbackDetail(detail, feedbackId);
         }
     }
 
@@ -806,27 +628,14 @@ public class ReviewFeedbackManager {
 
         // Delete feedback detail
         if (!oldReviewerUserIds.isEmpty()) {
-            StringBuilder sb = new StringBuilder();
-            boolean first = true;
+            List<Long> revieweIds = new ArrayList<Long>();
+            revieweIds.addAll(oldReviewerUserIds);
             for (long reviewerUserId : oldReviewerUserIds) {
                 ReviewFeedbackDetail detail = new ReviewFeedbackDetail();
                 detail.setReviewerUserId(reviewerUserId);
                 deletedDetails.add(detail);
-
-                if (first) {
-                    first = false;
-                } else {
-                    sb.append(",");
-                }
-                sb.append("?");
             }
-            String sql = String.format(DELETE_REVIEW_FEEDBACK_DETAIL, sb.toString());
-
-            List<Object> parameters = new ArrayList<Object>();
-            parameters.add(feedbackId);
-            parameters.addAll(oldReviewerUserIds);
-
-            executeUpdate(false, sql, parameters.toArray());
+            reviewFeedbackServiceRpc.deleteReviewFeedbackDetail(feedbackId, revieweIds);
         }
 
         // Insert new items.
@@ -834,8 +643,7 @@ public class ReviewFeedbackManager {
 
         // Update items.
         for (ReviewFeedbackDetail detail : updatedDetails) {
-            executeUpdateSql(jdbcTemplate, UPDATE_REVIEW_FEEDBACK_DETAIL, newArrayList(detail.getScore(),
-                    detail.getFeedbackText(), feedbackId, detail.getReviewerUserId()));
+            reviewFeedbackServiceRpc.updateReviewFeedbackDetail(detail, feedbackId);
         }
     }
 
@@ -850,13 +658,8 @@ public class ReviewFeedbackManager {
      * @since 2.0
      */
     private Set<Long> getReviewerIds(long feedbackId) {
-        Set<Long> oldReviewerUserIds = new HashSet<Long>();
-        // Retrieve reviewer user IDs.
-        List<Map<String, Object>> rows = executeSqlWithParam(jdbcTemplate, SELECT_REVIEWER_ID_BY_FEEDBACK_ID, newArrayList(feedbackId));
-        for (Map<String, Object> row: rows) {
-            oldReviewerUserIds.add(getLong(row, "reviewer_user_id"));
-        }
-        return oldReviewerUserIds;
+        List<Long> ids = reviewFeedbackServiceRpc.getReviewerIdsByFeedbackId(feedbackId);
+        return new HashSet<Long>(ids);
     }
 
     /**
@@ -874,10 +677,9 @@ public class ReviewFeedbackManager {
      * @since 2.0
      */
     private void auditReviewFeedback(ReviewFeedback entity,
-        long auditActionTypeId, String operator, Timestamp actionDate) {
+        long auditActionTypeId, String operator, Date actionDate) {
         // Create new record:
-        executeUpdateSql(jdbcTemplate, INSERT_REVIEW_FEEDBACK_AUDIT, newArrayList(entity.getId(), entity.getProjectId(), entity.getComment(), auditActionTypeId,
-                operator, actionDate));
+        reviewFeedbackServiceRpc.auditReviewFeedback(entity, auditActionTypeId, operator, actionDate);
     }
 
     /**
@@ -902,185 +704,14 @@ public class ReviewFeedbackManager {
      * @since 2.0
      */
     private void auditReviewFeedbackDetails(long reviewFeedbackId,
-        List<ReviewFeedbackDetail> details, long auditActionTypeId, String operator, Timestamp actionDate) {
+        List<ReviewFeedbackDetail> details, long auditActionTypeId, String operator, Date actionDate) {
         if (details.isEmpty()) {
             return;
         }
         for (ReviewFeedbackDetail detail : details) {
-            executeUpdateSql(jdbcTemplate, INSERT_REVIEW_FEEDBACK_DETAIL_AUDIT, newArrayList(reviewFeedbackId,
-                    detail.getReviewerUserId(), detail.getScore(), detail.getFeedbackText(),
-                    auditActionTypeId, operator, actionDate));
+            reviewFeedbackServiceRpc.auditReviewFeedbackDetail(detail, reviewFeedbackId, auditActionTypeId, operator,
+                    actionDate);
         }
-    }
-
-    /**
-     * Executes the SQL.
-     *
-     * @param returnsId
-     *            <code>true</code> indicating that generated key should be returned; <code>false</code> otherwise.
-     * @param sql
-     *            the SQL string
-     * @param params
-     *            the parameters
-     *
-     * @return the id or update count when returnsId is false
-     *
-     * @since 2.0
-     */
-    private long executeUpdate(boolean returnsId, String sql, Object... params) {
-        if (returnsId) {
-            return executeUpdateSqlWithReturn(jdbcTemplate, sql, newArrayList(params));
-        } else {
-            return executeUpdateSql(jdbcTemplate, sql, newArrayList(params));
-        }
-    }
-
-    /**
-     * Sets the parameters.
-     *
-     * @param preparedStatement
-     *            the prepared statement
-     * @param parameters
-     *            the parameters
-     * @param startIndex
-     *            the start index
-     *
-     * @throws SQLException
-     *             if any error occurs
-     *
-     * @since 2.0
-     */
-    private static void setParameters(PreparedStatement preparedStatement, int startIndex, Object... parameters)
-        throws SQLException {
-        for (int i = 0; i < parameters.length; i++) {
-            preparedStatement.setObject(startIndex++, parameters[i]);
-        }
-    }
-
-    /**
-     * <p>
-     * Create ReviewFeedbackDetail entity.
-     * </p>
-     *
-     * @param rs
-     *            the result set
-     * @return the ReviewFeedbackDetail entity
-     * @throws SQLException
-     *             if error occurs when creating the ReviewFeedbackDetail entity
-     *
-     * @since 2.0
-     */
-    private ReviewFeedbackDetail populateReviewFeedbackDetail(Map<String, Object> rs) {
-        ReviewFeedbackDetail detail = new ReviewFeedbackDetail();
-        detail.setReviewerUserId(getLong(rs, "reviewer_user_id"));
-        detail.setScore(getInt(rs, "score"));
-        detail.setFeedbackText(getString(rs, "feedback_text"));
-
-        return detail;
-    }
-
-    /**
-     * <p>
-     * Create ReviewFeedback entity.
-     * </p>
-     *
-     * <p>
-     * <em>Changes in 2.0:</em>
-     * <ol>
-     * <li>Implementation is updated according to the new data model.</li>
-     * </ol>
-     * </p>
-     *
-     * @param rs
-     *            the result set
-     * @param projectId
-     *            the project id
-     * @param reviewFeedbackId
-     *            the review feedback id
-     *
-     * @return the ReviewFeedback entity
-     *
-     * @throws SQLException
-     *             if error occurs when creating the ReviewFeedback entity
-     */
-    private ReviewFeedback populateReviewFeedback(Map<String, Object> rs, long projectId, long reviewFeedbackId) {
-        // Create ReviewFeedback entity
-        ReviewFeedback newEntity = new ReviewFeedback();
-        newEntity.setId(reviewFeedbackId);
-        newEntity.setProjectId(projectId);
-        newEntity.setComment(getString(rs, "comment"));
-        newEntity.setCreateUser(getString(rs, "create_user"));
-        newEntity.setCreateDate(getDate(rs, "create_date"));
-        newEntity.setModifyUser(getString(rs, "modify_user"));
-        newEntity.setModifyDate(getDate(rs, "modify_date"));
-        newEntity.setDetails(new ArrayList<>());
-
-        return newEntity;
-    }
-
-    /**
-     * <p>
-     * Rolls back the transaction.
-     * </p>
-     *
-     * @param conn
-     *            the connection
-     * @param signature
-     *            the method signature
-     *
-     * @since 2.0
-     */
-    private void rollback(Connection conn, String signature) {
-        try {
-            conn.rollback();
-        } catch (SQLException e) {
-            logException(signature, e);
-        }
-    }
-
-    /**
-     * <p>
-     * Closes the statement and the connection.
-     * </p>
-     *
-     * @param conn
-     *            the connection
-     * @param stmt
-     *            the statement
-     * @param signature
-     *            the method signature
-     */
-    private void close(Connection conn, PreparedStatement stmt, String signature) {
-        if (null != stmt) {
-            try {
-                stmt.close();
-            } catch (SQLException e) {
-                logException(signature, e);
-            }
-        }
-        if (null != conn) {
-            try {
-                conn.close();
-            } catch (SQLException e) {
-                logException(signature, e);
-            }
-        }
-    }
-
-    /**
-     * Checks the audit action type id.
-     *
-     * @param auditActionTypeId
-     *            the audit action type id.
-     * @param defaultValue
-     *            the default value
-     *
-     * @return the audit action type id or the default value if the id is null.
-     *
-     * @since 2.0
-     */
-    private static long checkAuditActionTypeId(Long auditActionTypeId, long defaultValue) {
-        return (auditActionTypeId == null) ? defaultValue : auditActionTypeId;
     }
 
     /**
@@ -1118,44 +749,6 @@ public class ReviewFeedbackManager {
     private static void checkNullIAE(Object arg, String name) {
         if (arg == null) {
             throw new IllegalArgumentException(name + " should not be null.");
-        }
-    }
-
-    /**
-     * <p>
-     * Checks whether the given String is empty.
-     * </p>
-     *
-     * @param arg
-     *            the String to check (can be null)
-     * @param name
-     *            the name of the String argument to check
-     *
-     * @throws ReviewFeedbackManagementConfigurationException
-     *             if the given string is empty
-     */
-    private static void checkEmptyCFE(String arg, String name) {
-        if (arg != null && arg.trim().length() == 0) {
-            throw new ReviewFeedbackManagementConfigurationException(name + " should not be empty.");
-        }
-    }
-
-    /**
-     * <p>
-     * Checks whether the given object is null.
-     * </p>
-     *
-     * @param arg
-     *            the object to check
-     * @param name
-     *            the name of the object argument to check
-     *
-     * @throws ReviewFeedbackManagementConfigurationException
-     *             if the given object is null
-     */
-    private static void checkNullCFE(Object arg, String name) {
-        if (arg == null) {
-            throw new ReviewFeedbackManagementConfigurationException(name + " should not be null.");
         }
     }
 
