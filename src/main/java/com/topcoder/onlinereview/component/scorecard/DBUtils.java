@@ -89,7 +89,7 @@ final class DBUtils {
    * @param ids the ids list.
    * @return the ids array.
    */
-  static Long[] listToArray(List ids) {
+  static Long[] listToArray(List<Long> ids) {
     Long[] result = new Long[ids.size()];
     for (int i = 0; i < result.length; i++) {
       result[i] = ((Long) ids.get(i)).longValue();
