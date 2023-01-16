@@ -43,28 +43,34 @@ public class UploadServiceRpc {
         stub = UploadServiceGrpc.newBlockingStub(grpcChannelManager.getChannel());
     }
 
-    public void addUploadType(UploadType entity) {
-        stub.addUploadType(buildEntityProto(entity));
+    public long addUploadType(UploadType entity) {
+        IdProto response = stub.addUploadType(buildEntityProto(entity));
+        return response.getId();
     }
 
-    public void addUploadStatus(UploadStatus entity) {
-        stub.addUploadStatus(buildEntityProto(entity));
+    public long addUploadStatus(UploadStatus entity) {
+        IdProto response = stub.addUploadStatus(buildEntityProto(entity));
+        return response.getId();
     }
 
-    public void addSubmissionType(SubmissionType entity) {
-        stub.addSubmissionType(buildEntityProto(entity));
+    public long addSubmissionType(SubmissionType entity) {
+        IdProto response = stub.addSubmissionType(buildEntityProto(entity));
+        return response.getId();
     }
 
-    public void addSubmissionStatus(SubmissionStatus entity) {
-        stub.addSubmissionStatus(buildEntityProto(entity));
+    public long addSubmissionStatus(SubmissionStatus entity) {
+        IdProto response = stub.addSubmissionStatus(buildEntityProto(entity));
+        return response.getId();
     }
 
-    public void addUpload(Upload upload) {
-        stub.addUpload(buildUploadProto(upload));
+    public long addUpload(Upload upload) {
+        IdProto response = stub.addUpload(buildUploadProto(upload));
+        return response.getId();
     }
 
-    public void addSubmission(Submission submission) {
-        stub.addSubmission(buildSubmissionProto(submission));
+    public long addSubmission(Submission submission) {
+        IdProto response = stub.addSubmission(buildSubmissionProto(submission));
+        return response.getId();
     }
 
     public void addSubmissionImage(SubmissionImage submissionImage) {

@@ -161,7 +161,8 @@ public class SqlUploadPersistence {
   public void addUploadType(UploadType uploadType) throws UploadPersistenceException {
 
     assertEntityNotNullAndValidToPersist(uploadType, "uploadType");
-    uploadServiceRpc.addUploadType(uploadType);
+    long id = uploadServiceRpc.addUploadType(uploadType);
+    uploadType.setId(id);
   }
 
   /**
@@ -175,7 +176,8 @@ public class SqlUploadPersistence {
    */
   public void addUploadStatus(UploadStatus uploadStatus) throws UploadPersistenceException {
     assertEntityNotNullAndValidToPersist(uploadStatus, "uploadStatus");
-    uploadServiceRpc.addUploadStatus(uploadStatus);
+    long id = uploadServiceRpc.addUploadStatus(uploadStatus);
+    uploadStatus.setId(id);
   }
 
   /**
@@ -190,7 +192,8 @@ public class SqlUploadPersistence {
   public void addSubmissionStatus(SubmissionStatus submissionStatus)
       throws UploadPersistenceException {
     assertEntityNotNullAndValidToPersist(submissionStatus, "submissionStatus");
-    uploadServiceRpc.addSubmissionStatus(submissionStatus);
+    long id = uploadServiceRpc.addSubmissionStatus(submissionStatus);
+    submissionStatus.setId(id);
   }
 
   /**
@@ -356,7 +359,8 @@ public class SqlUploadPersistence {
    */
   public void addSubmissionType(SubmissionType submissionType) throws UploadPersistenceException {
     assertEntityNotNullAndValidToPersist(submissionType, "submissionType");
-    uploadServiceRpc.addSubmissionType(submissionType);
+    long id = uploadServiceRpc.addSubmissionType(submissionType);
+    submissionType.setId(id);
   }
 
   /**
@@ -543,7 +547,8 @@ public class SqlUploadPersistence {
    */
   public void addUpload(Upload upload) throws UploadPersistenceException {
     assertEntityNotNullAndValidToPersist(upload, "upload");
-    uploadServiceRpc.addUpload(upload);
+    long id = uploadServiceRpc.addUpload(upload);
+    upload.setId(id);
   }
 
   /**
@@ -578,7 +583,8 @@ public class SqlUploadPersistence {
    */
   public void addSubmission(Submission submission) throws UploadPersistenceException {
     assertEntityNotNullAndValidToPersist(submission, "submission");
-    uploadServiceRpc.addSubmission(submission);
+    long id = uploadServiceRpc.addSubmission(submission);
+    submission.setId(id);
   }
 
   /**
