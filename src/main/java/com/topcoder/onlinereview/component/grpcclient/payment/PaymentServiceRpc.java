@@ -12,12 +12,14 @@ import javax.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Service;
+import org.springframework.util.SerializationUtils;
 
 import com.google.protobuf.ByteString;
 import com.topcoder.onlinereview.component.grpcclient.GrpcChannelManager;
 import com.topcoder.onlinereview.component.project.payment.ProjectPayment;
 import com.topcoder.onlinereview.component.project.payment.ProjectPaymentAdjustment;
 import com.topcoder.onlinereview.component.project.payment.ProjectPaymentType;
+import com.topcoder.onlinereview.component.search.filter.Filter;
 import com.topcoder.onlinereview.grpc.payment.proto.*;
 
 @Service
@@ -205,6 +207,60 @@ public class PaymentServiceRpc {
             return response.getDefaultPayment();
         }
         return null;
+    }
+
+    public List<ProjectPayment> searchPayments(Filter filter) {
+        FilterProto request = FilterProto.newBuilder()
+                .setFilter(ByteString.copyFrom(SerializationUtils.serialize(filter))).build();
+        SearchPaymentsResponse response = stub.searchPayments(request);
+        List<ProjectPayment> projectPayments = new ArrayList<>();
+        for (ProjectPaymentProto pp : response.getPaymentsList()) {
+            ProjectPayment projectPayment = new ProjectPayment();
+            projectPayment.setProjectPaymentId(pp.getId());
+            if (pp.hasResourceId()) {
+                projectPayment.setResourceId(pp.getResourceId());
+            }
+            if (pp.hasSubmissionId()) {
+                projectPayment.setSubmissionId(pp.getSubmissionId());
+            }
+            if (pp.hasAmount()) {
+                BigDecimalProto serialized = pp.getAmount();
+                projectPayment.setAmount(
+                        new BigDecimal(new BigInteger(serialized.getValue().toByteArray()), serialized.getScale(),
+                                new MathContext(serialized.getPrecision())));
+            }
+            if (pp.hasPactsPaymentId()) {
+                projectPayment.setPactsPaymentId(pp.getPactsPaymentId());
+            }
+            if (pp.hasCreateUser()) {
+                projectPayment.setCreateUser(pp.getCreateUser());
+            }
+            if (pp.hasCreateDate()) {
+                projectPayment.setCreateDate(new Date(pp.getCreateDate().getSeconds() * 1000));
+            }
+            if (pp.hasModifyUser()) {
+                projectPayment.setModifyUser(pp.getModifyUser());
+            }
+            if (pp.hasModifyDate()) {
+                projectPayment.setModifyDate(new Date(pp.getModifyDate().getSeconds() * 1000));
+            }
+            ProjectPaymentType projectPaymentType = new ProjectPaymentType();
+            if (pp.getProjectPaymentType().hasId()) {
+                projectPaymentType.setProjectPaymentTypeId(pp.getProjectPaymentType().getId());
+            }
+            if (pp.getProjectPaymentType().hasName()) {
+                projectPaymentType.setName(pp.getProjectPaymentType().getName());
+            }
+            if (pp.getProjectPaymentType().hasMergeable()) {
+                projectPaymentType.setMergeable(pp.getProjectPaymentType().getMergeable());
+            }
+            if (pp.getProjectPaymentType().hasPactsPaymentTypeId()) {
+                projectPaymentType.setPactsPaymentTypeId(pp.getProjectPaymentType().getPactsPaymentTypeId());
+            }
+            projectPayment.setProjectPaymentType(projectPaymentType);
+            projectPayments.add(projectPayment);
+        }
+        return projectPayments;
     }
 
     private ProjectPaymentProto buildProjectPayment(ProjectPayment projectPayment) {
