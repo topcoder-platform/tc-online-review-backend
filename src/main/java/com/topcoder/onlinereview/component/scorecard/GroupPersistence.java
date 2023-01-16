@@ -237,7 +237,7 @@ public class GroupPersistence {
         // get all sections and add the ids to set
         Section[] sections = oldGroups[i].getAllSections();
         for (int j = 0; j < sections.length; j++) {
-          ids.add(Long.valueOf(sections[j].getId()));
+          ids.add(new Long(sections[j].getId()));
         }
         break;
       }
