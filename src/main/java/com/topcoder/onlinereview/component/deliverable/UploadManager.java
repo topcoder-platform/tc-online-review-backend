@@ -4,9 +4,6 @@
 package com.topcoder.onlinereview.component.deliverable;
 
 import com.topcoder.onlinereview.component.grpcclient.upload.UploadServiceRpc;
-import com.topcoder.onlinereview.component.id.DBHelper;
-import com.topcoder.onlinereview.component.id.IDGenerationException;
-import com.topcoder.onlinereview.component.id.IDGenerator;
 import com.topcoder.onlinereview.component.project.management.LogMessage;
 import com.topcoder.onlinereview.component.search.SearchBuilderException;
 import com.topcoder.onlinereview.component.search.filter.Filter;
@@ -14,7 +11,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
 import java.text.MessageFormat;
 import java.util.Arrays;
 import java.util.Date;
@@ -286,61 +282,9 @@ public class UploadManager {
 
   @Autowired private SqlUploadPersistence persistence;
 
-  /**
-   * The generator used to create ids for new Uploads. This field is set in the constructor, is
-   * immutable, and can never be null.
-   */
-  private IDGenerator uploadIdGenerator;
-
-  /**
-   * The generator used to create ids for new Submissions. This field is set in the constructor, is
-   * immutable, and can never be null.
-   */
-  private IDGenerator submissionIdGenerator;
-
-  /**
-   * The generator used to create ids for new UploadTypes. This field is set in the constructor, is
-   * immutable, and can never be null.
-   */
-  private IDGenerator uploadTypeIdGenerator;
-
-  /**
-   * The generator used to create ids for new UploadStatuses. This field is set in the constructor,
-   * is immutable, and can never be null.
-   */
-  private IDGenerator uploadStatusIdGenerator;
-
-  /**
-   * The generator used to create ids for new SubmissionStatuses. This field is set in the
-   * constructor, is immutable, and can never be null.
-   */
-  private IDGenerator submissionStatusIdGenerator;
-
-  /**
-   * The generator used to create ids for new SubmissionTypes.
-   *
-   * <p>This field is set in the constructor, is immutable, and can never be null. This field is
-   * used when an id is needed for a new SubmissionType, which occurs in the createSubmissionType
-   * method.
-   *
-   * @since 1.1
-   */
-  private IDGenerator submissionTypeIdGenerator;
-
-  @Autowired private DBHelper dbHelper;
-
   @Autowired
   private UploadServiceRpc uploadServiceRpc;
 
-  @PostConstruct
-  public void postRun() throws IDGenerationException {
-    uploadIdGenerator = new IDGenerator(UPLOAD_ID_GENERATOR_NAME, dbHelper);
-    uploadTypeIdGenerator = new IDGenerator(UPLOAD_TYPE_ID_GENERATOR_NAME, dbHelper);
-    uploadStatusIdGenerator = new IDGenerator(UPLOAD_STATUS_ID_GENERATOR_NAME, dbHelper);
-    submissionIdGenerator = new IDGenerator(SUBMISSION_ID_GENERATOR_NAME, dbHelper);
-    submissionStatusIdGenerator = new IDGenerator(SUBMISSION_STATUS_ID_GENERATOR_NAME, dbHelper);
-    submissionTypeIdGenerator = new IDGenerator(SUBMISSION_TYPE_ID_GENERATOR_NAME, dbHelper);
-  }
 
   /**
    * Creates a new upload in the persistence store. The id of the upload must be UNSET_ID. The
@@ -356,7 +300,7 @@ public class UploadManager {
    */
   public void createUpload(Upload upload, String operator) throws UploadPersistenceException {
     log.debug(new LogMessage(null, operator, "Create new Upload.").toString());
-    persistenceUploadManagerHelper(upload, "upload", operator, CREATE_FLAG, uploadIdGenerator);
+    persistenceUploadManagerHelper(upload, "upload", operator, CREATE_FLAG);
   }
 
   /**
@@ -374,7 +318,7 @@ public class UploadManager {
   public void updateUpload(Upload upload, String operator) throws UploadPersistenceException {
     log.debug(new LogMessage(getId(upload), operator, "Update Upload.").toString());
 
-    persistenceUploadManagerHelper(upload, "upload", operator, UPDATE_FLAG, null);
+    persistenceUploadManagerHelper(upload, "upload", operator, UPDATE_FLAG);
   }
 
   /**
@@ -392,7 +336,7 @@ public class UploadManager {
   public void removeUpload(Upload upload, String operator) throws UploadPersistenceException {
     log.debug(new LogMessage(getId(upload), operator, "Remove Upload.").toString());
 
-    persistenceUploadManagerHelper(upload, "upload", operator, REMOVE_FLAG, null);
+    persistenceUploadManagerHelper(upload, "upload", operator, REMOVE_FLAG);
   }
 
   /**
@@ -443,7 +387,7 @@ public class UploadManager {
       throws UploadPersistenceException {
     log.debug(new LogMessage(null, operator, "Create new UploadType.").toString());
     persistenceUploadManagerHelper(
-        uploadType, "uploadType", operator, CREATE_FLAG, uploadTypeIdGenerator);
+        uploadType, "uploadType", operator, CREATE_FLAG);
   }
 
   /**
@@ -462,7 +406,7 @@ public class UploadManager {
       throws UploadPersistenceException {
     log.debug(new LogMessage(getId(uploadType), operator, "update UploadType.").toString());
 
-    persistenceUploadManagerHelper(uploadType, "uploadType", operator, UPDATE_FLAG, null);
+    persistenceUploadManagerHelper(uploadType, "uploadType", operator, UPDATE_FLAG);
   }
 
   /**
@@ -481,7 +425,7 @@ public class UploadManager {
       throws UploadPersistenceException {
     log.debug(new LogMessage(getId(uploadType), operator, "remove UploadType.").toString());
 
-    persistenceUploadManagerHelper(uploadType, "uploadType", operator, REMOVE_FLAG, null);
+    persistenceUploadManagerHelper(uploadType, "uploadType", operator, REMOVE_FLAG);
   }
 
   /**
@@ -512,7 +456,7 @@ public class UploadManager {
       throws UploadPersistenceException {
     log.debug(new LogMessage(null, operator, "create new UploadStatus.").toString());
     persistenceUploadManagerHelper(
-        uploadStatus, "uploadStatus", operator, CREATE_FLAG, uploadStatusIdGenerator);
+        uploadStatus, "uploadStatus", operator, CREATE_FLAG);
   }
 
   /**
@@ -531,7 +475,7 @@ public class UploadManager {
       throws UploadPersistenceException {
     log.debug(new LogMessage(getId(uploadStatus), operator, "create new UploadStatus.").toString());
 
-    persistenceUploadManagerHelper(uploadStatus, "uploadStatus", operator, UPDATE_FLAG, null);
+    persistenceUploadManagerHelper(uploadStatus, "uploadStatus", operator, UPDATE_FLAG);
   }
 
   /**
@@ -550,7 +494,7 @@ public class UploadManager {
       throws UploadPersistenceException {
     log.debug(new LogMessage(getId(uploadStatus), operator, "remove UploadStatus.").toString());
 
-    persistenceUploadManagerHelper(uploadStatus, "uploadStatus", operator, REMOVE_FLAG, null);
+    persistenceUploadManagerHelper(uploadStatus, "uploadStatus", operator, REMOVE_FLAG);
   }
 
   /**
@@ -581,7 +525,7 @@ public class UploadManager {
       throws UploadPersistenceException {
     log.debug(new LogMessage(null, operator, "create new Submission.").toString());
     persistenceUploadManagerHelper(
-        submission, "submission", operator, CREATE_FLAG, submissionIdGenerator);
+        submission, "submission", operator, CREATE_FLAG);
   }
 
   /**
@@ -600,7 +544,7 @@ public class UploadManager {
       throws UploadPersistenceException {
     log.debug(new LogMessage(getId(submission), operator, "update Submission.").toString());
 
-    persistenceUploadManagerHelper(submission, "submission", operator, UPDATE_FLAG, null);
+    persistenceUploadManagerHelper(submission, "submission", operator, UPDATE_FLAG);
   }
 
   /**
@@ -619,7 +563,7 @@ public class UploadManager {
       throws UploadPersistenceException {
     log.debug(new LogMessage(getId(submission), operator, "remove Submission.").toString());
 
-    persistenceUploadManagerHelper(submission, "submission", operator, REMOVE_FLAG, null);
+    persistenceUploadManagerHelper(submission, "submission", operator, REMOVE_FLAG);
   }
 
   /**
@@ -683,7 +627,7 @@ public class UploadManager {
       throws UploadPersistenceException {
     log.debug(new LogMessage(null, operator, "create new SubmissionStatus.").toString());
     persistenceUploadManagerHelper(
-        submissionStatus, "submissionStatus", operator, CREATE_FLAG, submissionStatusIdGenerator);
+        submissionStatus, "submissionStatus", operator, CREATE_FLAG);
   }
 
   /**
@@ -704,7 +648,7 @@ public class UploadManager {
         new LogMessage(getId(submissionStatus), operator, "update SubmissionStatus.").toString());
 
     persistenceUploadManagerHelper(
-        submissionStatus, "submissionStatus", operator, UPDATE_FLAG, null);
+        submissionStatus, "submissionStatus", operator, UPDATE_FLAG);
   }
 
   /**
@@ -725,7 +669,7 @@ public class UploadManager {
         new LogMessage(getId(submissionStatus), operator, "remove SubmissionStatus.").toString());
 
     persistenceUploadManagerHelper(
-        submissionStatus, "submissionStatus", operator, REMOVE_FLAG, null);
+        submissionStatus, "submissionStatus", operator, REMOVE_FLAG);
   }
 
   /**
@@ -757,7 +701,7 @@ public class UploadManager {
     log.debug(new LogMessage(null, operator, "Create new SubmissionType.").toString());
 
     persistenceUploadManagerHelper(
-        submissionType, "submissionType", operator, CREATE_FLAG, submissionTypeIdGenerator);
+        submissionType, "submissionType", operator, CREATE_FLAG);
   }
 
   /**
@@ -776,7 +720,7 @@ public class UploadManager {
       throws UploadPersistenceException {
     log.debug(new LogMessage(getId(submissionType), operator, "Update SubmissionType.").toString());
 
-    persistenceUploadManagerHelper(submissionType, "submissionType", operator, UPDATE_FLAG, null);
+    persistenceUploadManagerHelper(submissionType, "submissionType", operator, UPDATE_FLAG);
   }
 
   /**
@@ -794,7 +738,7 @@ public class UploadManager {
       throws UploadPersistenceException {
     log.debug(new LogMessage(getId(submissionType), operator, "Remove SubmissionType.").toString());
 
-    persistenceUploadManagerHelper(submissionType, "submissionType", operator, REMOVE_FLAG, null);
+    persistenceUploadManagerHelper(submissionType, "submissionType", operator, REMOVE_FLAG);
   }
 
   /**
@@ -952,7 +896,6 @@ public class UploadManager {
    * @param name object name which in manipulate in this method
    * @param operator the operator name
    * @param operation identifier for the caller
-   * @param idGenerator the IDGenerator to use
    * @throws IllegalArgumentException if obj or operator is <code>null</code>, id is not UNSET_ID,
    *     or the obj (once an id and creation/modification user/date are assigned) is not in a state
    *     to be persisted (i.e. if isValidToPersist returns false).
@@ -962,8 +905,7 @@ public class UploadManager {
       AuditedDeliverableStructure obj,
       String name,
       String operator,
-      int operation,
-      IDGenerator idGenerator)
+      int operation)
       throws UploadPersistenceException {
     DeliverableHelper.checkObjectNotNull(obj, name);
     DeliverableHelper.checkObjectNotNull(operator, "operator");
@@ -985,14 +927,6 @@ public class UploadManager {
       obj.setCreationUser(operator);
       obj.setCreationTimestamp(now);
 
-      // Create an id using idGenerator.
-      try {
-        obj.setId(idGenerator.getNextID());
-        log.debug("generate next id from the idGenerator:" + idGenerator.getIDName());
-      } catch (IDGenerationException ide) {
-        log.error("failed to generate an " + name + " id.", ide);
-        throw new UploadPersistenceException("Failed to generate an " + name + " id.", ide);
-      }
     } else {
       // Branch for UPDATE_FLAG, REMOVE_FLAG operation
 
