@@ -20,6 +20,7 @@ import com.topcoder.onlinereview.component.project.management.Prize;
 import com.topcoder.onlinereview.component.project.management.PrizeType;
 import com.topcoder.onlinereview.component.project.management.Project;
 import com.topcoder.onlinereview.component.project.management.ProjectCategory;
+import com.topcoder.onlinereview.component.project.management.ProjectLinkType;
 import com.topcoder.onlinereview.component.project.management.ProjectPropertyType;
 import com.topcoder.onlinereview.component.project.management.ProjectStatus;
 import com.topcoder.onlinereview.component.project.management.ProjectStudioSpecification;
@@ -442,6 +443,61 @@ public class ProjectServiceRpc {
             prizeTypes[i] = prizeType;
         }
         return prizeTypes;
+    }
+
+    public ProjectLinkType[] getAllProjectLinkTypes() {
+        GetAllProjectLinkTypesResponse response = stub.getAllProjectLinkTypes(null);
+        ProjectLinkType[] projectLinkTypes = new ProjectLinkType[response.getProjectLinkTypesCount()];
+        for (int i = 0; i < response.getProjectLinkTypesCount(); ++i) {
+            ProjectLinkTypeProto p = response.getProjectLinkTypes(i);
+            ProjectLinkType projectLinkType = new ProjectLinkType();
+            if (p.hasLinkTypeId()) {
+                projectLinkType.setId(p.getLinkTypeId());
+            }
+            if (p.hasLinkTypeName()) {
+                projectLinkType.setName(p.getLinkTypeName());
+            }
+            projectLinkTypes[i] = projectLinkType;
+        }
+        return projectLinkTypes;
+    }
+
+    public List<ProjectLinkProto> getSourceProjectLinks(long sourceProjectId) {
+        GetSourceProjectLinksRequest request = GetSourceProjectLinksRequest.newBuilder()
+                .setDestProjectId(sourceProjectId).build();
+        GetSourceProjectLinksResponse response = stub.getSourceProjectLinks(request);
+        return response.getProjectLinksList();
+    }
+
+    public List<ProjectLinkProto> getDestProjectLinks(long destProjectId) {
+        GetDestProjectLinksRequest request = GetDestProjectLinksRequest.newBuilder().setSourceProjectId(destProjectId)
+                .build();
+        GetDestProjectLinksResponse response = stub.getDestProjectLinks(request);
+        return response.getProjectLinksList();
+    }
+
+    public int deleteProjectLinksBySourceId(Long sourceProjectId) {
+        DeleteProjectLinksBySourceIdRequest.Builder request = DeleteProjectLinksBySourceIdRequest.newBuilder();
+        if (sourceProjectId != null) {
+            request.setSourceProjectId(sourceProjectId);
+        }
+        CountProto response = stub.deleteProjectLinksBySourceId(request.build());
+        return response.getCount();
+    }
+
+    public int createProjectLink(Long sourceProjectId, Long destProjectId, Long linkTypeId) {
+        ProjectLinkProto.Builder request = ProjectLinkProto.newBuilder();
+        if (sourceProjectId != null) {
+            request.setSourceProjectId(sourceProjectId);
+        }
+        if (destProjectId != null) {
+            request.setDestProjectId(destProjectId);
+        }
+        if (linkTypeId != null) {
+            request.setLinkTypeId(linkTypeId);
+        }
+        CountProto response = stub.createProjectLink(request.build());
+        return response.getCount();
     }
 
     private Project loadProject(ProjectProto p) {
