@@ -8115,10 +8115,10 @@ INSERT INTO resource_info (resource_id, resource_info_type_id, value, create_use
 	VALUES ('20292', '2', 'Partha', '124772', '2022-10-16 08:03:51', '124772', '2022-10-16 08:03:51');
 INSERT INTO upload (upload_id, project_id, project_phase_id, resource_id, upload_type_id, upload_status_id, parameter, create_user, create_date, modify_user, modify_date)
 	VALUES ("20293", "2029", "20292", "20292", 1, 1, 'no_file.txt', "124772", '2022-10-16 08:03:51', "124772", '2022-10-16 08:03:51');
-INSERT INTO submission (submission_id, upload_id, submission_status_id, screening_score, initial_score, final_score, placement, submission_type_id, create_user, create_date, modify_user, modify_date)
-	VALUES ("20293", "20293", 1, NULL, NULL, 100, 2, "1", "124772", '2022-10-16 08:03:51', "124772", '2022-10-16 08:03:51');
 INSERT INTO upload (upload_id, project_id, project_phase_id, resource_id, upload_type_id, upload_status_id, parameter, create_user, create_date, modify_user, modify_date)
 	VALUES ("20294", "2029", "202915", "20292", 1, 1, 'no_file.txt', "124772", '2022-10-16 08:03:51', "124772", '2022-10-16 08:03:51');
+INSERT INTO submission (submission_id, upload_id, submission_status_id, screening_score, initial_score, final_score, placement, submission_type_id, create_user, create_date, modify_user, modify_date)
+	VALUES ("20293", "20293", 1, NULL, NULL, 100, 2, "1", "124772", '2022-10-16 08:03:51', "124772", '2022-10-16 08:03:51');
 INSERT INTO submission (submission_id, upload_id, submission_status_id, screening_score, initial_score, final_score, placement, submission_type_id, create_user, create_date, modify_user, modify_date)
 	VALUES ("20294", "20294", 1, NULL, NULL, 100, 2, "3", "124772", '2022-10-16 08:03:51', "124772", '2022-10-16 08:03:51');
 INSERT INTO resource (resource_id, resource_role_id, project_id, project_phase_id, user_id, create_user, create_date, modify_user, modify_date)
@@ -8377,16 +8377,16 @@ INSERT INTO review (review_id, resource_id, submission_id, project_phase_id, sco
 INSERT INTO review (review_id, resource_id, submission_id, project_phase_id, scorecard_id, committed, score, initial_score, create_user, create_date, modify_user, modify_date)
 	VALUES ('30031', '20307', '20305', '202914', '30000722', '1', '100.0', '100.00', '124857', '2022-10-09 16:00:10.0', '124857', '2022-10-09 16:00:10.0');
 -- Review Comment
-﻿INSERT INTO tcs_catalog:informix.review_comment (review_comment_id, resource_id, review_id, comment_type_id, content, extra_info, sort, create_user, create_date, modify_user, modify_date)
+INSERT INTO tcs_catalog:informix.review_comment (review_comment_id, resource_id, review_id, comment_type_id, content, extra_info, sort, create_user, create_date, modify_user, modify_date)
  	VALUES (3001, 20302, 30029, 12, 'test', 'Rejected', 1, '124857', '2022-10-09 16:00:10.0', '124857', '2022-10-09 16:00:10.0');
-﻿INSERT INTO tcs_catalog:informix.review_comment (review_comment_id, resource_id, review_id, comment_type_id, content, extra_info, sort, create_user, create_date, modify_user, modify_date)
+INSERT INTO tcs_catalog:informix.review_comment (review_comment_id, resource_id, review_id, comment_type_id, content, extra_info, sort, create_user, create_date, modify_user, modify_date)
  	VALUES (3002, 20305, 30030, 10, 'test', 'Approved', 1, '124857', '2022-10-09 16:00:10.0', '124857', '2022-10-09 16:00:10.0');
 -- Review Item
-﻿INSERT INTO tcs_catalog:informix.review_item (review_item_id, review_id, scorecard_question_id, upload_id, answer, sort, create_user, create_date, modify_user, modify_date)
+INSERT INTO tcs_catalog:informix.review_item (review_item_id, review_id, scorecard_question_id, upload_id, answer, sort, create_user, create_date, modify_user, modify_date)
  	VALUES (30008, 30008, 30003113, 20292, '1', 0, '124766', '2022-10-06 14:00:10.0', '124766', '2022-10-06 14:00:10.0');
-﻿INSERT INTO tcs_catalog:informix.review_item (review_item_id, review_id, scorecard_question_id, upload_id, answer, sort, create_user, create_date, modify_user, modify_date)
+INSERT INTO tcs_catalog:informix.review_item (review_item_id, review_id, scorecard_question_id, upload_id, answer, sort, create_user, create_date, modify_user, modify_date)
  	VALUES (30009, 30009, 30003113, 20294, '1', 0, '124766', '2022-10-06 14:00:10.0', '124766', '2022-10-06 14:00:10.0');
-﻿INSERT INTO tcs_catalog:informix.review_item (review_item_id, review_id, scorecard_question_id, upload_id, answer, sort, create_user, create_date, modify_user, modify_date)
+INSERT INTO tcs_catalog:informix.review_item (review_item_id, review_id, scorecard_question_id, upload_id, answer, sort, create_user, create_date, modify_user, modify_date)
  	VALUES (30030, 30030, 30001001, 20294, '1', 0, '124766', '2022-10-06 14:00:10.0', '124766', '2022-10-06 14:00:10.0');
 -- Review Item Comment
 INSERT INTO tcs_catalog:informix.review_item_comment (review_item_comment_id, resource_id, review_item_id, comment_type_id, content, extra_info, sort, create_user, create_date, modify_user, modify_date)
