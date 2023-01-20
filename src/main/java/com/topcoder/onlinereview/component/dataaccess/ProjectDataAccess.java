@@ -3,6 +3,7 @@
  */
 package com.topcoder.onlinereview.component.dataaccess;
 
+import com.topcoder.onlinereview.component.grpcclient.dataaccess.DataAccessServiceRpc;
 import com.topcoder.onlinereview.component.project.management.Project;
 import com.topcoder.onlinereview.component.project.management.ProjectCategory;
 import com.topcoder.onlinereview.component.project.management.ProjectPropertyType;
@@ -32,6 +33,8 @@ import static com.topcoder.onlinereview.component.util.CommonUtils.getString;
  */
 @Component
 public class ProjectDataAccess extends BaseDataAccess {
+  @Autowired
+  DataAccessServiceRpc dataAccessServiceRpc;
 
   @Autowired
   @Qualifier("oltpJdbcTemplate")
@@ -141,13 +144,7 @@ public class ProjectDataAccess extends BaseDataAccess {
    *     for specified project; <code>false</code> otherwise.
    */
   public boolean isCockpitProjectUser(long projectId, long userId) {
-    Map<String, List<Map<String, Object>>> results =
-        runQuery(
-            "cockpit_project_user",
-            new String[] {"pj", "uid"},
-            new String[] {String.valueOf(projectId), String.valueOf(userId)});
-    List<Map<String, Object>> result = results.get("cockpit_project_user");
-    return !result.isEmpty();
+    return dataAccessServiceRpc.isCockpitProjectUser(projectId, userId);
   }
 
   /**
@@ -157,17 +154,7 @@ public class ProjectDataAccess extends BaseDataAccess {
    * @return a <code>CockpitProject</code> or null if not found.
    */
   public CockpitProject getCockpitProject(long cockpitProjectId) {
-    Map<String, List<Map<String, Object>>> results =
-        runQuery("cockpit_project_by_id", "pj", String.valueOf(cockpitProjectId));
-    List<Map<String, Object>> result = results.get("cockpit_project_by_id");
-    if (!result.isEmpty()) {
-      CockpitProject project = new CockpitProject();
-      project.setId(getLong(result.get(0), "tc_direct_project_id"));
-      project.setName(getString(result.get(0), "tc_direct_project_name"));
-      return project;
-    } else {
-      return null;
-    }
+    return dataAccessServiceRpc.getCockpitProject(cockpitProjectId);
   }
 
   /**
@@ -176,18 +163,7 @@ public class ProjectDataAccess extends BaseDataAccess {
    * @return a <code>List</code> of all existing <code>CockpitProject</code> projects.
    */
   public List<CockpitProject> getAllCockpitProjects() {
-    Map<String, List<Map<String, Object>>> results =
-        runQuery("cockpit_projects", (String) null, (String) null);
-    List<Map<String, Object>> projectsResultContainer = results.get("cockpit_projects");
-
-    List<CockpitProject> result = new ArrayList<CockpitProject>();
-    for (Map<String, Object> row : projectsResultContainer) {
-      CockpitProject project = new CockpitProject();
-      project.setId(getLong(row, "tc_direct_project_id"));
-      project.setName(getString(row, "tc_direct_project_name"));
-      result.add(project);
-    }
-    return result;
+    return dataAccessServiceRpc.getAllCockpitProjects();
   }
 
   /**
@@ -200,18 +176,7 @@ public class ProjectDataAccess extends BaseDataAccess {
    *     the specified user.
    */
   public List<CockpitProject> getCockpitProjectsForUser(long userId) {
-    Map<String, List<Map<String, Object>>> results =
-        runQuery("direct_my_projects", "uid", String.valueOf(userId));
-    List<Map<String, Object>> projectsResultContainer = results.get("direct_my_projects");
-
-    List<CockpitProject> result = new ArrayList<CockpitProject>();
-    for (Map<String, Object> row : projectsResultContainer) {
-      CockpitProject project = new CockpitProject();
-      project.setId(getLong(row, "tc_direct_project_id"));
-      project.setName(getString(row, "tc_direct_project_name"));
-      result.add(project);
-    }
-    return result;
+    return dataAccessServiceRpc.getCockpitProjectsForUser(userId);
   }
 
   /**
@@ -221,17 +186,7 @@ public class ProjectDataAccess extends BaseDataAccess {
    * @return a <code>ClientProject</code> or null if not found.
    */
   public ClientProject getClientProject(long clientProjectId) {
-    Map<String, List<Map<String, Object>>> results =
-        runQuery("client_project_by_id", "pj", String.valueOf(clientProjectId));
-    List<Map<String, Object>> result = results.get("client_project_by_id");
-    if (!result.isEmpty()) {
-      ClientProject project = new ClientProject();
-      project.setId(getLong(result.get(0), "project_id"));
-      project.setName(getString(result.get(0), "project_name"));
-      return project;
-    } else {
-      return null;
-    }
+    return dataAccessServiceRpc.getClientProject(clientProjectId);
   }
 
   /**
@@ -240,18 +195,7 @@ public class ProjectDataAccess extends BaseDataAccess {
    * @return a <code>List</code> of all existing <code>ClientProject</code> projects.
    */
   public List<ClientProject> getAllClientProjects() {
-    Map<String, List<Map<String, Object>>> results =
-        runQuery("client_projects", (String) null, (String) null);
-    List<Map<String, Object>> projectsResultContainer = results.get("client_projects");
-
-    List<ClientProject> result = new ArrayList<ClientProject>();
-    for (Map<String, Object> row : projectsResultContainer) {
-      ClientProject project = new ClientProject();
-      project.setId(getLong(row, "project_id"));
-      project.setName(getString(row, "project_name"));
-      result.add(project);
-    }
-    return result;
+    return dataAccessServiceRpc.getAllClientProjects();
   }
 
   /**
@@ -264,18 +208,7 @@ public class ProjectDataAccess extends BaseDataAccess {
    *     the specified user.
    */
   public List<ClientProject> getClientProjectsForUser(long userId) {
-    Map<String, List<Map<String, Object>>> results =
-        runQuery("client_projects_by_user", "uid", String.valueOf(userId));
-    List<Map<String, Object>> projectsResultContainer = results.get("client_projects_by_user");
-
-    List<ClientProject> result = new ArrayList<ClientProject>();
-    for (Map<String, Object> row : projectsResultContainer) {
-      ClientProject project = new ClientProject();
-      project.setId(getLong(row, "project_id"));
-      project.setName(getString(row, "project_name"));
-      result.add(project);
-    }
-    return result;
+    return dataAccessServiceRpc.getClientProjectsForUser(userId);
   }
 
   /**
