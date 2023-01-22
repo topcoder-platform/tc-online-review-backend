@@ -8,20 +8,19 @@ import com.topcoder.onlinereview.component.project.management.Project;
 import com.topcoder.onlinereview.component.project.management.ProjectCategory;
 import com.topcoder.onlinereview.component.project.management.ProjectPropertyType;
 import com.topcoder.onlinereview.component.project.management.ProjectStatus;
+import com.topcoder.onlinereview.grpc.dataaccess.proto.CheckUserChallengeEligibilityResponse;
+import com.topcoder.onlinereview.grpc.dataaccess.proto.ProjectInfoProto;
+import com.topcoder.onlinereview.grpc.dataaccess.proto.ProjectProto;
+import com.topcoder.onlinereview.grpc.dataaccess.proto.SearchProjectsParameter;
+import com.topcoder.onlinereview.grpc.dataaccess.proto.SearchProjectsResponse;
+
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import static com.topcoder.onlinereview.component.util.CommonUtils.getDate;
-import static com.topcoder.onlinereview.component.util.CommonUtils.getLong;
-import static com.topcoder.onlinereview.component.util.CommonUtils.getString;
 
 /**
  * A simple DAO for projects backed up by Query Tool. Changes in version 2.1 Topcoder - Add Group
@@ -35,22 +34,6 @@ import static com.topcoder.onlinereview.component.util.CommonUtils.getString;
 public class ProjectDataAccess extends BaseDataAccess {
   @Autowired
   DataAccessServiceRpc dataAccessServiceRpc;
-
-  @Autowired
-  @Qualifier("oltpJdbcTemplate")
-  private JdbcTemplate oltpJdbcTemplate;
-
-  @Autowired
-  @Qualifier("tcsDwJdbcTemplate")
-  private JdbcTemplate tcsDwJdbcTemplate;
-
-  public void setOltpJdbcTemplate(JdbcTemplate oltpJdbcTemplate) {
-    this.oltpJdbcTemplate = oltpJdbcTemplate;
-  }
-
-  public void setTcsDwJdbcTemplate(JdbcTemplate tcsDwJdbcTemplate) {
-    this.tcsDwJdbcTemplate = tcsDwJdbcTemplate;
-  }
 
   /**
    * Gets all active projects.
@@ -69,10 +52,9 @@ public class ProjectDataAccess extends BaseDataAccess {
       ProjectStatus[] projectStatuses,
       ProjectCategory[] projectCategories,
       ProjectPropertyType[] projectInfoTypes) {
+
     return searchProjectsByQueryTool(
-        "tcs_projects_by_status",
-        "tcs_project_infos_by_status",
-        "stid",
+        SearchProjectsParameter.STATUS_ID,
         String.valueOf(PROJECT_STATUS_ACTIVE_ID),
         projectStatuses,
         projectCategories,
@@ -97,9 +79,7 @@ public class ProjectDataAccess extends BaseDataAccess {
       ProjectCategory[] projectCategories,
       ProjectPropertyType[] projectInfoTypes) {
     return searchProjectsByQueryTool(
-        "tcs_projects_by_status",
-        "tcs_project_infos_by_status",
-        "stid",
+        SearchProjectsParameter.STATUS_ID,
         String.valueOf(PROJECT_STATUS_DRAFT_ID),
         projectStatuses,
         projectCategories,
@@ -126,9 +106,7 @@ public class ProjectDataAccess extends BaseDataAccess {
       ProjectCategory[] projectCategories,
       ProjectPropertyType[] projectInfoTypes) {
     return searchProjectsByQueryTool(
-        "tcs_projects_by_user",
-        "tcs_project_infos_by_user",
-        "uid",
+        SearchProjectsParameter.USER_ID,
         String.valueOf(userId),
         projectStatuses,
         projectCategories,
@@ -233,9 +211,7 @@ public class ProjectDataAccess extends BaseDataAccess {
    *     Tool.
    */
   private Project[] searchProjectsByQueryTool(
-      String projectQuery,
-      String projectInfoQuery,
-      String paramName,
+      SearchProjectsParameter paramName,
       String paramValue,
       ProjectStatus[] projectStatuses,
       ProjectCategory[] projectCategories,
@@ -246,21 +222,34 @@ public class ProjectDataAccess extends BaseDataAccess {
     Map<Long, ProjectStatus> statusesMap = buildProjectStatusesLookupMap(projectStatuses);
 
     // Get project details by status using Query Tool
-    Map<String, List<Map<String, Object>>> results = runQuery(projectQuery, paramName, paramValue);
+    SearchProjectsResponse results = dataAccessServiceRpc.searchProjects(paramName, paramValue);
 
     // Convert returned data into Project objects
-    List<Map<String, Object>> projectsData = results.get(projectQuery);
+    List<ProjectProto> projectsData = results.getProjectsList();;
     Map<Long, Project> projects = new HashMap<Long, Project>(projectsData.size());
     int recordNum = projectsData.size();
     Project[] resultingProjects = new Project[recordNum];
     for (int i = 0; i < recordNum; i++) {
-      long projectId = getLong(projectsData.get(i), "project_id");
-      long projectCategoryId = getLong(projectsData.get(i), "project_category_id");
-      long projectStatusId = getLong(projectsData.get(i), "project_status_id");
-      String createUser = getString(projectsData.get(i), "create_user");
-      Date createDate = getDate(projectsData.get(i), "create_date");
-      String modifyUser = getString(projectsData.get(i), "modify_user");
-      Date modifyDate = getDate(projectsData.get(i), "modify_date");
+      ProjectProto projectData = projectsData.get(i);
+      long projectId = projectData.getProjectId();
+      long projectCategoryId = projectData.getProjectCategoryId();
+      long projectStatusId = projectData.getProjectStatusId();
+      String createUser = null;
+      if (projectData.hasCreateUser()) {
+        createUser = projectData.getCreateUser();
+      }
+      Date createDate = null;
+      if (projectData.hasCreateDate()) {
+        createDate = new Date(projectData.getCreateDate().getSeconds() * 1000);
+      }
+      String modifyUser = null;
+      if (projectData.hasModifyUser()) {
+        modifyUser = projectData.getModifyUser();
+      }
+      Date modifyDate = null;
+      if (projectData.hasModifyDate()) {
+        modifyDate = new Date(projectData.getModifyDate().getSeconds() * 1000);
+      }
 
       Project project =
           new Project(
@@ -278,12 +267,16 @@ public class ProjectDataAccess extends BaseDataAccess {
     Map<Long, ProjectPropertyType> infoTypesMap =
         buildProjectPropertyTypesLookupMap(projectInfoTypes);
 
-    List<Map<String, Object>> projectInfosData = results.get(projectInfoQuery);
+    List<ProjectInfoProto> projectInfosData = results.getProjectInfosList();;
     recordNum = projectInfosData.size();
     for (int i = 0; i < recordNum; i++) {
-      long projectId = getLong(projectInfosData.get(i), "project_id");
-      long projectInfoTypeId = getLong(projectInfosData.get(i), "project_info_type_id");
-      String value = getString(projectInfosData.get(i), "value");
+      ProjectInfoProto projectInfoData = projectInfosData.get(i);
+      long projectId = projectInfoData.getProjectId();
+      long projectInfoTypeId = projectInfoData.getProjectInfoTypeId();
+      String value = null;
+      if (projectInfoData.hasValue()) {
+        value = projectInfoData.getValue();
+      }
       Project project = projects.get(projectId);
       project.setProperty(infoTypesMap.get(projectInfoTypeId).getName(), value);
     }
@@ -301,22 +294,7 @@ public class ProjectDataAccess extends BaseDataAccess {
   public long getProjectClient(long directProjectId) {
     System.out.println("Will run getProjectClient with id=" + directProjectId);
 
-    String queryName = "non_admin_client_billing_accounts";
-
-    List<Map<String, Object>> resultContainer =
-        runQueryInDB(
-                tcsDwJdbcTemplate,
-                queryName,
-                new String[] {"tdpis"},
-                new String[] {String.valueOf(directProjectId)})
-            .get(queryName);
-
-    if (resultContainer != null) {
-      if (resultContainer.size() > 0) {
-        return getLong(resultContainer.get(0), "client_id");
-      }
-    }
-    return 0;
+    return dataAccessServiceRpc.getProjectClient(directProjectId);
   }
 
   /**
@@ -327,30 +305,19 @@ public class ProjectDataAccess extends BaseDataAccess {
    * @return the Map<String,Long> result contains the group and challenge info
    */
   public Map<String, Long> checkUserChallengeEligibility(long userId, long challengeId) {
-    String queryName = "get_challenge_accessibility_and_groups";
-    List<Map<String, Object>> resultContainer =
-        runQueryInDB(
-                oltpJdbcTemplate,
-                queryName,
-                new String[] {"userId", "challengeId"},
-                new String[] {userId + "", challengeId + ""})
-            .get(queryName);
+    CheckUserChallengeEligibilityResponse result = dataAccessServiceRpc.checkUserChallengeEligibility(userId, challengeId);
 
-    if (resultContainer != null && resultContainer.size() > 0) {
+    if (result != null) {
       Map<String, Long> map = new HashMap<String, Long>();
-      Map<String, Object> row = resultContainer.get(0);
 
-      Object obj = row.get("user_group_xref_found");
-      if (obj != null) {
-        map.put("user_group_xref_found", Long.parseLong(obj.toString()));
+      if (result.hasUserGroupXrefFound()) {
+        map.put("user_group_xref_found", result.getUserGroupXrefFound());
       }
-      obj = row.get("challenge_group_ind");
-      if (obj != null) {
-        map.put("challenge_group_ind", Long.parseLong(obj.toString()));
+      if (result.hasChallengeGroupInd()) {
+        map.put("challenge_group_ind", result.getChallengeGroupInd());
       }
-      obj = row.get("group_id");
-      if (obj != null) {
-        map.put("group_id", Long.parseLong(obj.toString()));
+      if (result.hasGroupId()) {
+        map.put("group_id", result.getGroupId());
       }
       return map;
     }

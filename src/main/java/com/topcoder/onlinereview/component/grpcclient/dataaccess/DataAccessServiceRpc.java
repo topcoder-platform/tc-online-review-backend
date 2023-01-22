@@ -1,12 +1,7 @@
 package com.topcoder.onlinereview.component.grpcclient.dataaccess;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import javax.annotation.PostConstruct;
 
@@ -14,7 +9,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Service;
 
-import com.google.protobuf.Timestamp;
 import com.topcoder.onlinereview.component.dataaccess.ClientProject;
 import com.topcoder.onlinereview.component.dataaccess.CockpitProject;
 import com.topcoder.onlinereview.component.dataaccess.Document;
@@ -193,5 +187,49 @@ public class DataAccessServiceRpc {
             result.add(project);
         }
         return result;
+    }
+
+    public SearchProjectsResponse searchProjects(SearchProjectsParameter param, String value) {
+        SearchProjectsRequest request = SearchProjectsRequest.newBuilder().setParameter(param).setValue(value).build();
+        SearchProjectsResponse response = stub.searchProjects(request);
+        return response;
+    }
+
+    public long getProjectClient(long directProjectId) {
+        GetProjectClientRequest request = GetProjectClientRequest.newBuilder().setDirectProjectId(directProjectId)
+                .build();
+        GetProjectClientResponse response = stub.getProjectClient(request);
+        return response.getClientId();
+    }
+
+    public CheckUserChallengeEligibilityResponse checkUserChallengeEligibility(long userId, long challengeId) {
+        CheckUserChallengeEligibilityRequest request = CheckUserChallengeEligibilityRequest.newBuilder()
+                .setUserId(userId).setChallengeId(challengeId).build();
+        CheckUserChallengeEligibilityResponse response = stub.checkUserChallengeEligibility(request);
+        if (response.equals(CheckUserChallengeEligibilityResponse.getDefaultInstance())) {
+            return null;
+        }
+        return response;
+    }
+
+    public SearchProjectPhasesResponse searchProjectPhases(SearchProjectsParameter param, String value) {
+        SearchProjectPhasesRequest request = SearchProjectPhasesRequest.newBuilder().setParameter(param).setValue(value)
+                .build();
+        SearchProjectPhasesResponse response = stub.searchProjectPhases(request);
+        return response;
+    }
+
+    public SearchUserResourcesResponse searchUserResourcesByUserId(long userId) {
+        SearchUserResourcesByUserIdRequest request = SearchUserResourcesByUserIdRequest.newBuilder().setUserId(userId)
+                .build();
+        SearchUserResourcesResponse response = stub.searchUserResourcesByUserId(request);
+        return response;
+    }
+
+    public SearchUserResourcesResponse searchUserResourcesByUserIdAndStatus(long userId, long statusId) {
+        SearchUserResourcesByUserIdAndStatusRequest request = SearchUserResourcesByUserIdAndStatusRequest.newBuilder()
+                .setUserId(userId).setStatusId(statusId).build();
+        SearchUserResourcesResponse response = stub.searchUserResourcesByUserIdAndStatus(request);
+        return response;
     }
 }

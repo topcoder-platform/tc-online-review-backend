@@ -21,7 +21,7 @@ import java.util.List;
  * @version 2.0
  */
 @Component
-public class CatalogDataAccess extends BaseDataAccess {
+public class CatalogDataAccess {
     @Autowired
     DataAccessServiceRpc dataAccessServiceRpc;
 

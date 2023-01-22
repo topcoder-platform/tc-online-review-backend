@@ -20,7 +20,7 @@ import java.util.Map;
  * @version 2.0
  */
 @Component
-public class DeliverableDataAccess extends BaseDataAccess {
+public class DeliverableDataAccess {
     @Autowired
     DataAccessServiceRpc dataAccessServiceRpc;
 
