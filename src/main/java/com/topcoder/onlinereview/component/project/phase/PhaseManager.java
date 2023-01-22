@@ -3,6 +3,7 @@
  */
 package com.topcoder.onlinereview.component.project.phase;
 
+import com.topcoder.onlinereview.component.grpcclient.phasehandler.PhaseHandlerServiceRpc;
 import com.topcoder.onlinereview.component.project.phase.handler.AbstractPhaseHandler;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -110,7 +111,8 @@ import java.util.TreeSet;
  */
 @Component
 public class PhaseManager {
-
+  @Autowired
+  PhaseHandlerServiceRpc phaseHandlerServiceRpc;
   /**
    * This is an inner class of DefaultPhaseManager. It is a comparator that compares Phase
    * instances.
@@ -421,7 +423,7 @@ public class PhaseManager {
     if (phase.getPhaseType() != null) {
       handler = getPhaseHandler(phase, PhaseOperationEnum.START);
       if (handler != null) {
-        handler.perform(phase, operator);
+        handler.perform(phaseHandlerServiceRpc, phase, operator);
       }
     }
     String oldStatus = phase.getPhaseStatus().getName();
@@ -514,7 +516,7 @@ public class PhaseManager {
     if (phase.getPhaseType() != null) {
       handler = getPhaseHandler(phase, PhaseOperationEnum.END);
       if (handler != null) {
-        handler.perform(phase, operator);
+        handler.perform(phaseHandlerServiceRpc, phase, operator);
       }
     }
     String oldStatus = phase.getPhaseStatus().getName();

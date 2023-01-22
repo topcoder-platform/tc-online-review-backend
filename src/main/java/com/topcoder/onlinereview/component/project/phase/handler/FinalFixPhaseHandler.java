@@ -9,6 +9,7 @@ import com.topcoder.onlinereview.component.deliverable.Upload;
 import com.topcoder.onlinereview.component.deliverable.UploadFilterBuilder;
 import com.topcoder.onlinereview.component.deliverable.UploadManager;
 import com.topcoder.onlinereview.component.deliverable.UploadPersistenceException;
+import com.topcoder.onlinereview.component.grpcclient.phasehandler.PhaseHandlerServiceRpc;
 import com.topcoder.onlinereview.component.project.phase.ManagerHelper;
 import com.topcoder.onlinereview.component.project.phase.OperationCheckResult;
 import com.topcoder.onlinereview.component.project.phase.Phase;
@@ -193,7 +194,7 @@ public class FinalFixPhaseHandler extends AbstractPhaseHandler {
      * @throws IllegalArgumentException if the input parameters is null or empty
      *             string.
      */
-    public void perform(Phase phase, String operator) throws PhaseHandlingException {
+    public void perform(PhaseHandlerServiceRpc phaseHandlerServiceRpc, Phase phase, String operator) throws PhaseHandlingException {
         PhasesHelper.checkNull(phase, "phase");
         PhasesHelper.checkString(operator, "operator");
         PhasesHelper.checkPhaseType(phase, Constants.PHASE_FINAL_FIX);
