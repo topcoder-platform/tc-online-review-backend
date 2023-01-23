@@ -522,9 +522,7 @@ public class ProjectServiceRpc {
         if (p.hasModifyDate()) {
             project.setModificationTimestamp(new Date(p.getModifyDate().getSeconds() * 1000));
         }
-        if (p.hasDirectProjectId()) {
-            project.setTcDirectProjectId(p.getDirectProjectId());
-        }
+        project.setTcDirectProjectId(p.getDirectProjectId());
         if (p.hasTcDirectProjectName()) {
             project.setTcDirectProjectName(p.getTcDirectProjectName());
         }

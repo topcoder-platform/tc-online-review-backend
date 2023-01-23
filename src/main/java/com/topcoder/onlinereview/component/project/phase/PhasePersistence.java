@@ -141,7 +141,7 @@ public class PhasePersistence {
         phaseResult.stream()
             .collect(
                 toMap(
-                    m -> m.getProjectId(),
+                    m -> m.getProjectPhaseId(),
                     m -> {
                       Project project = projectsMap.get(m.getProjectId());
                       Phase phase = populatePhase(m, project);

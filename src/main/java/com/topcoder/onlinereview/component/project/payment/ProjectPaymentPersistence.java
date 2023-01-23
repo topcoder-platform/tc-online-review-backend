@@ -147,7 +147,7 @@ public class ProjectPaymentPersistence {
    */
   private void checkProjectPaymentIntegrity(ProjectPayment projectPayment)
       throws ProjectPaymentManagementDataIntegrityException, SQLException {
-    if (!paymentServiceRpc.isProjectPaymentTypeExists(projectPayment.getProjectPaymentType().getPactsPaymentTypeId())) {
+    if (!paymentServiceRpc.isProjectPaymentTypeExists(projectPayment.getProjectPaymentType().getProjectPaymentTypeId())) {
       throw new ProjectPaymentManagementDataIntegrityException(
           "'projectPaymentTypeId' doesn't exist.");
     }
