@@ -2,6 +2,7 @@ package com.topcoder.onlinereview.component.grpcclient.webcommon;
 
 import java.util.Enumeration;
 import java.util.Hashtable;
+import java.util.List;
 
 import javax.annotation.PostConstruct;
 
@@ -70,5 +71,15 @@ public class WebCommonServiceRpc {
             }
         }
         return stub.doStartTag(request.build());
+    }
+
+    public List<DataTypeMappingProto> getDataTypeMappings() {
+        GetDataTypeMappingsResponse response = stub.getDataTypeMappings(null);
+        return response.getDataTypeMappingsList();
+    }
+
+    public List<DataTypeProto> getDataTypes() {
+        GetDataTypesResponse response = stub.getDataTypes(null);
+        return response.getDataTypesList();
     }
 }
