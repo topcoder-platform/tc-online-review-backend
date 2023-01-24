@@ -12,6 +12,7 @@ import com.topcoder.onlinereview.component.grpcclient.review.ReviewServiceRpc;
 import com.topcoder.onlinereview.component.grpcclient.reviewfeedback.ReviewFeedbackServiceRpc;
 import com.topcoder.onlinereview.component.grpcclient.reviewupload.ReviewUploadServiceRpc;
 import com.topcoder.onlinereview.component.grpcclient.scorecard.ScorecardServiceRpc;
+import com.topcoder.onlinereview.component.grpcclient.security.SecurityServiceRpc;
 import com.topcoder.onlinereview.component.grpcclient.termsofuse.TermsOfUseServiceRpc;
 import com.topcoder.onlinereview.component.grpcclient.upload.UploadServiceRpc;
 import com.topcoder.onlinereview.component.grpcclient.userretrieval.UserRetrievalServiceRpc;
@@ -66,6 +67,10 @@ public class GrpcHelper {
 
     public static ScorecardServiceRpc getScorecardServiceRpc() {
         return SpringUtils.getApplicationContext().getBean(ScorecardServiceRpc.class);
+    }
+
+    public static SecurityServiceRpc getSecurityServiceRpc() {
+        return SpringUtils.getApplicationContext().getBean(SecurityServiceRpc.class);
     }
 
     public static TermsOfUseServiceRpc getTermsOfUseServiceRpc() {
