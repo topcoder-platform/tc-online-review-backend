@@ -4,8 +4,8 @@
 package com.topcoder.onlinereview.component.project.management;
 
 import com.topcoder.onlinereview.component.grpcclient.project.ProjectServiceRpc;
-import com.topcoder.onlinereview.component.id.IDGenerationException;
 
+import io.grpc.StatusRuntimeException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -197,7 +197,7 @@ public class ProjectPersistence {
             .toString());
     try {
       projectServiceRpc.createProject(project, operator);
-    } catch (IDGenerationException e) {
+    } catch (StatusRuntimeException e) {
       log.error(
           new LogMessage(null, operator, "Unable to generate id for the project.", e).toString());
       throw new PersistenceException("Unable to generate id for the project.", e);
@@ -446,7 +446,7 @@ public class ProjectPersistence {
     log.debug(new LogMessage(null, operator, "creating new file type: " + fileType).toString());
     try {
       return projectServiceRpc.createFileType(fileType, operator);
-    } catch (IDGenerationException e) {
+    } catch (StatusRuntimeException e) {
       throw new PersistenceException("Unable to generate id for the file type.", e);
     } catch (PersistenceException e) {
       log.error(new LogMessage(null, operator, "Fails to create file type ", e).toString());
@@ -551,7 +551,7 @@ public class ProjectPersistence {
     log.debug(new LogMessage(null, operator, "creating new prize: " + prize).toString());
     try {
       return projectServiceRpc.createPrize(prize, operator);
-    } catch (IDGenerationException e) {
+    } catch (StatusRuntimeException e) {
       throw new PersistenceException("Unable to generate id for the prize.", e);
     } catch (PersistenceException e) {
       log.error(new LogMessage(null, operator, "Fails to create prize", e).toString());
@@ -625,7 +625,7 @@ public class ProjectPersistence {
             .toString());
     try {
       return projectServiceRpc.createStudioSpec(spec, operator);
-    } catch (IDGenerationException e) {
+    } catch (StatusRuntimeException e) {
       throw new PersistenceException(
           "Unable to generate id for the project studio specification.", e);
     } catch (PersistenceException e) {

@@ -4,7 +4,6 @@
 package com.topcoder.onlinereview.component.review;
 
 import com.topcoder.onlinereview.component.grpcclient.review.ReviewServiceRpc;
-import com.topcoder.onlinereview.component.id.IDGenerationException;
 import com.topcoder.onlinereview.component.project.management.LogMessage;
 import com.topcoder.onlinereview.component.search.filter.Filter;
 import com.topcoder.onlinereview.grpc.review.proto.CommentTypeProto;
@@ -12,6 +11,7 @@ import com.topcoder.onlinereview.grpc.review.proto.ReviewCommentProto;
 import com.topcoder.onlinereview.grpc.review.proto.ReviewItemCommentProto;
 import com.topcoder.onlinereview.grpc.review.proto.ReviewItemProto;
 
+import io.grpc.StatusRuntimeException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -401,7 +401,7 @@ public class ReviewPersistence {
         // add the comment and newId pair to the change table.
         changeTable.put(comment, newId);
       }
-    } catch (IDGenerationException e) {
+    } catch (StatusRuntimeException e) {
       throw new ReviewPersistenceException("Unable to generate id for review comment.", e);
     }
   }
@@ -434,7 +434,7 @@ public class ReviewPersistence {
             operator,
             changeTable);
       }
-    } catch (IDGenerationException e) {
+    } catch (StatusRuntimeException e) {
       throw new ReviewPersistenceException("Unable to generate id for review item.", e);
     }
   }
@@ -465,7 +465,7 @@ public class ReviewPersistence {
         // add the comment and newId pair to the change table.
         changeTable.put(comment, newId);
       }
-    } catch (IDGenerationException e) {
+    } catch (StatusRuntimeException e) {
       throw new ReviewPersistenceException("Unable to generate id for review item comment.", e);
     }
   }
