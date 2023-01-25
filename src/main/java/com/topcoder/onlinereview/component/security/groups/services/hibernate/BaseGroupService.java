@@ -5,7 +5,6 @@ package com.topcoder.onlinereview.component.security.groups.services.hibernate;
 
 import com.topcoder.onlinereview.component.security.groups.services.SecurityGroupException;
 import com.topcoder.onlinereview.component.util.LoggingWrapperUtility;
-import org.hibernate.SessionFactory;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.InitializingBean;
 
@@ -27,15 +26,6 @@ import org.springframework.beans.factory.InitializingBean;
  * 
  */
 public abstract class BaseGroupService implements InitializingBean {
-
-    /**
-     * <p>
-     * An instance of {@link SessionFactory} with which to interact against
-     * underlying database. This field has getter/setter, but it is not supposed
-     * to be changed after Spring IOC.
-     * </p>
-     */
-    protected SessionFactory sessionFactory;
 
     /**
      * <p>
@@ -82,15 +72,4 @@ public abstract class BaseGroupService implements InitializingBean {
 
     public void afterPropertiesSet() {
     }
-
-    /**
-     * Setter of sessionFactory
-     * 
-     * @param sessionFactory
-     *            the sessionFactory from Spring
-     */
-    public void setSessionFactory(SessionFactory sessionFactory) {
-        this.sessionFactory = sessionFactory;
-    }
-
 }
