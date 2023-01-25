@@ -3,10 +3,14 @@
  */
 package com.topcoder.onlinereview.component.security.login;
 
+import com.topcoder.onlinereview.component.grpcclient.GrpcHelper;
+import com.topcoder.onlinereview.component.grpcclient.security.SecurityServiceRpc;
 import com.topcoder.onlinereview.component.security.GeneralSecurityException;
 import com.topcoder.onlinereview.component.security.RolePrincipal;
 import com.topcoder.onlinereview.component.security.SecurityDB;
 import com.topcoder.onlinereview.component.security.TCSubject;
+import com.topcoder.onlinereview.grpc.security.proto.UserRoleProto;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -14,14 +18,7 @@ import javax.naming.InitialContext;
 import javax.naming.NamingException;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
-
-import static com.google.common.collect.Lists.newArrayList;
-import static com.topcoder.onlinereview.component.util.CommonUtils.executeSqlWithParam;
-import static com.topcoder.onlinereview.component.util.CommonUtils.getLong;
-import static com.topcoder.onlinereview.component.util.CommonUtils.getString;
-import static com.topcoder.onlinereview.component.util.SpringUtils.getTcsJdbcTemplate;
 
 /**
  * <p>A stateless EJB to be used for authenticating users to application.</p>
@@ -206,27 +203,13 @@ public class LoginBean {
      */
     public static Set<RolePrincipal> getUserRoles(long userId) throws GeneralSecurityException {
         // Collect user's roles from database
+        SecurityServiceRpc securityServiceRpc = GrpcHelper.getSecurityServiceRpc();
         Set<RolePrincipal> userRoles = new HashSet<RolePrincipal>();
         try {
-            String query = "SELECT security_roles.role_id, description " +
-                           "FROM   user_role_xref, security_roles " +
-                           "WHERE  user_role_xref.login_id = ? " +
-                           "AND    user_role_xref.role_id = security_roles.role_id " +
-                           "AND    user_role_xref.security_status_id = ? "+
-                           "UNION " +
-                           "SELECT security_roles.role_id, description " +
-                           "FROM   security_roles, user_group_xref, group_role_xref " +
-                           "WHERE  user_group_xref.login_id = ? " +
-                           "AND    user_group_xref.group_id = group_role_xref.group_id " +
-                           "AND    user_group_xref.security_status_id = ? " +
-                           "AND    group_role_xref.security_status_id = ? " +
-                           "AND    group_role_xref.role_id = security_roles.role_id";
-
-            List<Map<String, Object>> rs2 = executeSqlWithParam(getTcsJdbcTemplate(), query, newArrayList(userId, SecurityDB.STATUS_ACTIVE, userId, SecurityDB.STATUS_ACTIVE, SecurityDB.STATUS_ACTIVE));
-
+            List<UserRoleProto> result =  securityServiceRpc.getUserRoles(userId);
             // Build list of RolePrincipals associated with user
-            for (Map<String, Object> row: rs2) {
-                userRoles.add(new RolePrincipal(getString(row, "description"), getLong(row, "role_id")));
+            for (UserRoleProto row : result) {
+                userRoles.add(new RolePrincipal(row.getDescription(), row.getRoleId()));
             }
         } catch (Exception e) {
             throw new GeneralSecurityException(e);
@@ -269,15 +252,11 @@ public class LoginBean {
      * @throws GeneralSecurityException If there is any general security error.
      */
     public boolean isCloudSpokesUser(String handle) throws GeneralSecurityException {
-         try {
-             String query = "SELECT reg_source FROM user WHERE handle = ?";
-             List<Map<String, Object>> rs = executeSqlWithParam(getTcsJdbcTemplate(), query, newArrayList(handle));
-             if(!rs.isEmpty()) {
-            	 return "cloudspokes".equalsIgnoreCase(getString(rs.get(0), "reg_source"));
-             }
-         } catch (Exception e) {
-             throw new GeneralSecurityException(e);
-         }
-    	return false;
+        try {
+            SecurityServiceRpc securityServiceRpc = GrpcHelper.getSecurityServiceRpc();
+            return securityServiceRpc.isCloudSpokesUser(handle);
+        } catch (Exception e) {
+            throw new GeneralSecurityException(e);
+        }
     }
 }
