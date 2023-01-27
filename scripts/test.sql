@@ -8489,7 +8489,7 @@ VALUES ('125205', '17', '2082', NULL, '124764', '124764', '2022-12-22 09:54:12.2
 INSERT INTO resource (resource_id, resource_role_id, project_id, project_phase_id, user_id, create_user, create_date, modify_user, modify_date)
 VALUES ('125206', '12', '2082', NULL, '132456', '132456', '2022-12-22 09:54:12.287', '132456', '2022-12-22 10:11:49.449');
 INSERT INTO resource (resource_id, resource_role_id, project_id, project_phase_id, user_id, create_user, create_date, modify_user, modify_date)
-VALUES ('125207', '18', '2082', NULL, '132456', '132456', '2022-12-22 09:54:12.309', '132456', '2022-12-22 10:11:49.474');
+VALUES ('125207', '18', '2082', '208214', '132456', '132456', '2022-12-22 09:54:12.309', '132456', '2022-12-22 10:11:49.474');
 INSERT INTO resource (resource_id, resource_role_id, project_id, project_phase_id, user_id, create_user, create_date, modify_user, modify_date)
 VALUES ('125208', '19', '2082', '208216', '132456', '132456', '2022-12-22 09:54:12.327', '132456', '2022-12-22 10:11:49.502');
 INSERT INTO resource (resource_id, resource_role_id, project_id, project_phase_id, user_id, create_user, create_date, modify_user, modify_date)
