@@ -1,5 +1,6 @@
 package com.topcoder.onlinereview.component.grpcclient;
 
+import com.topcoder.onlinereview.component.grpcclient.actionshelper.ActionsHelperServiceRpc;
 import com.topcoder.onlinereview.component.grpcclient.contesteligibility.ContestEligibilityServiceRpc;
 import com.topcoder.onlinereview.component.grpcclient.dataaccess.DataAccessServiceRpc;
 import com.topcoder.onlinereview.component.grpcclient.deliverable.DeliverableServiceRpc;
@@ -20,6 +21,10 @@ import com.topcoder.onlinereview.component.grpcclient.webcommon.WebCommonService
 import com.topcoder.onlinereview.component.util.SpringUtils;
 
 public class GrpcHelper {
+
+    public static ActionsHelperServiceRpc getActionsHelperServiceRpc() {
+        return SpringUtils.getApplicationContext().getBean(ActionsHelperServiceRpc.class);
+    }
 
     public static ContestEligibilityServiceRpc getContestEligibilityServiceRpc() {
         return SpringUtils.getApplicationContext().getBean(ContestEligibilityServiceRpc.class);
