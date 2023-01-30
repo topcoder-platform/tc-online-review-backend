@@ -7433,7 +7433,7 @@ INSERT INTO project_phase (project_phase_id, project_id, phase_type_id, phase_st
 INSERT INTO project_phase (project_phase_id, project_id, phase_type_id, phase_status_id, fixed_start_time, scheduled_start_time, scheduled_end_time, actual_start_time, actual_end_time, duration, create_user, create_date, modify_user, modify_date)
 	VALUES ('20932', '2093', '2', '2', '2022-10-10 13:45:22', '2022-10-10 13:45:22', '2022-11-09 13:45:22', NULL, NULL, '2592000000.0', '132456', '2022-10-10 13:45:22', '132456', '2022-10-10 13:45:22');
 INSERT INTO project_phase (project_phase_id, project_id, phase_type_id, phase_status_id, fixed_start_time, scheduled_start_time, scheduled_end_time, actual_start_time, actual_end_time, duration, create_user, create_date, modify_user, modify_date)
-	VALUES ('209318', '2093', '18', '1', '2022-10-11 13:45:22', '2022-10-11 13:45:22', '2022-10-12 13:45:22', NULL, NULL, '86400000.0', '132456', '2022-10-10 13:45:22', '132456', '2022-10-10 13:45:22');
+	VALUES ('209318', '2093', '18', '2', '2022-10-11 13:45:22', '2022-10-11 13:45:22', '2022-10-12 13:45:22', NULL, NULL, '86400000.0', '132456', '2022-10-10 13:45:22', '132456', '2022-10-10 13:45:22');
 --  Data for phase_criteria
 INSERT INTO phase_criteria (project_phase_id, phase_criteria_type_id, parameter, create_user, create_date, modify_user, modify_date)
 	VALUES ('20931', '2', '0', '132456', '2022-10-10 13:45:22', '132456', '2022-10-10 13:45:22');
@@ -7450,14 +7450,6 @@ INSERT INTO phase_dependency (dependency_phase_id, dependent_phase_id, dependenc
 	VALUES ('20931', '20932', '1', '1', '0', '132456', '2022-10-10 13:45:22', '132456', '2022-10-10 13:45:22');
 INSERT INTO phase_dependency (dependency_phase_id, dependent_phase_id, dependency_start, dependent_start, lag_time, create_user, create_date, modify_user, modify_date)
 	VALUES ('20932', '209318', '0', '1', '0', '132456', '2022-10-10 13:45:22', '132456', '2022-10-10 13:45:22');
---  Data for resource
-INSERT INTO resource (resource_id, resource_role_id, project_id, project_phase_id, user_id, create_user, create_date, modify_user, modify_date)
-	VALUES ('2093', '13', '2093', NULL, 132456, '132456', '2022-10-10 13:45:22', '132456', '2022-10-10 13:45:22');
---  Data for resource_info
-INSERT INTO resource_info (resource_id, resource_info_type_id, value, create_user, create_date, modify_user, modify_date)
-	VALUES ('2093', '1', '132456', '132456', '2022-10-10 13:45:22', '132456', '2022-10-10 13:45:22');
-INSERT INTO resource_info (resource_id, resource_info_type_id, value, create_user, create_date, modify_user, modify_date)
-	VALUES ('2093', '2', 'dok', '132456', '2022-10-10 13:45:22', '132456', '2022-10-10 13:45:22');
 
 -- Data for project
 INSERT INTO project (project_id, project_status_id, project_category_id, create_user, create_date, modify_user, modify_date)
@@ -8508,3 +8500,28 @@ INSERT INTO upload (upload_id, project_id, project_phase_id, resource_id, upload
 VALUES ("20392", "2082", "208213", "125205", 1, 1, 'no_file.txt', "124764", '2022-10-13 14:00:10', "124764", '2022-10-13 14:00:10');
 INSERT INTO submission (submission_id, upload_id, submission_status_id, screening_score, initial_score, final_score, placement, submission_type_id, create_user, create_date, modify_user, modify_date)
 VALUES ("20392", "20392", 1, NULL, NULL, NULL, NULL, "2", "124764", '2022-10-16 08:03:51', "124764", '2022-10-16 08:03:51');
+-- project_id = 2093 submitter
+INSERT INTO resource (resource_id, resource_role_id, project_id, project_phase_id, user_id, create_user, create_date, modify_user, modify_date)
+VALUES ('125201', '1', '2093', NULL, '124857', '124857', '2022-12-22 09:54:12.256', '124857', '2022-12-22 10:11:49.424');
+-- for reference: To reproduce the phase tab breaking error comment the resource_info
+-- INSERT INTO resource_info (resource_id, resource_info_type_id, value, create_user, create_date, modify_user, modify_date)
+-- VALUES ('125201', '1', '124857', '124857', '2022-10-08 08:45:22', '124857', '2022-10-08 08:45:22');
+
+--  Data for resource iterative reviewer
+INSERT INTO resource (resource_id, resource_role_id, project_id, project_phase_id, user_id, create_user, create_date, modify_user, modify_date)
+	VALUES ('2093', '21', '2093', NULL, 132456, '132456', '2022-10-10 13:45:22', '132456', '2022-10-10 13:45:22');
+--  Data for resource_info
+INSERT INTO resource_info (resource_id, resource_info_type_id, value, create_user, create_date, modify_user, modify_date)
+	VALUES ('2093', '1', '132456', '132456', '2022-10-10 13:45:22', '132456', '2022-10-10 13:45:22');
+INSERT INTO resource_info (resource_id, resource_info_type_id, value, create_user, create_date, modify_user, modify_date)
+	VALUES ('2093', '2', 'dok', '132456', '2022-10-10 13:45:22', '132456', '2022-10-10 13:45:22');
+-- submision 20393 from user cartajs
+INSERT INTO upload (upload_id, project_id, project_phase_id, resource_id, upload_type_id, upload_status_id, parameter, create_user, create_date, modify_user, modify_date)
+VALUES ("20393", "2093", "20932", "125201", 1, 1, 'no_file.txt', "124764", '2022-10-13 14:00:10', "124764", '2022-10-13 14:00:10');
+INSERT INTO submission (submission_id, upload_id, submission_status_id, screening_score, initial_score, final_score, placement, submission_type_id, create_user, create_date, modify_user, modify_date)
+VALUES ("20393", "20393", 1, NULL, NULL, NULL, NULL, "1", "124857", '2022-10-16 08:03:51', "124857", '2022-10-16 08:03:51');
+-- submission 20394 from user cartajs
+INSERT INTO upload (upload_id, project_id, project_phase_id, resource_id, upload_type_id, upload_status_id, parameter, create_user, create_date, modify_user, modify_date)
+VALUES ("20394", "2093", "20932", "125201", 1, 1, 'no_file.txt', "124764", '2022-10-13 14:00:10', "124764", '2022-10-13 14:00:10');
+INSERT INTO submission (submission_id, upload_id, submission_status_id, screening_score, initial_score, final_score, placement, submission_type_id, create_user, create_date, modify_user, modify_date)
+VALUES ("20394", "20394", 1, NULL, NULL, NULL, NULL, "1", "124764", '2022-10-16 08:03:51', "124764", '2022-10-16 08:03:51');
