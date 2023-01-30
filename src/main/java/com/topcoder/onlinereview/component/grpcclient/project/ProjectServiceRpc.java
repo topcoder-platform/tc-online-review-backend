@@ -660,8 +660,9 @@ public class ProjectServiceRpc {
     }
 
     private PrizeProto buildPrize(Prize prize) {
-        PrizeProto.Builder prizeBuilder = PrizeProto.newBuilder().setId(prize.getId()).setPlace(prize.getPlace())
-                .setPrizeAmount(prize.getPrizeAmount()).setNumberOfSubmissions(prize.getNumberOfSubmissions());
+        PrizeProto.Builder prizeBuilder = PrizeProto.newBuilder().setId(prize.getId())
+                .setProjectId(prize.getProjectId()).setPlace(prize.getPlace()).setPrizeAmount(prize.getPrizeAmount())
+                .setNumberOfSubmissions(prize.getNumberOfSubmissions());
         if (prize.getPrizeType() != null) {
             prizeBuilder.setPrizeType(PrizeTypeProto.newBuilder().setId(prize.getPrizeType().getId()));
         }
