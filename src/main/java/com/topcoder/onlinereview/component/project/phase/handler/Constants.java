@@ -113,6 +113,7 @@ public final class Constants {
     public static final String PHASE_CRITERIA_SCORECARD_ID = "Scorecard ID";
     public static final String PHASE_CRITERIA_REGISTRATION_NUMBER = "Registration Number";
     public static final String PHASE_CRITERIA_REVIEWER_NUMBER = "Reviewer Number";
+    public static final String PHASE_CRITERIA_SUBMISSION_NUMBER = "Submission Number";
 
     // ------------------------ Review Type Names -----
     public static final String REVIEW_TYPE_PEER = "PEER";
