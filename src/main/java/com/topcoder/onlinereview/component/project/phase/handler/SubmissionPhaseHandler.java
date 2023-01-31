@@ -13,6 +13,7 @@ import com.topcoder.onlinereview.component.project.phase.ManagerHelper;
 import com.topcoder.onlinereview.component.project.phase.OperationCheckResult;
 import com.topcoder.onlinereview.component.project.phase.Phase;
 import com.topcoder.onlinereview.component.project.phase.PhaseHandlingException;
+import com.topcoder.onlinereview.component.resource.Resource;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -175,6 +176,9 @@ public class SubmissionPhaseHandler extends AbstractPhaseHandler {
             if (!PhasesHelper.reachedPhaseEndTime(phase)) {
                 return new OperationCheckResult("Phase end time is not yet reached");
             }
+            else if (!areSubmissionsEnough(phase)) {
+                return new OperationCheckResult("Not enough submissions.");
+            }
             // version 1.1 : can stop if there is no submission
             return PhasesHelper.checkPhaseDependenciesMet(phase, false);
         }
@@ -257,6 +261,25 @@ public class SubmissionPhaseHandler extends AbstractPhaseHandler {
                                     subs, getManagerHelper().getResourceManager(), false));
         }
         return subs.length > 0;
+    }
+
+    /**
+     * This method checks if the number of submissions meets the required number.
+     * @param phase
+     *            the input phase to check.
+     * @return true if number of submissions is enough, false otherwise.
+     * @throws PhaseHandlingException
+     *             if there is any error occurred while processing the phase.
+     */
+    private boolean areSubmissionsEnough(Phase phase) throws PhaseHandlingException {
+        if (phase.getAttribute(Constants.PHASE_CRITERIA_SUBMISSION_NUMBER) == null) {
+            return true;
+        }
+
+        final int numSubmissions = PhasesHelper.getIntegerAttribute(phase, Constants.PHASE_CRITERIA_SUBMISSION_NUMBER);
+        final Submission[] subs = PhasesHelper.getActiveProjectSubmissions((getManagerHelper().getUploadManager()), phase.getProject().getId(), Constants.SUBMISSION_TYPE_CONTEST_SUBMISSION);
+
+        return subs.length >= numSubmissions;
     }
 
 }

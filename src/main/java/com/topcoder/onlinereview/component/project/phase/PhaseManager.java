@@ -7,6 +7,7 @@ import com.topcoder.onlinereview.component.grpcclient.phasehandler.PhaseHandlerS
 import com.topcoder.onlinereview.component.project.phase.handler.AbstractPhaseHandler;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Comparator;
 import java.util.Date;
@@ -409,6 +410,7 @@ public class PhaseManager {
    * @throws PhaseHandlingException if an exception occurs while starting the phase
    * @throws PhaseManagementException if an error occurs while persisting the change
    */
+  @Transactional
   public void start(Phase phase, String operator) throws PhaseManagementException {
     if (phase == null) {
       throw new IllegalArgumentException("phase must be non-null");
@@ -430,6 +432,9 @@ public class PhaseManager {
     phase.setPhaseStatus(
         new PhaseStatus(PhaseStatusEnum.OPEN.getId(), PhaseStatusEnum.OPEN.getName()));
     phase.setActualStartDate(new Date());
+    if (phase.getFixedStartDate() != null) {
+        phase.setFixedStartDate(phase.getActualStartDate());
+    }
     try {
       Phase[] allPhases = phase.getProject().getAllPhases();
       recalculateScheduledDates(allPhases);
@@ -502,6 +507,7 @@ public class PhaseManager {
    * @throws PhaseHandlingException if an exception occurs while starting the phase
    * @throws PhaseManagementException if an error occurs while persisting the change
    */
+  @Transactional
   public void end(Phase phase, String operator) throws PhaseManagementException {
     if (phase == null) {
       throw new IllegalArgumentException("phase must be non-null");
