@@ -44,8 +44,8 @@ public class ProjectManager {
     }
   }
 
-  public long[] searchProjectsForIds(String query) throws PersistenceException {
-    return this.persistence.searchProjectsForIds(query);
+  public long[] searchProjectsForIds() throws PersistenceException {
+    return this.persistence.searchProjectsForIds();
   }
 
   public Project[] getAllProjects(Long userId, ProjectStatus status, int page, int perPage, long categoryId,

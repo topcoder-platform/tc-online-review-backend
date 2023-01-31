@@ -867,7 +867,7 @@ public class ProjectPersistence {
    *
    * @return the id array
    */
-  public long[] searchProjectsForIds(String query) {
+  public long[] searchProjectsForIds() {
     try {
       return projectServiceRpc.searchProjectsForAutopilot();
 
