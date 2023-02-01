@@ -6523,7 +6523,7 @@ INSERT INTO project_phase (project_phase_id, project_id, phase_type_id, phase_st
 INSERT INTO project_phase (project_phase_id, project_id, phase_type_id, phase_status_id, fixed_start_time, scheduled_start_time, scheduled_end_time, actual_start_time, actual_end_time, duration, create_user, create_date, modify_user, modify_date)
 	VALUES ('20812', '2081', '2', '3', '2022-10-09 00:45:22', '2022-10-09 00:45:22', '2022-10-11 00:45:22', NULL, NULL, '172800000.0', '132456', '2022-10-09 00:45:22', '132456', '2022-10-09 00:45:22');
 INSERT INTO project_phase (project_phase_id, project_id, phase_type_id, phase_status_id, fixed_start_time, scheduled_start_time, scheduled_end_time, actual_start_time, actual_end_time, duration, create_user, create_date, modify_user, modify_date)
-	VALUES ('20813', '2081', '3', '2', '2022-10-11 00:45:22', '2022-10-11 00:45:22', '2022-10-11 12:45:22', NULL, NULL, '43200000.0', '132456', '2022-10-09 00:45:22', '132456', '2022-10-09 00:45:22');
+	VALUES ('20813', '2081', '3', '3', '2022-10-11 00:45:22', '2022-10-11 00:45:22', '2022-10-11 12:45:22', NULL, NULL, '43200000.0', '132456', '2022-10-09 00:45:22', '132456', '2022-10-09 00:45:22');
 INSERT INTO project_phase (project_phase_id, project_id, phase_type_id, phase_status_id, fixed_start_time, scheduled_start_time, scheduled_end_time, actual_start_time, actual_end_time, duration, create_user, create_date, modify_user, modify_date)
 	VALUES ('20814', '2081', '4', '1', '2022-10-11 12:45:22', '2022-10-11 12:45:22', '2022-10-12 12:45:22', NULL, NULL, '86400000.0', '132456', '2022-10-09 00:45:22', '132456', '2022-10-09 00:45:22');
 INSERT INTO project_phase (project_phase_id, project_id, phase_type_id, phase_status_id, fixed_start_time, scheduled_start_time, scheduled_end_time, actual_start_time, actual_end_time, duration, create_user, create_date, modify_user, modify_date)
@@ -6562,6 +6562,34 @@ INSERT INTO resource_info (resource_id, resource_info_type_id, value, create_use
 	VALUES ('2081', '1', '132456', '132456', '2022-10-09 00:45:22', '132456', '2022-10-09 00:45:22');
 INSERT INTO resource_info (resource_id, resource_info_type_id, value, create_user, create_date, modify_user, modify_date)
 	VALUES ('2081', '2', 'dok', '132456', '2022-10-09 00:45:22', '132456', '2022-10-09 00:45:22');
+-- Reviewer
+INSERT INTO resource (resource_id, resource_role_id, project_id, project_phase_id, user_id, create_user, create_date, modify_user, modify_date)
+  VALUES ('20811', '4', '2081', 20814, 132456, '132456', '2022-10-16 08:03:51', '132456', '2022-10-16 08:03:51');
+INSERT INTO resource_info (resource_id, resource_info_type_id, value, create_user, create_date, modify_user, modify_date)
+  VALUES ('20811', '1', '132456', '132456', '2022-10-16 08:03:51', '132456', '2022-10-16 08:03:51');
+INSERT INTO resource_info (resource_id, resource_info_type_id, value, create_user, create_date, modify_user, modify_date)
+  VALUES ('20811', '2', 'dok', '132456', '2022-10-16 08:03:51', '132456', '2022-10-16 08:03:51');
+-- Screener
+INSERT INTO resource (resource_id, resource_role_id, project_id, project_phase_id, user_id, create_user, create_date, modify_user, modify_date)
+  VALUES ('20812', '2', '2081', 20813, 132456, '132456', '2022-10-16 08:03:51', '132456', '2022-10-16 08:03:51');
+INSERT INTO resource_info (resource_id, resource_info_type_id, value, create_user, create_date, modify_user, modify_date)
+  VALUES ('20812', '1', '132456', '132456', '2022-10-16 08:03:51', '132456', '2022-10-16 08:03:51');
+INSERT INTO resource_info (resource_id, resource_info_type_id, value, create_user, create_date, modify_user, modify_date)
+  VALUES ('20812', '2', 'dok', '132456', '2022-10-16 08:03:51', '132456', '2022-10-16 08:03:51');
+-- Submitter
+INSERT INTO resource (resource_id, resource_role_id, project_id, project_phase_id, user_id, create_user, create_date, modify_user, modify_date)
+  VALUES ('20813', '1', '2081', NULL, 124834, '124834', '2022-10-09 08:03:51', '124834', '2022-10-09 08:03:51');
+INSERT INTO resource_info (resource_id, resource_info_type_id, value, create_user, create_date, modify_user, modify_date)
+  VALUES ('20813', '1', '124834', '124834', '2022-10-09 08:03:51', '124834', '2022-10-09 08:03:51');
+INSERT INTO resource_info (resource_id, resource_info_type_id, value, create_user, create_date, modify_user, modify_date)
+  VALUES ('20813', '2', 'lightspeed', '124834', '2022-10-09 08:03:51', '124834', '2022-10-09 08:03:51');
+INSERT INTO upload (upload_id, project_id, project_phase_id, resource_id, upload_type_id, upload_status_id, parameter, create_user, create_date, modify_user, modify_date)
+  VALUES ("20811", "2081", "20812", "20813", 1, 1, 'no_file.txt', "124834", '2022-10-09 08:03:51', "124834", '2022-10-09 08:03:51');
+INSERT INTO submission (submission_id, upload_id, submission_status_id, screening_score, initial_score, final_score, placement, submission_type_id, create_user, create_date, modify_user, modify_date)
+  VALUES ("20811", "20811", 2, 7.83, 7.83, 7.83, 1, "1", "124834", '2022-10-09 08:03:51', "124834", '2022-10-09 08:03:51');
+-- Screening
+INSERT INTO review (review_id, resource_id, submission_id, project_phase_id, scorecard_id, committed, score, initial_score, create_user, create_date, modify_user, modify_date)
+  VALUES ('30032', '20812', '20811', '20813', '30000410', '1', '7.83', '7.83', '132456', '2022-10-11 08:00:10.0', '132456', '2022-10-11 08:00:10.0');
 
 -- Data for project
 INSERT INTO project (project_id, project_status_id, project_category_id, create_user, create_date, modify_user, modify_date)
