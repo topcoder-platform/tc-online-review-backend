@@ -3,18 +3,15 @@
  */
 package com.topcoder.onlinereview.component.webcommon;
 
-import com.topcoder.onlinereview.component.shared.dataaccess.DataAccessConstants;
-import com.topcoder.onlinereview.component.shared.dataaccess.Request;
+import com.topcoder.onlinereview.component.grpcclient.GrpcHelper;
+import com.topcoder.onlinereview.component.grpcclient.webcommon.WebCommonServiceRpc;
+import com.topcoder.onlinereview.grpc.webcommon.proto.GetUserPasswordResponse;
 
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.security.MessageDigest;
-import java.util.List;
-import java.util.Map;
 
-import static com.topcoder.onlinereview.component.util.CommonUtils.getString;
-import static com.topcoder.onlinereview.component.util.SpringUtils.getOltpJdbcTemplate;
 import static com.topcoder.onlinereview.component.util.SpringUtils.getPropertyValue;
 
 /**
@@ -177,14 +174,11 @@ public class SSOCookieService {
      */
     private String hashForUser(long uid) throws Exception {
         //log.debug("hash for user: " + uid);
-        CachedDataAccess dai = new CachedDataAccess(getOltpJdbcTemplate());
-        Request dataRequest = new Request();
-        dataRequest.setProperty(DataAccessConstants.COMMAND, "userid_to_password");
-        dataRequest.setProperty("uid", Long.toString(uid));
-        Map<String, List<Map<String, Object>>> dataMap = dai.getData(dataRequest);
-        List<Map<String, Object>> rsc = dataMap.get("userid_to_password");
-        String password = getString(rsc.get(0), "password");
-        String status = getString(rsc.get(0), "status");
+        WebCommonServiceRpc webCommonServiceRpc = GrpcHelper.getWebCommonServiceRpc();
+        GetUserPasswordResponse result = webCommonServiceRpc.getUserPassword(uid);
+
+        String password = result.hasPassword() ? result.getPassword() : null;
+        String status = result.hasStatus() ? result.getStatus() : null;
 
 
         String plainString = getPropertyValue("SSO_HASH_SECRET") + uid + password + status;

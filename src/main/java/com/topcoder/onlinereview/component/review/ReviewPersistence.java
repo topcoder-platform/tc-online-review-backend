@@ -3,27 +3,21 @@
  */
 package com.topcoder.onlinereview.component.review;
 
-import com.topcoder.onlinereview.component.datavalidator.NotValidator;
-import com.topcoder.onlinereview.component.datavalidator.NullValidator;
-import com.topcoder.onlinereview.component.datavalidator.ObjectValidator;
-import com.topcoder.onlinereview.component.id.DBHelper;
-import com.topcoder.onlinereview.component.id.IDGenerationException;
-import com.topcoder.onlinereview.component.id.IDGenerator;
+import com.topcoder.onlinereview.component.grpcclient.review.ReviewServiceRpc;
 import com.topcoder.onlinereview.component.project.management.LogMessage;
-import com.topcoder.onlinereview.component.search.SearchBundle;
-import com.topcoder.onlinereview.component.search.SearchBundleManager;
 import com.topcoder.onlinereview.component.search.filter.Filter;
+import com.topcoder.onlinereview.grpc.review.proto.CommentTypeProto;
+import com.topcoder.onlinereview.grpc.review.proto.ReviewCommentProto;
+import com.topcoder.onlinereview.grpc.review.proto.ReviewItemCommentProto;
+import com.topcoder.onlinereview.grpc.review.proto.ReviewItemProto;
+
+import io.grpc.StatusRuntimeException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import javax.annotation.PostConstruct;
-import java.sql.Connection;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -33,13 +27,6 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 import static com.google.common.collect.Lists.newArrayList;
-import static com.topcoder.onlinereview.component.util.CommonUtils.executeSql;
-import static com.topcoder.onlinereview.component.util.CommonUtils.executeSqlWithParam;
-import static com.topcoder.onlinereview.component.util.CommonUtils.getBoolean;
-import static com.topcoder.onlinereview.component.util.CommonUtils.getDate;
-import static com.topcoder.onlinereview.component.util.CommonUtils.getDouble;
-import static com.topcoder.onlinereview.component.util.CommonUtils.getLong;
-import static com.topcoder.onlinereview.component.util.CommonUtils.getString;
 
 /**
  * This class is responsible for creating, updating, searching and deleting the review entities
@@ -98,220 +85,8 @@ import static com.topcoder.onlinereview.component.util.CommonUtils.getString;
 @Component
 public class ReviewPersistence {
 
-  /** Represents the id generator name used to get reviewIDGenerator from IDGeneratorFactory. */
-  public static final String REVIEW_ID_SEQ = "review_id_seq";
-  /**
-   * Represents the id generator name used to get reviewCommentIDGenerator from IDGeneratorFactory.
-   */
-  public static final String REVIEW_COMMENT_ID_SEQ = "review_comment_id_seq";
-
-  /** Represents the id generator name used to get reviewItemIDGenerator from IDGeneratorFactory. */
-  public static final String REVIEW_ITEM_ID_SEQ = "review_item_id_seq";
-  /**
-   * Represents the id generator name used to get reviewItemCommentIDGenerator from
-   * IDGeneratorFactory.
-   */
-  public static final String REVIEW_ITEM_COMMENT_ID_SEQ = "review_item_comment_id_seq";
-
-  /** Represents the name of search bundle name parameter in configuration. */
-  private static final String SEARCH_BUNDLE_NAME = "Review Search Bundle";
-
-  /** Represents the review table. */
-  private static final String REVIEW_TABLE = "review";
-
-  /** Represents the review comment table. */
-  private static final String REVIEW_COMMENT_TABLE = "review_comment";
-
-  /** Represents the review item table. */
-  private static final String REVIEW_ITEM_TABLE = "review_item";
-
-  /** Represents the review item comment table. */
-  private static final String REVIEW_ITEM_COMMENT_TABLE = "review_item_comment";
-
-  /** Represents the comment type lookup table. */
-  private static final String COMMENT_TYPE_LOOKUP_TABLE = "comment_type_lu";
-
-  /**
-   * Represents the name of the table that stores upload records. This is a string constant.
-   *
-   * @since 1.2
-   */
-  private static final String UPLOAD_TABLE = "upload";
-
-  /** Represents the placeholder string in a sql statement to be replaced by a set of ids. */
-  private static final String ID_ARRAY_PARAMETER_PLACEHOLDER = "$ID_ARRAY$";
-
-  /**
-   * Represents the regular expression string used to find the id-array placeholder string in a sql
-   * statement.
-   */
-  private static final String ID_ARRAY_PARAMETER_REGULAR_EXP = "\\$ID_ARRAY\\$";
-
-  /** Represents the sql statement to create review. */
-  private static final String CREATE_REVIEW_SQL =
-      "INSERT INTO "
-          + REVIEW_TABLE
-          + " (review_id, resource_id, submission_id, project_phase_id, scorecard_id, committed, score, initial_score,"
-          + " create_user, create_date, modify_user, modify_date)"
-          + " values (?,?,?,?,?,?,?,?,?,CURRENT,?,CURRENT)";
-
-  /** Represents the sql statement to create review comment. */
-  private static final String CREATE_REVIEW_COMMENT_SQL =
-      "INSERT INTO "
-          + REVIEW_COMMENT_TABLE
-          + " (review_comment_id, resource_id, review_id, comment_type_id, content, extra_info, sort,"
-          + " create_user, create_date, modify_user, modify_date)"
-          + " values (?,?,?,?,?,?,?,?,CURRENT,?,CURRENT)";
-
-  /** Represents the sql statement to create review item. */
-  private static final String CREATE_REVIEW_ITEM_SQL =
-      "INSERT INTO "
-          + REVIEW_ITEM_TABLE
-          + " (review_item_id, review_id, scorecard_question_id, upload_id, answer, sort,"
-          + " create_user, create_date, modify_user, modify_date)"
-          + " values (?,?,?,?,?,?,?,CURRENT,?,CURRENT)";
-
-  /** Represents the sql statement to create review item comment. */
-  private static final String CREATE_REVIEW_ITEM_COMMENT_SQL =
-      "INSERT INTO "
-          + REVIEW_ITEM_COMMENT_TABLE
-          + " (review_item_comment_id, resource_id, review_item_id, comment_type_id, content, extra_info, sort,"
-          + " create_user, create_date, modify_user, modify_date)"
-          + " values (?,?,?,?,?,?,?,?,CURRENT,?,CURRENT)";
-
-  /** Represents the sql statement to update review. */
-  private static final String UPDATE_REVIEW_SQL =
-      "UPDATE "
-          + REVIEW_TABLE
-          + " SET resource_id=?, submission_id=?, project_phase_id = ?, scorecard_id=?, committed=?, score=?, initial_score=?,"
-          + " modify_user=?, modify_date=CURRENT"
-          + " WHERE review_id=?";
-
-  /** Represents the sql statement to update review comment. */
-  private static final String UPDATE_REVIEW_COMMENT_SQL =
-      "UPDATE "
-          + REVIEW_COMMENT_TABLE
-          + " SET resource_id=?, comment_type_id=?, content=?, extra_info=?, sort=?,"
-          + " modify_user=?, modify_date=CURRENT"
-          + " WHERE review_comment_id=?";
-
-  /** Represents the sql statement to update review item. */
-  private static final String UPDATE_REVIEW_ITEM_SQL =
-      "UPDATE "
-          + REVIEW_ITEM_TABLE
-          + " SET scorecard_question_id=?, upload_id=?, answer=?, sort=?,"
-          + " modify_user=?, modify_date=CURRENT"
-          + " WHERE review_item_id=?";
-
-  /** Represents the sql statement to update review item comment. */
-  private static final String UPDATE_REVIEW_ITEM_COMMENT_SQL =
-      "UPDATE "
-          + REVIEW_ITEM_COMMENT_TABLE
-          + " SET resource_id=?, comment_type_id=?, content=?, extra_info=?, sort=?,"
-          + " modify_user=?, modify_date=CURRENT"
-          + " WHERE review_item_comment_id=?";
-
-  /** Represents the sql statement to query reviews. */
-  private static final String QUERY_REVIEWS_SQL =
-      "SELECT "
-          + "review_id, resource_id, submission_id, project_phase_id, scorecard_id, committed, score, initial_score, "
-          + "create_user, create_date, modify_user, modify_date FROM "
-          + REVIEW_TABLE
-          + " WHERE review_id IN ("
-          + ID_ARRAY_PARAMETER_PLACEHOLDER
-          + ")";
-
-  /** Represents the sql statement to query review comments. */
-  private static final String QUERY_REVIEW_COMMENTS_SQL =
-      "SELECT "
-          + "review_comment_id, resource_id, review_id, comment_type_id, content, extra_info "
-          + "FROM "
-          + REVIEW_COMMENT_TABLE
-          + " WHERE review_id IN ("
-          + ID_ARRAY_PARAMETER_PLACEHOLDER
-          + ") ORDER BY review_id, sort";
-
-  /** Represents the sql statement to query review comments. */
-  private static final String QUERY_REVIEW_COMMENTS_NO_CONTENT_SQL =
-      "SELECT "
-          + "review_comment_id, resource_id, review_id, comment_type_id "
-          + "FROM "
-          + REVIEW_COMMENT_TABLE
-          + " WHERE review_id IN ("
-          + ID_ARRAY_PARAMETER_PLACEHOLDER
-          + ") ORDER BY review_id, sort";
-
-  /** Represents the sql statement to query review items. */
-  private static final String QUERY_REVIEW_ITEMS_SQL =
-      "SELECT "
-          + "review_item_id, review_id, scorecard_question_id, upload_id, answer "
-          + "FROM "
-          + REVIEW_ITEM_TABLE
-          + " WHERE review_id IN ("
-          + ID_ARRAY_PARAMETER_PLACEHOLDER
-          + ") ORDER BY review_id, sort";
-
-  /** Represents the sql statement to query review item comments. */
-  private static final String QUERY_REVIEW_ITEM_COMMENTS_SQL =
-      "SELECT "
-          + "ric.review_item_comment_id, ric.resource_id, ric.review_item_id, ric.comment_type_id, "
-          + "ric.content, ric.extra_info "
-          + "FROM "
-          + REVIEW_ITEM_COMMENT_TABLE
-          + " ric "
-          + "INNER JOIN "
-          + REVIEW_ITEM_TABLE
-          + " ri ON ric.review_item_id=ri.review_item_id AND "
-          + "ri.review_id IN ("
-          + ID_ARRAY_PARAMETER_PLACEHOLDER
-          + ") "
-          + "ORDER BY ric.review_item_id, ric.sort";
-
-  /** Represents the sql statement to query review item comments. */
-  private static final String QUERY_REVIEW_ITEM_COMMENTS_NO_CONTENT_SQL =
-      "SELECT "
-          + "ric.review_item_comment_id, ric.resource_id, ric.review_item_id, ric.comment_type_id "
-          + "FROM "
-          + REVIEW_ITEM_COMMENT_TABLE
-          + " ric "
-          + "INNER JOIN "
-          + REVIEW_ITEM_TABLE
-          + " ri ON ric.review_item_id=ri.review_item_id AND "
-          + "ri.review_id IN ("
-          + ID_ARRAY_PARAMETER_PLACEHOLDER
-          + ") "
-          + "ORDER BY ric.review_item_id, ric.sort";
-
-  /** Represents the sql statement to query review comment IDs. */
-  private static final String QUERY_REVIEW_COMMENT_IDS_SQL =
-      "SELECT " + "review_comment_id FROM " + REVIEW_COMMENT_TABLE + " WHERE review_id=?";
-
-  /** Represents the sql statement to query review item IDs. */
-  private static final String QUERY_REVIEW_ITEM_IDS_SQL =
-      "SELECT " + "review_item_id FROM " + REVIEW_ITEM_TABLE + " WHERE review_id=?";
-
-  /** Represents the sql statement to query review item comment IDs. */
-  private static final String QUERY_REVIEW_ITEM_COMMENT_IDS_SQL =
-      "SELECT "
-          + "review_item_comment_id FROM "
-          + REVIEW_ITEM_COMMENT_TABLE
-          + " WHERE review_item_id=?";
-
-  /** Represents the sql statement to query all comment types. */
-  private static final String QUERY_ALL_COMMENT_TYPES_SQL =
-      "SELECT comment_type_id, name FROM " + COMMENT_TYPE_LOOKUP_TABLE;
-
-  /**
-   * Represents the sql statement to query review items uploads.
-   *
-   * @since 1.2
-   */
-  private static final String QUERY_REVIEW_ITEM_UPLOADS_SQL =
-      "SELECT upload_id FROM "
-          + REVIEW_ITEM_TABLE
-          + "  WHERE review_item_id IN ("
-          + ID_ARRAY_PARAMETER_PLACEHOLDER
-          + ")";
+  @Autowired
+  ReviewServiceRpc reviewServiceRpc;
 
   /** Cached comment types. Set and read in the getAllCommentTypes() method. */
   private static CommentType[] cachedCommentTypes = null;
@@ -337,50 +112,6 @@ public class ReviewPersistence {
    *   <li>committed --- review.committed
    * </ol>
    */
-  private SearchBundle searchBundle;
-
-  /** The IDGenerator used to generate the review id. It's set in the constructor, not-null. */
-  private IDGenerator reviewIDGenerator;
-
-  /**
-   * The IDGenerator used to generate the review comment id. It's set in the constructor, not-null.
-   */
-  private IDGenerator reviewCommentIDGenerator;
-
-  /** The IDGenerator used to generate the review item id. It's set in the constructor, not-null. */
-  private IDGenerator reviewItemIDGenerator;
-
-  /**
-   * The IDGenerator used to generate the review item comment id. It's set in the constructor,
-   * not-null.
-   */
-  private IDGenerator reviewItemCommentIDGenerator;
-
-  @Autowired private DBHelper dbHelper;
-  @Autowired private SearchBundleManager searchBundleManager;
-
-  @Autowired
-  @Qualifier("tcsJdbcTemplate")
-  private JdbcTemplate jdbcTemplate;
-
-  @PostConstruct
-  public void postRun() throws IDGenerationException {
-    reviewIDGenerator = new IDGenerator(REVIEW_ID_SEQ, dbHelper);
-    reviewCommentIDGenerator = new IDGenerator(REVIEW_COMMENT_ID_SEQ, dbHelper);
-    reviewItemIDGenerator = new IDGenerator(REVIEW_ITEM_ID_SEQ, dbHelper);
-    reviewItemCommentIDGenerator = new IDGenerator(REVIEW_ITEM_COMMENT_ID_SEQ, dbHelper);
-    searchBundle = searchBundleManager.getSearchBundle(SEARCH_BUNDLE_NAME);
-    // create the searchable fields map.
-    Map<String, ObjectValidator> fieldsMap = new HashMap<>();
-    ObjectValidator notNullValidator = new NotValidator(new NullValidator());
-    fieldsMap.put("scorecardType", notNullValidator);
-    fieldsMap.put("submission", notNullValidator);
-    fieldsMap.put("projectPhase", notNullValidator);
-    fieldsMap.put("reviewer", notNullValidator);
-    fieldsMap.put("project", notNullValidator);
-    fieldsMap.put("committed", notNullValidator);
-    searchBundle.setSearchableFields(fieldsMap);
-  }
 
   /**
    * Check if the given review is valid. A Review object is considered valid if:
@@ -581,13 +312,13 @@ public class ReviewPersistence {
     // create a change table to record the new Ids for Review, Item or
     // Comment.
     Map<Object, Long> changeTable = new HashMap<>();
-    // createDate will contain the create_date retrieved from database.
-    Date createDate;
+
+    Date createDate = new Date();
     log.debug(new LogMessage(null, operator, "creating new Review.").toString());
     try {
       // check whether the review id is already in the database
       if (review.getId() > 0) {
-        if (Helper.countEntities(REVIEW_TABLE, "review_id", review.getId(), jdbcTemplate) != 0) {
+        if (reviewServiceRpc.isReviewExists(review.getId())) {
           log.error(
               new LogMessage(
                       review.getId(),
@@ -599,14 +330,7 @@ public class ReviewPersistence {
         }
       }
       // create the review.
-      createReview(review, operator, changeTable);
-      // get the creation date.
-      createDate =
-          Helper.doSingleValueQuery(
-              jdbcTemplate,
-              "SELECT create_date FROM " + REVIEW_TABLE + " WHERE review_id=?",
-              new Object[] {changeTable.get(review)},
-              d -> getDate(d, "create_date"));
+      createReview(review, operator, createDate, changeTable);
     } catch (ReviewPersistenceException e) {
       log.error(
           new LogMessage(null, operator, "Error occurs during create new Review.", e).toString());
@@ -630,51 +354,12 @@ public class ReviewPersistence {
    * @param changeTable the change table
    * @throws ReviewPersistenceException if any error occurs during the creation
    */
-  private void createReview(Review review, String operator, Map<Object, Long> changeTable)
+  private void createReview(Review review, String operator, Date date, Map<Object, Long> changeTable)
       throws ReviewPersistenceException {
-    Long newId;
-    try {
-      // generate id for the review
-      newId = reviewIDGenerator.getNextID();
-      log.debug("Get new review id :" + newId);
-    } catch (IDGenerationException e) {
-      throw new ReviewPersistenceException("Unable to generate id for review.", e);
-    }
+    long newId = reviewServiceRpc.createReview(review, operator, date);
     // add the review and newId pair to the change table.
     changeTable.put(review, newId);
-    // insert the review into database
-    Object[] queryArgs;
-    if (review.getSubmission() > 0) {
-      queryArgs =
-          new Object[] {
-            newId,
-            review.getAuthor(),
-            review.getSubmission(),
-            review.getProjectPhase(),
-            review.getScorecard(),
-            review.isCommitted() ? 1 : 0,
-            review.getScore(),
-            review.getInitialScore(),
-            operator,
-            operator
-          };
-    } else {
-      queryArgs =
-          new Object[] {
-            newId,
-            review.getAuthor(),
-            null,
-            review.getProjectPhase(),
-            review.getScorecard(),
-            review.isCommitted() ? 1 : 0,
-            review.getScore(),
-            review.getInitialScore(),
-            operator,
-            operator
-          };
-    }
-    Helper.doDMLQuery(jdbcTemplate, CREATE_REVIEW_SQL, queryArgs);
-    log.debug("insert record into " + REVIEW_TABLE + " with new id:" + newId);
+
     // create review comments
     createReviewComments(
         review.getAllComments(),
@@ -712,27 +397,11 @@ public class ReviewPersistence {
       // enumerate each review comment
       for (int i = 0; i < comments.length; ++i) {
         Comment comment = comments[i];
-        // generate id for the review comment
-        Long newId = reviewCommentIDGenerator.getNextID();
-        log.debug("generate new review comment id :" + newId);
+        long newId = reviewServiceRpc.createReviewComment(comment, reviewId, indices[i], operator, new Date());
         // add the comment and newId pair to the change table.
         changeTable.put(comment, newId);
-        // insert the review comment into database
-        Object[] queryArgs = {
-          newId,
-          comment.getAuthor(),
-          reviewId,
-          comment.getCommentType().getId(),
-          comment.getComment(),
-          comment.getExtraInfo(),
-          indices[i],
-          operator,
-          operator
-        };
-        log.debug("insert record into " + REVIEW_COMMENT_TABLE + " with new id:" + newId);
-        Helper.doDMLQuery(jdbcTemplate, CREATE_REVIEW_COMMENT_SQL, queryArgs);
       }
-    } catch (IDGenerationException e) {
+    } catch (StatusRuntimeException e) {
       throw new ReviewPersistenceException("Unable to generate id for review comment.", e);
     }
   }
@@ -755,23 +424,8 @@ public class ReviewPersistence {
       for (int i = 0; i < items.length; ++i) {
         Item item = items[i];
         // generate id for the review item
-        Long newId = reviewItemIDGenerator.getNextID();
-        log.debug("generate new review Item id :" + newId);
-        // add the item and newId pair into the change table.
+        Long newId = reviewServiceRpc.createReviewItem(item, reviewId, indices[i], operator, new Date());
         changeTable.put(item, newId);
-        // insert the review item into database
-        Object[] queryArgs = {
-          newId,
-          reviewId,
-          item.getQuestion(),
-          item.getDocument(),
-          item.getAnswer(),
-          indices[i],
-          operator,
-          operator
-        };
-        log.debug("insert record into " + REVIEW_ITEM_TABLE + " with new id:" + newId);
-        Helper.doDMLQuery(jdbcTemplate, CREATE_REVIEW_ITEM_SQL, queryArgs);
         // create review item comments
         createReviewItemComments(
             item.getAllComments(),
@@ -780,7 +434,7 @@ public class ReviewPersistence {
             operator,
             changeTable);
       }
-    } catch (IDGenerationException e) {
+    } catch (StatusRuntimeException e) {
       throw new ReviewPersistenceException("Unable to generate id for review item.", e);
     }
   }
@@ -807,26 +461,11 @@ public class ReviewPersistence {
       for (int i = 0; i < comments.length; ++i) {
         Comment comment = comments[i];
         // generate id for the review item comment
-        Long newId = reviewItemCommentIDGenerator.getNextID();
-        log.debug("generate new review Item comment id :" + newId);
+        Long newId = reviewServiceRpc.createReviewItemComment(comment, itemId, indices[i], operator, new Date());
         // add the comment and newId pair to the change table.
         changeTable.put(comment, newId);
-        // insert the review item comment into database
-        Object[] queryArgs = {
-          newId,
-          comment.getAuthor(),
-          itemId,
-          comment.getCommentType().getId(),
-          comment.getComment(),
-          comment.getExtraInfo(),
-          indices[i],
-          operator,
-          operator
-        };
-        log.debug("insert record into " + REVIEW_ITEM_COMMENT_TABLE + " with new id:" + newId);
-        Helper.doDMLQuery(jdbcTemplate, CREATE_REVIEW_ITEM_COMMENT_SQL, queryArgs);
       }
-    } catch (IDGenerationException e) {
+    } catch (StatusRuntimeException e) {
       throw new ReviewPersistenceException("Unable to generate id for review item comment.", e);
     }
   }
@@ -853,17 +492,16 @@ public class ReviewPersistence {
     Helper.assertStringNotNullNorEmpty(operator, "operator");
     Helper.assertLongPositive(review.getId(), "review id");
     assertReviewValid(review);
-    Connection conn = null;
     // create a change table to record the new Ids for Review, Item or
     // Comment.
     Map<Object, Long> changeTable = new HashMap<Object, Long>();
     // modifyDate will contain the modify_date retrieved from database.
-    Date modifyDate;
+    Date modifyDate = new Date();
     log.debug(new LogMessage(review.getId(), operator, "Update Review.").toString());
     try {
       // create the connection
       // check whether the review id is already in the database
-      if (Helper.countEntities(REVIEW_TABLE, "review_id", review.getId(), jdbcTemplate) == 0) {
+      if (!reviewServiceRpc.isReviewExists(review.getId())) {
         log.error(
             new LogMessage(
                     review.getId(),
@@ -875,14 +513,7 @@ public class ReviewPersistence {
             review.getId());
       }
       // update the review.
-      updateReview(review, operator, changeTable);
-      // get the modification date.
-      modifyDate =
-          Helper.doSingleValueQuery(
-              jdbcTemplate,
-              "SELECT modify_date FROM " + REVIEW_TABLE + " WHERE review_id=?",
-              new Object[] {review.getId()},
-              d -> getDate(d, "modify_date"));
+      updateReview(review, operator, modifyDate, changeTable);
     } catch (ReviewPersistenceException e) {
       log.error(
           new LogMessage(review.getId(), operator, "Error occurs during update Review.", e)
@@ -905,40 +536,10 @@ public class ReviewPersistence {
    * @param changeTable the change table
    * @throws ReviewPersistenceException if any error occurs during the update
    */
-  private void updateReview(Review review, String operator, Map<Object, Long> changeTable)
+  private void updateReview(Review review, String operator, Date date, Map<Object, Long> changeTable)
       throws ReviewPersistenceException {
     Long reviewId = review.getId();
-    // update the review item in database
-    Object[] queryArgs;
-    if (review.getSubmission() > 0) {
-      queryArgs =
-          new Object[] {
-            review.getAuthor(),
-            review.getSubmission(),
-            review.getProjectPhase(),
-            review.getScorecard(),
-            review.isCommitted() ? 1 : 0,
-            review.getScore(),
-            review.getInitialScore(),
-            operator,
-            reviewId
-          };
-    } else {
-      queryArgs =
-          new Object[] {
-            review.getAuthor(),
-            null,
-            review.getProjectPhase(),
-            review.getScorecard(),
-            review.isCommitted() ? 1 : 0,
-            review.getScore(),
-            review.getInitialScore(),
-            operator,
-            reviewId
-          };
-    }
-    log.debug("update record in the  " + REVIEW_TABLE + " table with id:" + reviewId);
-    Helper.doDMLQuery(jdbcTemplate, UPDATE_REVIEW_SQL, queryArgs);
+    reviewServiceRpc.updateReview(review, operator, date);
     // update review comments
     updateReviewComments(
         review.getAllComments(),
@@ -1016,17 +617,7 @@ public class ReviewPersistence {
   private void updateReviewComment(Comment comment, Long index, String operator)
       throws ReviewPersistenceException {
     // update the review comment in database
-    Object[] queryArgs = {
-      comment.getAuthor(),
-      comment.getCommentType().getId(),
-      comment.getComment(),
-      comment.getExtraInfo(),
-      index,
-      operator,
-      comment.getId()
-    };
-    log.debug("update record in the " + REVIEW_COMMENT_TABLE + " table with id:" + comment.getId());
-    Helper.doDMLQuery(jdbcTemplate, UPDATE_REVIEW_COMMENT_SQL, queryArgs);
+    reviewServiceRpc.updateReviewComment(comment, index, operator, new Date());
   }
 
   /**
@@ -1087,18 +678,12 @@ public class ReviewPersistence {
   private void updateReviewItem(
       Item item, Long index, String operator, Map<Object, Long> changeTable)
       throws ReviewPersistenceException {
-    log.debug("execute sql:" + UPDATE_REVIEW_ITEM_SQL);
-    Long itemId = item.getId();
-    // update the review item in database
-    Object[] queryArgs = {
-      item.getQuestion(), item.getDocument(), item.getAnswer(), index, operator, itemId
-    };
-    Helper.doDMLQuery(jdbcTemplate, UPDATE_REVIEW_ITEM_SQL, queryArgs);
+    reviewServiceRpc.updateReviewItem(item, index, operator, new Date());
     // update the review item comments
     updateReviewItemComments(
         item.getAllComments(),
         makeAscendingLongArray(item.getNumberOfComments()),
-        itemId,
+        item.getId(),
         operator,
         changeTable);
   }
@@ -1163,18 +748,7 @@ public class ReviewPersistence {
    */
   private void updateReviewItemComment(Comment comment, Long index, String operator)
       throws ReviewPersistenceException {
-    log.debug("execute sql:" + UPDATE_REVIEW_ITEM_COMMENT_SQL);
-    // update the review item comment in database
-    Object[] queryArgs = {
-      comment.getAuthor(),
-      comment.getCommentType().getId(),
-      comment.getComment(),
-      comment.getExtraInfo(),
-      index,
-      operator,
-      comment.getId()
-    };
-    Helper.doDMLQuery(jdbcTemplate, UPDATE_REVIEW_ITEM_COMMENT_SQL, queryArgs);
+    reviewServiceRpc.updateReviewItemComment(comment, index, operator, new Date());
   }
 
   /**
@@ -1185,12 +759,11 @@ public class ReviewPersistence {
    * @throws ReviewPersistenceException if any error occurs during the query
    */
   private Set<Long> getReviewCommentIDs(Long reviewId) {
-    List<Map<String, Object>> result =
-        executeSqlWithParam(jdbcTemplate, QUERY_REVIEW_COMMENT_IDS_SQL, newArrayList(reviewId));
+    List<Long> result = reviewServiceRpc.getReviewCommentIds(reviewId);
     // build the set from result list
     Set<Long> reviewCommentIDs = new HashSet<>();
-    for (Map<String, Object> map : result) {
-      reviewCommentIDs.add(getLong(map, "review_comment_id"));
+    for (Long id : result) {
+      reviewCommentIDs.add(id);
     }
     return reviewCommentIDs;
   }
@@ -1203,12 +776,11 @@ public class ReviewPersistence {
    * @throws ReviewPersistenceException if any error occurs during the query
    */
   private Set<Long> getReviewItemIDs(Long reviewId) throws ReviewPersistenceException {
-    List<Map<String, Object>> result =
-        executeSqlWithParam(jdbcTemplate, QUERY_REVIEW_ITEM_IDS_SQL, newArrayList(reviewId));
+    List<Long> result = reviewServiceRpc.getReviewItemIds(reviewId);
     // build the set from result list
     Set<Long> reviewItemIDs = new HashSet<>();
-    for (Map<String, Object> map : result) {
-      reviewItemIDs.add(getLong(map, "review_item_id"));
+    for (Long id : result) {
+      reviewItemIDs.add(id);
     }
     return reviewItemIDs;
   }
@@ -1221,13 +793,11 @@ public class ReviewPersistence {
    * @throws ReviewPersistenceException if any error occurs during the query
    */
   private Set<Long> getReviewItemCommentIDs(Long itemId) {
-    log.debug("execute sql:" + QUERY_REVIEW_ITEM_COMMENT_IDS_SQL);
-    List<Map<String, Object>> result =
-        executeSqlWithParam(jdbcTemplate, QUERY_REVIEW_ITEM_COMMENT_IDS_SQL, newArrayList(itemId));
+    List<Long> result = reviewServiceRpc.getReviewItemCommentIds(itemId);
     // build the set from result list
     Set<Long> reviewItemCommentIDs = new HashSet<>();
-    for (Map<String, Object> map : result) {
-      reviewItemCommentIDs.add(getLong(map, "review_item_comment_id"));
+    for (Long id : result) {
+      reviewItemCommentIDs.add(id);
     }
     return reviewItemCommentIDs;
   }
@@ -1253,14 +823,7 @@ public class ReviewPersistence {
    * @throws ReviewPersistenceException if any error occurs during the deletion
    */
   private void deleteReviewComments(Set<Long> reviewCommentIDs) throws ReviewPersistenceException {
-    // enumerate each id
-    log.debug(
-        "delete entry from "
-            + REVIEW_COMMENT_TABLE
-            + " with the review comment id:"
-            + getCommaSeparatedList(reviewCommentIDs));
-    Helper.deleteEntities(
-        REVIEW_COMMENT_TABLE, "review_comment_id", reviewCommentIDs, jdbcTemplate);
+    reviewServiceRpc.deleteReviewComments(new ArrayList<>(reviewCommentIDs));
   }
 
   /**
@@ -1270,46 +833,7 @@ public class ReviewPersistence {
    * @throws ReviewPersistenceException if any error occurs during the deletion
    */
   private void deleteReviewItems(Set<Long> reviewItemIDs) throws ReviewPersistenceException {
-    // Get IDs of uploads associated with the review item:
-    Set<Long> reviewItemUploadIDs = getReviewItemsUploadIDs(reviewItemIDs);
-    // review item ids for logging
-    String ids = getCommaSeparatedList(reviewItemIDs);
-    // delete review item and review item comment first as they have references to upload
-    log.debug(
-        "delete entries from " + REVIEW_ITEM_COMMENT_TABLE + " with the review item ids: " + ids);
-    Helper.deleteEntities(REVIEW_ITEM_COMMENT_TABLE, "review_item_id", reviewItemIDs, jdbcTemplate);
-    log.debug("delete entries from " + REVIEW_ITEM_TABLE + " with the review item ids: " + ids);
-    Helper.deleteEntities(REVIEW_ITEM_TABLE, "review_item_id", reviewItemIDs, jdbcTemplate);
-    // delete item uploads
-    if (!reviewItemUploadIDs.isEmpty()) {
-      log.debug(
-          "delete entries from "
-              + UPLOAD_TABLE
-              + " with the upload ids: "
-              + getCommaSeparatedList(reviewItemUploadIDs));
-      // Delete all the found uploads:
-      Helper.deleteEntities(UPLOAD_TABLE, "upload_id", reviewItemUploadIDs, jdbcTemplate);
-    }
-  }
-
-  /**
-   * Creates String as comma separated values list.
-   *
-   * @param collection the collection to get values
-   * @return created String as comma separated values list
-   */
-  private static String getCommaSeparatedList(Collection<Long> collection) {
-    boolean first = true;
-    StringBuilder sb = new StringBuilder();
-    for (Long value : collection) {
-      if (first) {
-        first = false;
-      } else {
-        sb.append(",");
-      }
-      sb.append(value);
-    }
-    return sb.toString();
+    reviewServiceRpc.deleteReviewItems(new ArrayList<>(reviewItemIDs));
   }
 
   /**
@@ -1320,14 +844,7 @@ public class ReviewPersistence {
    */
   private void deleteReviewItemComments(Set<Long> reviewItemCommentIDs)
       throws ReviewPersistenceException {
-    // enumerate each id
-    log.debug(
-        "delete entries from "
-            + REVIEW_ITEM_COMMENT_TABLE
-            + " with the review_item_comment_ids: "
-            + getCommaSeparatedList(reviewItemCommentIDs));
-    Helper.deleteEntities(
-        REVIEW_ITEM_COMMENT_TABLE, "review_item_comment_id", reviewItemCommentIDs, jdbcTemplate);
+    reviewServiceRpc.deleteReviewItemComments(new ArrayList<>(reviewItemCommentIDs));
   }
 
   /**
@@ -1342,11 +859,10 @@ public class ReviewPersistence {
   @Transactional
   public Review getReview(long id) throws ReviewPersistenceException {
     Helper.assertLongPositive(id, "id");
-    Connection conn = null;
     log.debug(new LogMessage(id, null, "Retrieve Review.").toString());
     try {
       // check whether the review id is already in the database
-      if (Helper.countEntities(REVIEW_TABLE, "review_id", id, jdbcTemplate) == 0) {
+      if (!reviewServiceRpc.isReviewExists(id)) {
         log.error(
             new LogMessage(id, null, "The review id [" + id + "] does not exist in the database.")
                 .toString());
@@ -1354,7 +870,7 @@ public class ReviewPersistence {
             "The review id [" + id + "] does not exist in the database.", id);
       }
       // get the review in the database
-      Review review = getReviewsComplete(Long.toString(id))[0];
+      Review review = getReviewsComplete(newArrayList(id))[0];
       return review;
     } catch (ReviewPersistenceException e) {
       log.error(new LogMessage(id, null, "Error occurs during retrieve Review.", e).toString());
@@ -1393,31 +909,23 @@ public class ReviewPersistence {
   @Transactional
   public Review[] searchReviews(Filter filter, boolean complete) throws ReviewPersistenceException {
     Helper.assertObjectNotNull(filter, "filter");
-    List<Review> reviewsList = new ArrayList<Review>();
     log.debug(
         new LogMessage(
                 null, null, "Search " + (complete ? " complete " : " not completed") + " Reviews ")
             .toString());
+    Review[] reviews;
     try {
-      // do the search using search bundle
-      List<Map<String, Object>> resultSet = searchBundle.search(filter);
-      if (resultSet.isEmpty()) {
-        return new Review[0];
-      }
-      for (Map<String, Object> map : resultSet) {
-        reviewsList.add(getReview(map));
+      reviews = reviewServiceRpc.searchReviews(filter);
+      if (reviews.length == 0) {
+        return reviews;
       }
     } catch (Exception sbe) {
       throw new ReviewPersistenceException("Error searching the reviews.", sbe);
     }
-    Review[] reviews = reviewsList.toArray(new Review[reviewsList.size()]);
 
-    StringBuilder idList = new StringBuilder();
+    List<Long> idList = new ArrayList<>();
     for (int i = 0; i < reviews.length; ++i) {
-      if (i != 0) {
-        idList.append(",");
-      }
-      idList.append(reviews[i].getId());
+      idList.add(reviews[i].getId());
     }
     try {
       // create the connection
@@ -1425,13 +933,12 @@ public class ReviewPersistence {
       Map<Long, CommentType> commentTypeMap = makeIdCommentTypeMap(getAllCommentTypes());
       // get the Id-Review Map
       Map<Long, Review> reviewMap = makeIdReviewMap(reviews);
-      String idsList = idList.toString();
       // get the review comments
-      getReviewComments(idsList, reviewMap, commentTypeMap, complete);
+      getReviewComments(idList, reviewMap, commentTypeMap, complete);
       // get the review items
-      Item[] items = getReviewItems(idsList, reviewMap);
+      Item[] items = getReviewItems(idList, reviewMap);
       // get the review item comments
-      getReviewItemComments(idsList, makeIdItemMap(items), commentTypeMap, complete);
+      getReviewItemComments(idList, makeIdItemMap(items), commentTypeMap, complete);
       return reviews;
     } catch (ReviewPersistenceException e) {
       log.error(
@@ -1447,34 +954,8 @@ public class ReviewPersistence {
    * @return A Review array that contains the reviews get
    * @throws ReviewPersistenceException if any error occurs during the query
    */
-  private Review[] getReviews(String idList) {
-    // find the reviews with review id in idList in the table
-    List<Map<String, Object>> result =
-        executeSql(
-            jdbcTemplate, QUERY_REVIEWS_SQL.replaceFirst(ID_ARRAY_PARAMETER_REGULAR_EXP, idList));
-    // create the Review array.
-    Review[] reviews = new Review[result.size()];
-    for (int i = 0; i < reviews.length; ++i) {
-      Map<String, Object> row = result.get(i);
-      Review review = new Review();
-      review.setId(getLong(row, "review_id"));
-      review.setAuthor(getLong(row, "resource_id"));
-      if (row.get("submission_id") != null) {
-        review.setSubmission(getLong(row, "submission_id"));
-      }
-      review.setProjectPhase(getLong(row, "project_phase_id"));
-      review.setScorecard(getLong(row, "scorecard_id"));
-      review.setCommitted(getBoolean(row, "committed"));
-      review.setScore(getDouble(row, "score"));
-      review.setInitialScore(getDouble(row, "initial_score"));
-      review.setCreationUser(getString(row, "create_user"));
-      review.setCreationTimestamp(getDate(row, "create_date"));
-      review.setModificationUser(getString(row, "modify_user"));
-      review.setModificationTimestamp(getDate(row, "modify_date"));
-      // assign the current review to the array.
-      reviews[i] = review;
-    }
-    return reviews;
+  private Review[] getReviews(List<Long> idList) {
+    return reviewServiceRpc.getReviews(idList);
   }
 
   /**
@@ -1485,7 +966,7 @@ public class ReviewPersistence {
    * @return A Review array that contains the reviews get
    * @throws ReviewPersistenceException if any error occurs during the query
    */
-  private Review[] getReviewsComplete(String idList) throws ReviewPersistenceException {
+  private Review[] getReviewsComplete(List<Long> idList) throws ReviewPersistenceException {
     // get the reviews from the id list string
     Review[] reviews = getReviews(idList);
     // get the Id-CommentType map
@@ -1502,45 +983,6 @@ public class ReviewPersistence {
   }
 
   /**
-   * Creates a review from result set's row.
-   *
-   * @return created review.
-   * @param resultSet a result set pointing to the row describing new review to create
-   */
-  private static Review getReview(Map<String, Object> resultSet) {
-    Review review = new Review();
-    try {
-      review.setId(getLong(resultSet, "review_id"));
-      review.setAuthor(getLong(resultSet, "resource_id"));
-      try {
-        review.setSubmission(getLong(resultSet, "submission_id"));
-      } catch (Exception e) {
-        // Submission ID may be NULL
-      }
-      review.setProjectPhase(getLong(resultSet, "project_phase_id"));
-      review.setScorecard(getLong(resultSet, "scorecard_id"));
-      review.setCommitted(getLong(resultSet, "committed") != 0);
-      if (resultSet.get("score") != null) {
-        review.setScore(getDouble(resultSet, "score"));
-      } else {
-        review.setScore(null);
-      }
-      if (resultSet.get("initial_score") != null) {
-        review.setInitialScore(getDouble(resultSet, "initial_score"));
-      } else {
-        review.setInitialScore(null);
-      }
-    } catch (Exception e1) {
-      // ignore, never happens
-    }
-    review.setCreationUser(getString(resultSet, "create_user"));
-    review.setCreationTimestamp(getDate(resultSet, "create_date"));
-    review.setModificationUser(getString(resultSet, "modify_user"));
-    review.setModificationTimestamp(getDate(resultSet, "modify_date"));
-    return review;
-  }
-
-  /**
    * Get the review comments whose review id is in the id list from database, and add them to the
    * corresponding review objects.
    *
@@ -1551,29 +993,30 @@ public class ReviewPersistence {
    * @throws ReviewPersistenceException if any error occurs during the query
    */
   private void getReviewComments(
-      String idList,
+      List<Long> idList,
       Map<Long, Review> reviewMap,
       Map<Long, CommentType> commentTypeMap,
       boolean complete)
       throws ReviewPersistenceException {
-    String query =
-        (complete ? QUERY_REVIEW_COMMENTS_SQL : QUERY_REVIEW_COMMENTS_NO_CONTENT_SQL)
-            .replaceFirst(ID_ARRAY_PARAMETER_REGULAR_EXP, idList);
-    List<Map<String, Object>> result = executeSql(jdbcTemplate, query);
+    List<ReviewCommentProto> result = complete ? reviewServiceRpc.getReviewComments(idList)
+        : reviewServiceRpc.getReviewCommentsWithNoContent(idList);
 
     // enumerate each comment
-    for (int i = 0; i < result.size(); ++i) {
-      Map<String, Object> row = result.get(i);
+    for (ReviewCommentProto rc : result) {
       Comment comment = new Comment();
-      comment.setId(getLong(row, "review_comment_id"));
-      comment.setAuthor(getLong(row, "resource_id"));
+      comment.setId(rc.getReviewCommentId());
+      comment.setAuthor(rc.getResourceId());
       // add to the corresponding review object.
-      reviewMap.get(getLong(row, "review_id")).addComment(comment);
-      comment.setCommentType(commentTypeMap.get(getLong(row, "comment_type_id")));
+      reviewMap.get(rc.getReviewId()).addComment(comment);
+      comment.setCommentType(commentTypeMap.get(rc.getCommentTypeId()));
 
       if (complete) {
-        comment.setComment(getString(row, "content"));
-        comment.setExtraInfo(getString(row, "extra_info"));
+        if (rc.hasContent()) {
+          comment.setComment(rc.getContent());
+        }
+        if (rc.hasExtraInfo()) {
+          comment.setExtraInfo(rc.getExtraInfo());
+        }
       }
     }
   }
@@ -1587,25 +1030,26 @@ public class ReviewPersistence {
    * @return A Comment array that contains the review items get
    * @throws ReviewPersistenceException if any error occurs during the query
    */
-  private Item[] getReviewItems(String idList, Map<Long, Review> reviewMap)
+  private Item[] getReviewItems(List<Long> idList, Map<Long, Review> reviewMap)
       throws ReviewPersistenceException {
     // find the review items with review id in idList in the table
-    List<Map<String, Object>> result =
-        executeSql(
-            jdbcTemplate,
-            QUERY_REVIEW_ITEMS_SQL.replaceFirst(ID_ARRAY_PARAMETER_REGULAR_EXP, idList));
+    List<ReviewItemProto> result = reviewServiceRpc.getReviewItems(idList);
     // create the Item array.
     Item[] items = new Item[result.size()];
     for (int i = 0; i < items.length; ++i) {
-      Map<String, Object> row = result.get(i);
+      ReviewItemProto ri = result.get(i);
       // create a new Item object.
       Item item = new Item();
-      item.setId(getLong(row, "review_item_id"));
+      item.setId(ri.getReviewItemId());
       // add to the corresponding review object.
-      reviewMap.get(getLong(row, "review_id")).addItem(item);
-      item.setQuestion(getLong(row, "scorecard_question_id"));
-      item.setDocument(getLong(row, "upload_id"));
-      item.setAnswer(getString(row, "answer"));
+      reviewMap.get(ri.getReviewId()).addItem(item);
+      item.setQuestion(ri.getScorecardQuestionId());
+      if (ri.hasUploadId()) {
+        item.setDocument(ri.getUploadId());
+      }
+      if (ri.hasAnswer()) {
+        item.setAnswer(ri.getAnswer());
+      }
       // assign the current Item object to the array.
       items[i] = item;
     }
@@ -1623,27 +1067,28 @@ public class ReviewPersistence {
    * @throws ReviewPersistenceException if any error occurs during the query
    */
   private void getReviewItemComments(
-      String idList,
+      List<Long> idList,
       Map<Long, Item> itemMap,
       Map<Long, CommentType> commentTypeMap,
       boolean complete)
       throws ReviewPersistenceException {
-    String query =
-        (complete ? QUERY_REVIEW_ITEM_COMMENTS_SQL : QUERY_REVIEW_ITEM_COMMENTS_NO_CONTENT_SQL)
-            .replaceFirst(ID_ARRAY_PARAMETER_REGULAR_EXP, idList);
-    List<Map<String, Object>> result = executeSql(jdbcTemplate, query);
-    for (int i = 0; i < result.size(); ++i) {
-      Map<String, Object> row = result.get(i);
+    List<ReviewItemCommentProto> result = complete ? reviewServiceRpc.getReviewItemComments(idList)
+        : reviewServiceRpc.getReviewItemCommentsWithNoContent(idList);
+    for (ReviewItemCommentProto ric : result) {
       Comment comment = new Comment();
-      comment.setId(getLong(row, "review_item_comment_id"));
-      comment.setAuthor(getLong(row, "resource_id"));
+      comment.setId(ric.getReviewItemCommentId());
+      comment.setAuthor(ric.getResourceId());
       // add to the corresponding item object.
-      itemMap.get(getLong(row, "review_item_id")).addComment(comment);
-      comment.setCommentType(commentTypeMap.get(getLong(row, "comment_type_id")));
+      itemMap.get(ric.getReviewItemId()).addComment(comment);
+      comment.setCommentType(commentTypeMap.get(ric.getCommentTypeId()));
 
       if (complete) {
-        comment.setComment(getString(row, "content"));
-        comment.setExtraInfo(getString(row, "extra_info"));
+        if (ric.hasContent()) {
+          comment.setComment(ric.getContent());
+        }
+        if (ric.hasExtraInfo()) {
+          comment.setExtraInfo(ric.getExtraInfo());
+        }
       }
     }
   }
@@ -1699,12 +1144,12 @@ public class ReviewPersistence {
   public CommentType[] getAllCommentTypes() {
     log.debug(new LogMessage(null, null, " retrieve all comment types.").toString());
     if (cachedCommentTypes == null) {
-      List<Map<String, Object>> result = executeSql(jdbcTemplate, QUERY_ALL_COMMENT_TYPES_SQL);
+      List<CommentTypeProto> result = reviewServiceRpc.getAllCommentTypes();
       // create the CommentType array.
       CommentType[] commentTypes = new CommentType[result.size()];
       for (int i = 0; i < commentTypes.length; ++i) {
-        Map<String, Object> row = result.get(i);
-        commentTypes[i] = new CommentType(getLong(row, "comment_type_id"), getString(row, "name"));
+        CommentTypeProto ct = result.get(i);
+        commentTypes[i] = new CommentType(ct.getCommentTypeId(), ct.getName());
       }
       cachedCommentTypes = commentTypes;
     }
@@ -1738,7 +1183,7 @@ public class ReviewPersistence {
     try {
       // create the connection
       // check if the review id exists
-      if (Helper.countEntities(REVIEW_TABLE, "review_id", reviewId, jdbcTemplate) == 0) {
+      if (!reviewServiceRpc.isReviewExists(reviewId)) {
         log.error(
             new LogMessage(
                     reviewId,
@@ -1746,12 +1191,12 @@ public class ReviewPersistence {
                     "The review id [" + reviewId + "] does not exist in the database.")
                 .toString());
         throw new ReviewEntityNotFoundException(
-            "The review id [" + reviewId + "] does not exist in table [" + REVIEW_TABLE + "].",
+            "The review id [" + reviewId + "] does not exist.",
             reviewId);
       }
       // get # of comments for this review in the database, which equals
       // to the position of the current comment in its review.
-      Long index = Helper.countEntities(REVIEW_COMMENT_TABLE, "review_id", reviewId, jdbcTemplate);
+      Long index = reviewServiceRpc.countReviewComments(reviewId);
       // create the comment
       createReviewComments(
           new Comment[] {comment}, new Long[] {index}, reviewId, operator, changeTable);
@@ -1793,7 +1238,7 @@ public class ReviewPersistence {
             .toString());
     try {
       // check if the review item id exists
-      if (Helper.countEntities(REVIEW_ITEM_TABLE, "review_item_id", itemId, jdbcTemplate) == 0) {
+      if (!reviewServiceRpc.isReviewItemExists(itemId)) {
         log.error(
             new LogMessage(
                     itemId,
@@ -1801,13 +1246,12 @@ public class ReviewPersistence {
                     "The item id [" + itemId + "] does not exist in the database.")
                 .toString());
         throw new ReviewEntityNotFoundException(
-            "The item id [" + itemId + "] does not exist in table [" + REVIEW_ITEM_TABLE + "].",
+            "The item id [" + itemId + "] does not exist.",
             itemId);
       }
       // get # of comments for this item in the database, which equals
       // to the position of the current comment in its item.
-      Long index =
-          Helper.countEntities(REVIEW_ITEM_COMMENT_TABLE, "review_item_id", itemId, jdbcTemplate);
+      Long index = reviewServiceRpc.countReviewItemComments(itemId);
       // create the comment
       createReviewItemComments(
           new Comment[] {comment}, new Long[] {index}, itemId, operator, changeTable);
@@ -1841,50 +1285,16 @@ public class ReviewPersistence {
     Helper.assertLongPositive(id, "id");
     Helper.assertStringNotNullNorEmpty(operator, "operator");
     log.debug(new LogMessage(id, operator, "Delete Review.").toString());
-    Connection conn = null;
     try {
-      // Get IDs of all review items:
-      Set<Long> reviewItemIDs = getReviewItemIDs(id);
-      // Delete the review items together with associated uploads and comments:
-      deleteReviewItems(reviewItemIDs);
-      // Delete all review comments:
-      Helper.deleteEntities(REVIEW_COMMENT_TABLE, "review_id", id, jdbcTemplate);
       // Delete the review record:
-      int deletedNum = Helper.deleteEntities(REVIEW_TABLE, "review_id", id, jdbcTemplate);
+      int deletedNum = reviewServiceRpc.deleteReview(id);
       if (deletedNum == 0) {
         throw new ReviewEntityNotFoundException(
-            "The review id [" + id + "] does not exist in table [" + REVIEW_TABLE + "].", id);
+            "The review id [" + id + "] does not exist in.", id);
       }
     } catch (ReviewPersistenceException e) {
       log.error(new LogMessage(id, operator, "Error occurs during deleting review.", e).toString());
       throw e;
     }
-  }
-
-  /**
-   * Retrieves the IDs of uploads associated with the review items that have the specified IDs.
-   *
-   * @param itemIds the IDs of the review items
-   * @return A set that contains the upload ids
-   * @since 1.2
-   */
-  private Set<Long> getReviewItemsUploadIDs(Set<Long> itemIds) {
-    // Create the result set:
-    Set<Long> reviewItemsUploadIDs = new HashSet<>();
-    // Check that items are not empty
-    if (itemIds.isEmpty()) {
-      return reviewItemsUploadIDs;
-    }
-    List<Map<String, Object>> result =
-        executeSql(
-            jdbcTemplate,
-            QUERY_REVIEW_ITEM_UPLOADS_SQL.replaceFirst(
-                ID_ARRAY_PARAMETER_REGULAR_EXP, getCommaSeparatedList(itemIds)));
-    for (Map<String, Object> map : result) {
-      if (map.get("upload_id") != null) {
-        reviewItemsUploadIDs.add(getLong(map, "upload_id"));
-      }
-    }
-    return reviewItemsUploadIDs;
   }
 }

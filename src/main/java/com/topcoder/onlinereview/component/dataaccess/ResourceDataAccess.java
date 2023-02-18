@@ -3,20 +3,22 @@
  */
 package com.topcoder.onlinereview.component.dataaccess;
 
+import com.topcoder.onlinereview.component.grpcclient.dataaccess.DataAccessServiceRpc;
 import com.topcoder.onlinereview.component.project.management.ProjectStatus;
 import com.topcoder.onlinereview.component.resource.Resource;
 import com.topcoder.onlinereview.component.resource.ResourceManager;
 import com.topcoder.onlinereview.component.resource.ResourceRole;
+import com.topcoder.onlinereview.grpc.dataaccess.proto.ResourceInfoProto;
+import com.topcoder.onlinereview.grpc.dataaccess.proto.ResourceProto;
+import com.topcoder.onlinereview.grpc.dataaccess.proto.SearchUserResourcesResponse;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import static com.topcoder.onlinereview.component.util.CommonUtils.getDate;
-import static com.topcoder.onlinereview.component.util.CommonUtils.getLong;
-import static com.topcoder.onlinereview.component.util.CommonUtils.getString;
 
 /**
  * <p>A simple DAO for project resources backed up by Query Tool.</p>
@@ -25,8 +27,9 @@ import static com.topcoder.onlinereview.component.util.CommonUtils.getString;
  * @version 2.0
  */
 @Component
-public class ResourceDataAccess extends BaseDataAccess {
-
+public class ResourceDataAccess {
+    @Autowired
+    DataAccessServiceRpc dataAccessServiceRpc;
     /**
      * <p>Searches the resources for specified user for projects of specified status.
      * If status parameter is null it will search for the 'global' resources with no
@@ -48,39 +51,46 @@ public class ResourceDataAccess extends BaseDataAccess {
         }
 
         // Get resources details by user ID using Query Tool
-        Map<String, List<Map<String, Object>>> results;
+        SearchUserResourcesResponse results;
         if (status == null) {
-            results = runQuery("tcs_global_resources_by_user", "uid", String.valueOf(userId));
+            results = dataAccessServiceRpc.searchUserResourcesByUserId(userId);
         } else {
-            results = runQuery("tcs_resources_by_user_and_status", new String[] {"uid", "stid"},
-                               new String[] {String.valueOf(userId), String.valueOf(status.getId())});
+            results = dataAccessServiceRpc.searchUserResourcesByUserIdAndStatus(userId, status.getId());
         }
 
         // Convert returned data into Resource objects
-        List<Map<String, Object>> resourcesData;
-        if (status == null) {
-            resourcesData = results.get("tcs_global_resources_by_user");
-        } else {
-            resourcesData = results.get("tcs_resources_by_user_and_status");
-        }
+        List<ResourceProto> resourcesData = results.getResourcesList();
         Map<Long, Resource> cachedResources = new HashMap<Long, Resource>();
         int recordNum = resourcesData.size();
         Resource[] resources = new Resource[recordNum];
         for (int i = 0; i < recordNum; i++) {
-            long resourceId = getLong(resourcesData.get(i), "resource_id");
-            long resourceRoleId = getLong(resourcesData.get(i), "resource_role_id");
+            ResourceProto resourceData = resourcesData.get(i);
+            long resourceId = resourceData.getResourceId();
+            long resourceRoleId = resourceData.getResourceRoleId();
             Long projectId = null;
-            if (resourcesData.get(i).get("project_id") != null) {
-                projectId = getLong(resourcesData.get(i), "project_id");
+            if (resourceData.hasProjectId()) {
+                projectId = resourceData.getProjectId();
             }
             Long phaseId = null;
-            if (resourcesData.get(i).get("phase_id") != null) {
-                phaseId = getLong(resourcesData.get(i), "phase_id");
+            if (resourceData.hasPhaseId()) {
+                phaseId = resourceData.getPhaseId();
             }
-            String createUser = getString(resourcesData.get(i), "create_user");
-            Date createDate = getDate(resourcesData.get(i), "create_date");
-            String modifyUser = getString(resourcesData.get(i), "modify_user");
-            Date modifyDate = getDate(resourcesData.get(i), "modify_date");
+            String createUser = null;
+            if (resourceData.hasCreateUser()) {
+                createUser = resourceData.getCreateUser();
+            }
+            Date createDate = null;
+            if (resourceData.hasCreateDate()) {
+                createDate = new Date(resourceData.getCreateDate().getSeconds() * 1000);
+            }
+            String modifyUser = null;
+            if (resourceData.hasModifyUser()) {
+                modifyUser = resourceData.getModifyUser();
+            }
+            Date modifyDate = null;
+            if (resourceData.hasModifyDate()) {
+                modifyDate = new Date(resourceData.getModifyDate().getSeconds() * 1000);
+            }
 
             Resource resource = new Resource(resourceId, cachedRoles.get(resourceRoleId));
             resource.setProject(projectId);
@@ -96,18 +106,20 @@ public class ResourceDataAccess extends BaseDataAccess {
         }
 
         // Fill resources with resource info records
-        List<Map<String, Object>> resourceInfosData;
-        if (status == null) {
-            resourceInfosData = results.get("tcs_global_resource_infos_by_user");
-        } else {
-            resourceInfosData = results.get("tcs_resource_infos_by_user_and_status");
-        }
+        List<ResourceInfoProto> resourceInfosData = results.getResourceInfosList();
         recordNum = resourceInfosData.size();
 
         for (int i = 0; i < recordNum; i++) {
-            long resourceId = getLong(resourceInfosData.get(i), "resource_id");
-            String propName = getString(resourceInfosData.get(i), "resource_info_type_name");
-            String value = getString(resourceInfosData.get(i), "value");
+            ResourceInfoProto resourceInfoData = resourceInfosData.get(i);
+            long resourceId = resourceInfoData.getResourceId();
+            String propName = null;
+            if (resourceInfoData.hasResourceInfoTypeName()) {
+                propName = resourceInfoData.getResourceInfoTypeName();
+            }
+            String value = null;
+            if (resourceInfoData.hasValue()) {
+                value = resourceInfoData.getValue();
+            }
             Resource resource = cachedResources.get(resourceId);
             resource.setProperty(propName, value);
         }

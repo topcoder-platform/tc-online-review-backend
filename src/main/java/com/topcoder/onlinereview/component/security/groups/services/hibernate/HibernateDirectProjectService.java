@@ -3,13 +3,16 @@
  */
 package com.topcoder.onlinereview.component.security.groups.services.hibernate;
 
-import com.topcoder.onlinereview.component.security.groups.model.BillingAccount;
+import com.topcoder.onlinereview.component.grpcclient.GrpcHelper;
+import com.topcoder.onlinereview.component.grpcclient.security.SecurityServiceRpc;
 import com.topcoder.onlinereview.component.security.groups.services.DirectProjectService;
 import com.topcoder.onlinereview.component.security.groups.services.SecurityGroupException;
 import com.topcoder.onlinereview.component.security.groups.services.dto.ProjectDTO;
-import com.topcoder.onlinereview.component.shared.dataaccess.DataAccess;
-import com.topcoder.onlinereview.component.shared.dataaccess.Request;
 import com.topcoder.onlinereview.component.util.LoggingWrapperUtility;
+import com.topcoder.onlinereview.grpc.security.proto.BillingAccountProto;
+import com.topcoder.onlinereview.grpc.security.proto.ProjectByBillingAccountProto;
+import com.topcoder.onlinereview.grpc.security.proto.ProjectByClientIdProto;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -18,12 +21,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
-
-import static com.topcoder.onlinereview.component.util.CommonUtils.getLong;
-import static com.topcoder.onlinereview.component.util.CommonUtils.getString;
-import static com.topcoder.onlinereview.component.util.SpringUtils.getTcsJdbcTemplate;
 
 /**
  * <p>
@@ -71,16 +69,6 @@ public class HibernateDirectProjectService extends BaseGroupService implements D
     private static final String CLASS_NAME = HibernateDirectProjectService.class.getName();
 
     /**
-     * The DataAccess used to retrieve data from corporate_oltp
-     */
-    private DataAccess dataAccessCorp;
-
-    /**
-     * The DataAccess used to retrieve data from tcs_dw
-     */
-    private DataAccess dataAccessTcs;
-
-    /**
      * This method gets a project. If not found, returns null.
      * 
      * @param id
@@ -95,19 +83,12 @@ public class HibernateDirectProjectService extends BaseGroupService implements D
 
         ProjectDTO result = null;
         try {
-            if (dataAccessCorp == null)
-                dataAccessCorp = new DataAccess(getTcsJdbcTemplate());
-            Request request = new Request();
-            request.setContentHandle("project_name");
-            request.setProperty("tcdirectid", String.valueOf(id));
-            List<Map<String, Object>> resultContainer = dataAccessCorp.getData(request).get("project_name");
-            if (resultContainer != null) {
-                if(resultContainer.size()>0){
-                    Map<String, Object> row = resultContainer.get(0);
-                    result = new ProjectDTO();
-                    result.setProjectId(id);
-                    result.setName(getString(row, "project_name"));
-                }
+            SecurityServiceRpc securityServiceRpc = GrpcHelper.getSecurityServiceRpc();
+            String projectName = securityServiceRpc.getProjectName(id);
+            if (projectName != null) {
+                result = new ProjectDTO();
+                result.setProjectId(id);
+                result.setName(projectName);
             }
         } catch (Exception e) {
             wrapAndLogSecurityException(e, logger, signature);
@@ -133,23 +114,19 @@ public class HibernateDirectProjectService extends BaseGroupService implements D
 
         List<ProjectDTO> result = new ArrayList<ProjectDTO>();
         try {
-            if (dataAccessTcs == null)
-                dataAccessTcs = new DataAccess(getTcsJdbcTemplate());
-            Request request = new Request();
-            request.setContentHandle("admin_client_billing_accounts_v2");
-            // request.setProperty("client_id",String.valueOf(id));
-            List<Map<String, Object>> resultContainer = dataAccessTcs.getData(request).get("admin_client_billing_accounts_v2");
-            if (resultContainer != null) {
-                Set<Long> ids = new HashSet<Long>();
-                for (Map<String, Object> row : resultContainer) {
-                    if (id == getLong(row, "client_id")
-                        && !ids.contains(getLong(row, "direct_project_id"))) {
-                        ProjectDTO dto = new ProjectDTO();
-                        dto.setProjectId(getLong(row, "direct_project_id"));
-                        dto.setName(getString(row, "direct_project_name"));
-                        result.add(dto);
-                        ids.add(dto.getProjectId());
+            SecurityServiceRpc securityServiceRpc = GrpcHelper.getSecurityServiceRpc();
+            List<ProjectByClientIdProto> response = securityServiceRpc.getProjectsByClientId();
+            Set<Long> ids = new HashSet<Long>();
+            for (ProjectByClientIdProto row : response) {
+                if (row.hasClientId() && row.hasDirectProjectId() && id == row.getClientId()
+                        && !ids.contains(row.getDirectProjectId())) {
+                    ProjectDTO dto = new ProjectDTO();
+                    dto.setProjectId(row.getDirectProjectId());
+                    if (row.hasDirectProjectName()) {
+                        dto.setName(row.getDirectProjectName());
                     }
+                    result.add(dto);
+                    ids.add(dto.getProjectId());
                 }
             }
             Collections.sort(result, new Comparator<ProjectDTO>() {
@@ -172,31 +149,28 @@ public class HibernateDirectProjectService extends BaseGroupService implements D
      * @throws SecurityGroupException
      *             If there are any errors during the execution of this method
      */
-    public List<ProjectDTO> getProjectsByBillingAccounts(List<BillingAccount> billingAccounts) throws SecurityGroupException {
+    public List<ProjectDTO> getProjectsByBillingAccounts(List<BillingAccountProto> billingAccounts) throws SecurityGroupException {
         final String signature = CLASS_NAME + ".getProjectsByBillingAccounts(List<BillingAccount> billingAccounts)";
 
         List<ProjectDTO> result = new ArrayList<ProjectDTO>();
         try {
-            if (dataAccessTcs == null)
-                dataAccessTcs = new DataAccess(getTcsJdbcTemplate());
-            Request request = new Request();
-            request.setContentHandle("admin_client_billing_accounts_v2");
-            // request.setProperty("client_id",String.valueOf(id));
-            List<Map<String, Object>> resultContainer = dataAccessTcs.getData(request).get("admin_client_billing_accounts_v2");
-            if (resultContainer != null) {
-                Set<Long> ids = new HashSet<Long>();
-                for (Map<String, Object> row : resultContainer) {
-                    for (BillingAccount billingAccount : billingAccounts) {
-                        if (billingAccount.getId() == getLong(row, "billing_account_id")) {
-                            if (!ids.contains(getLong(row, "direct_project_id"))) {
-                                ProjectDTO dto = new ProjectDTO();
-                                dto.setProjectId(getLong(row, "direct_project_id"));
-                                dto.setName(getString(row, "direct_project_name"));
-                                result.add(dto);
-                                ids.add(dto.getProjectId());
+            SecurityServiceRpc securityServiceRpc = GrpcHelper.getSecurityServiceRpc();
+            List<ProjectByBillingAccountProto> response = securityServiceRpc.getProjectsByBillingAccounts();
+            Set<Long> ids = new HashSet<Long>();
+            for (ProjectByBillingAccountProto row : response) {
+                for (BillingAccountProto billingAccount : billingAccounts) {
+                    if (row.hasBillingAccountId() && billingAccount.hasProjectId()
+                            && billingAccount.getProjectId() == row.getBillingAccountId()) {
+                        if (row.hasDirectProjectId() && !ids.contains(row.getDirectProjectId())) {
+                            ProjectDTO dto = new ProjectDTO();
+                            dto.setProjectId(row.getDirectProjectId());
+                            if (row.hasDirectProjectName()) {
+                                dto.setName(row.getDirectProjectName());
                             }
-                            break;
+                            result.add(dto);
+                            ids.add(dto.getProjectId());
                         }
+                        break;
                     }
                 }
             }
@@ -211,25 +185,4 @@ public class HibernateDirectProjectService extends BaseGroupService implements D
 
         return result;
     }
-    
-    /**
-     * The setter of dataAccessCorp
-     * 
-     * @param dataAccessCorp
-     *            the dataAccessCorp to set
-     */
-    public void setDataAccessCorp(DataAccess dataAccessCorp) {
-        this.dataAccessCorp = dataAccessCorp;
-    }
-
-    /**
-     * The setter of dataAccessTcs
-     * 
-     * @param dataAccessTcs
-     *            the dataAccessTcs to set
-     */
-    public void setDataAccessTcs(DataAccess dataAccessTcs) {
-        this.dataAccessTcs = dataAccessTcs;
-    }
-
 }

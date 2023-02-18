@@ -3,18 +3,22 @@
  */
 package com.topcoder.onlinereview.component.resource;
 
+import com.topcoder.onlinereview.component.grpcclient.resource.ResourceServiceRpc;
 import com.topcoder.onlinereview.component.project.management.LogMessage;
+import com.topcoder.onlinereview.grpc.resource.proto.NotificationProto;
+import com.topcoder.onlinereview.grpc.resource.proto.NotificationTypeProto;
+import com.topcoder.onlinereview.grpc.resource.proto.ResourceInfoProto;
+import com.topcoder.onlinereview.grpc.resource.proto.ResourceProto;
+import com.topcoder.onlinereview.grpc.resource.proto.ResourceRoleProto;
+import com.topcoder.onlinereview.grpc.resource.proto.ResourceSubmissionProto;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -25,16 +29,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
-
-import static com.google.common.collect.Lists.newArrayList;
-import static com.topcoder.onlinereview.component.util.CommonUtils.executeSql;
-import static com.topcoder.onlinereview.component.util.CommonUtils.executeSqlWithParam;
-import static com.topcoder.onlinereview.component.util.CommonUtils.executeUpdateSql;
-import static com.topcoder.onlinereview.component.util.CommonUtils.getDate;
-import static com.topcoder.onlinereview.component.util.CommonUtils.getInt;
-import static com.topcoder.onlinereview.component.util.CommonUtils.getLong;
-import static com.topcoder.onlinereview.component.util.CommonUtils.getString;
 
 /**
  * The <code>AbstractResourcePersistence</code> class implements the <code>ResourcePersistence
@@ -79,180 +73,11 @@ import static com.topcoder.onlinereview.component.util.CommonUtils.getString;
  */
 @Component
 public class ResourcePersistence {
+  @Autowired
+  private ResourceServiceRpc resourceServiceRpc;
+
   /** Logger instance using the class name as category */
   private static final Logger LOGGER = LoggerFactory.getLogger(ResourcePersistence.class.getName());
-
-  /** Represents the sql to get the external properties. */
-  private static final String SQL_SELECT_EXT_PROPS =
-      "SELECT resource_info.resource_id, "
-          + "resource_info_type_lu.name, resource_info.value "
-          + "FROM resource_info INNER JOIN resource_info_type_lu ON "
-          + "(resource_info.resource_info_type_id = resource_info_type_lu.resource_info_type_id) "
-          + "WHERE resource_id IN (";
-
-  /** Represents the sql to get the notification types. */
-  private static final String SQL_SELECT_NOTIFICATION_TYPES =
-      "SELECT notification_type_id, name, description,"
-          + " create_user, create_date, modify_user, modify_date"
-          + " FROM notification_type_lu WHERE notification_type_id IN (";
-
-  /** Represents the sql to get all resource roles. */
-  private static final String SQL_SELECT_RES_ALL_ROLES =
-      "SELECT resource_role_id, phase_type_id, name, description,"
-          + " create_user, create_date, modify_user, modify_date"
-          + " FROM resource_role_lu";
-
-  /** Represents the sql to get the notifications. */
-  private static final String SQL_SELECT_NOTIFICATIONS =
-      "SELECT project_id, external_ref_id,"
-          + " notification_type_id, create_user, "
-          + " create_date, modify_user, modify_date FROM notification WHERE ";
-
-  /** Represents the sql to get all resources. */
-  private static final String SQL_SELECT_ALL_RES =
-      "SELECT resource.resource_id, resource_role_id, project_id,"
-          + " project_phase_id, user_id, resource.create_user, resource.create_date, resource.modify_user, "
-          + " resource.modify_date"
-          + " FROM resource WHERE resource.resource_id IN (";
-
-  /** Represents the sql for updating resource role. */
-  private static final String SQL_UPDATE_RES_ROLE =
-      "UPDATE resource_role_lu SET phase_type_id = ?, name = ?, "
-          + "description = ?, modify_user = ?, modify_date = ? WHERE resource_role_id = ?";
-
-  /** Represents the sql for deleting resource role. */
-  private static final String SQL_DELETE_RES_ROLE =
-      "DELETE FROM resource_role_lu WHERE resource_role_id = ?";
-
-  /** Represents the sql for updating notification type. */
-  private static final String SQL_UPDATE_NOTIFICATION_TYPE =
-      "UPDATE notification_type_lu SET name = ?,"
-          + " description = ?, modify_user = ?, modify_date = ?  WHERE notification_type_id = ?";
-
-  /** Represents the sql for deleting notification type. */
-  private static final String SQL_DELETE_NOTIFICATION_TYPE =
-      "DELETE FROM notification_type_lu " + "WHERE notification_type_id = ?";
-
-  /** Represents the sql for inserting notification type. */
-  private static final String SQL_INSERT_NOTIFICATION_TYPE =
-      "INSERT INTO notification_type_lu ("
-          + "notification_type_id, name, description, create_user, "
-          + "create_date, modify_user, modify_date) VALUES(?, ?, ?, ?, ?, ?, ?)";
-
-  /** Represents the sql for inserting resource role. */
-  private static final String SQL_INSERT_RES_ROLE =
-      "INSERT INTO resource_role_lu(resource_role_id, name, "
-          + "description, phase_type_id, create_user, create_date, modify_user, modify_date)"
-          + "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
-
-  /** Represents the sql for loading notification type. */
-  private static final String SQL_SELECT_NOTIFICATION_TYPE =
-      "SELECT notification_type_id, name, description,"
-          + " create_user, create_date, modify_user, modify_date"
-          + " FROM notification_type_lu WHERE notification_type_id = ?";
-
-  /** Represents the sql for loading notification. */
-  private static final String SQL_SELECT_NOTIFICATION =
-      "SELECT project_id, external_ref_id, "
-          + " notification_type_id, create_user, create_date, modify_user, modify_date"
-          + " FROM notification WHERE project_id = ? AND external_ref_id = ? AND notification_type_id = ?";
-
-  /** Represents the sql for deleting notification. */
-  private static final String SQL_DELETE_NOTIFICATION =
-      "DELETE FROM notification WHERE project_id = ? "
-          + "AND external_ref_id = ? AND notification_type_id = ?";
-
-  /** Represents the sql for adding notification. */
-  private static final String SQL_INSERT_NOTIFICATION =
-      "INSERT INTO notification "
-          + "(project_id, external_ref_id, notification_type_id, create_user, "
-          + "create_date, modify_user, modify_date) VALUES (?, ?, ?, ?, ?, ?, ?)";
-
-  /** Represents the sql to load resources. */
-  private static final String SQL_SELECT_LOAD_RES =
-      "SELECT resource.resource_id, resource_role_id, project_id,"
-          + " project_phase_id, user_id, resource.create_user, resource.create_date, resource.modify_user,"
-          + " resource.modify_date"
-          + " FROM resource WHERE resource.resource_id = ?";
-
-  /** Represents the sql to select external properties. */
-  private static final String SQL_SELECT_EXT_PROP =
-      "SELECT resource_info_type_lu.name, resource_info.value"
-          + " FROM resource_info, resource_info_type_lu  "
-          + " WHERE resource_info.resource_info_type_id = resource_info_type_lu.resource_info_type_id "
-          + " AND resource_id = ?";
-
-  /** Represents the sql for deleting the resource info. */
-  private static final String SQL_DELETE_RES_INFO_TYPE =
-      "DELETE FROM resource_info " + "WHERE resource_id = ? and resource_info_type_id = ?";
-
-  /** Represents the sql for updating the resource info. */
-  private static final String SQL_UPDATE_RES_INFO =
-      "UPDATE resource_info SET value = ? " + "WHERE resource_id = ? AND resource_info_type_id = ?";
-
-  /** Represents the sql for updating the resource submission. */
-  private static final String SQL_UPDATE_SUBMISSION =
-      "UPDATE resource_submission"
-          + " SET modify_user = ?, modify_date = ? WHERE resource_id = ? AND submission_id = ?";
-
-  /** Represents the sql for selecting resource submission. */
-  private static final String SQL_SELECT_SUBMISSIONS =
-      "SELECT resource_id, submission_id FROM resource_submission " + "WHERE resource_id IN (";
-
-  /** Represents the sql for updating resource. */
-  private static final String SQL_UPDATE_RESOURCE =
-      "UPDATE resource"
-          + " SET resource_role_id = ?, project_id = ?, project_phase_id = ?,"
-          + " user_id = ?, modify_user = ?, modify_date = ? WHERE resource_id = ?";
-
-  /** Represents the sql for deleting resource. */
-  private static final String SQL_DELETE_RESOURCE = "DELETE FROM resource WHERE resource_id = ?";
-
-  /** Represents the sql for deleting resource submission. */
-  private static final String SQL_DELETE_SUBMISSION =
-      "DELETE FROM resource_submission WHERE resource_id = ?";
-
-  /** Represents the sql for deleting one line of resource submission. */
-  private static final String SQL_DELETE_ONE_SUBMISSION =
-      "DELETE FROM resource_submission WHERE resource_id = ? AND submission_id = ?";
-
-  /** Represents the sql for deleting resource info. */
-  private static final String SQL_DELETE_RES_INFO =
-      "DELETE FROM resource_info WHERE resource_id = ?";
-
-  /** Represents the sql for selecting resource info type. */
-  private static final String SQL_SELECT_RES_INFO_TYPE =
-      "SELECT resource_info_type_id" + " FROM resource_info_type_lu WHERE name = ?";
-
-  /** Represents the sql for inserting resource info. */
-  private static final String SQL_INSERT_RES_INFO =
-      "INSERT INTO resource_info"
-          + "(resource_id, resource_info_type_id, value, create_user, create_date, modify_user, modify_date)"
-          + "VALUES (?, ?, ?, ?, ?, ?, ?)";
-
-  /** Represents the sql for inserting submission. */
-  private static final String SQL_INSERT_SUBMISSION =
-      "INSERT INTO resource_submission"
-          + "(resource_id, submission_id, create_user, create_date, modify_user, modify_date)"
-          + "VALUES (?, ?, ?, ?, ?, ?)";
-
-  /** Represents the sql for adding resource. */
-  private static final String SQL_INSERT_RESOURCE =
-      "INSERT INTO resource "
-          + "(resource_id, resource_role_id, project_id, project_phase_id, user_id, create_user, create_date,"
-          + " modify_user, modify_date)"
-          + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
-
-  /**
-   * <p>
-   * Represents the sql to get all resources.
-   * </p>
-   */
-  private static final String SQL_SELECT_ALL_RES_BY_PROJECT =
-          "SELECT r.resource_id, r.project_id, r.project_phase_id, r.resource_role_id"
-                  + " FROM resource r"
-                  + " LEFT JOIN project p ON r.project_id = p.project_id"
-                  + " WHERE r.user_id = ? AND p.project_id IN (";
 
   /**
    * Represents the project user audit creation type
@@ -269,24 +94,10 @@ public class ResourcePersistence {
   private static final int PROJECT_USER_AUDIT_DELETE_TYPE = 2;
 
   /**
-   * Represents the SQL for inserting project user audit records
-   *
-   * @since 1.2.2
-   */
-  private static final String SQL_INSERT_PROJECT_USER_AUDIT =
-      "INSERT INTO project_user_audit (project_user_audit_id, project_id, resource_user_id, "
-          + " resource_role_id, audit_action_type_id, action_date, action_user_id) "
-          + " VALUES (PROJECT_USER_AUDIT_SEQ.nextval, ?, ?, ?, ?, ?, ?)";
-
-  /**
    * Stores cached ResourceRoles mapped by their IDs. Used to avoid quering the DB each time for the
    * performance reasons.
    */
   private static Map<Long, ResourceRole> cachedResourceRoles = null;
-
-  @Autowired
-  @Qualifier("tcsJdbcTemplate")
-  private JdbcTemplate jdbcTemplate;
 
   /**
    * Adds the given Resource to the persistence store. The resource must not already exist (by id)
@@ -305,7 +116,7 @@ public class ResourcePersistence {
    *     with the id is already in the persistence.
    */
   public void addResource(Resource resource) throws ResourcePersistenceException {
-    Util.checkResource(resource, false);
+    Util.checkResource(resource, false, true);
 
     LOGGER.debug(
         new LogMessage(
@@ -369,20 +180,8 @@ public class ResourcePersistence {
    * @param resource the <code>Resource</code> instance to be persist.
    */
   private void insertResource(Resource resource) {
-    LOGGER.debug("insert a record into resource with resource id : " + resource.getId());
-    executeUpdateSql(
-        jdbcTemplate,
-        SQL_INSERT_RESOURCE,
-        newArrayList(
-            resource.getId(),
-            resource.getResourceRole().getId(),
-            resource.getProject(),
-            resource.getPhase(),
-            resource.getUserId(),
-            resource.getCreationUser(),
-            resource.getCreationTimestamp(),
-            resource.getModificationUser(),
-            resource.getModificationTimestamp()));
+    long newId = resourceServiceRpc.createResource(resource);
+    resource.setId(newId);
   }
 
   /**
@@ -392,22 +191,13 @@ public class ResourcePersistence {
    * @param submission the submission to insert
    * @throws SQLException if failed to persist submission.
    */
-  private void insertSubmission(Resource resource, Object submission) {
+  private void insertSubmission(Resource resource, Long submission) {
     LOGGER.debug(
         "insert a record into the resource_submission with resource_id:"
             + resource.getId()
             + " and submission_id:"
             + getIdString(resource.getSubmissions()));
-    executeUpdateSql(
-        jdbcTemplate,
-        SQL_INSERT_SUBMISSION,
-        newArrayList(
-            resource.getId(),
-            submission,
-            resource.getCreationUser(),
-            resource.getCreationTimestamp(),
-            resource.getModificationUser(),
-            resource.getModificationTimestamp()));
+    resourceServiceRpc.createResourceSubmission(resource, submission);
   }
 
   /**
@@ -426,17 +216,7 @@ public class ResourcePersistence {
             + resourceInfoTypeId
             + " value = "
             + value);
-    executeUpdateSql(
-        jdbcTemplate,
-        SQL_INSERT_RES_INFO,
-        newArrayList(
-            resource.getId(),
-            resourceInfoTypeId,
-            value,
-            resource.getCreationUser(),
-            resource.getCreationTimestamp(),
-            resource.getModificationUser(),
-            resource.getModificationTimestamp()));
+    resourceServiceRpc.createResourceInfo(resource, resourceInfoTypeId, value);
   }
 
   /**
@@ -447,12 +227,7 @@ public class ResourcePersistence {
    * @throws SQLException if failed to look up resource_info_type_lu table for resource_info_type_id
    */
   private Integer getResourceInfoTypeId(String name) throws SQLException {
-    List<Map<String, Object>> result =
-        executeSqlWithParam(jdbcTemplate, SQL_SELECT_RES_INFO_TYPE, newArrayList(name));
-    if (!result.isEmpty()) {
-      return getInt(result.get(0), "resource_info_type_id");
-    }
-    return null;
+    return resourceServiceRpc.getResourceInfoTypeId(name);
   }
 
   /**
@@ -470,7 +245,7 @@ public class ResourcePersistence {
    * @throws ResourcePersistenceException If there is a failure to persist the change.
    */
   public void deleteResource(Resource resource) throws ResourcePersistenceException {
-    Util.checkResource(resource, true);
+    Util.checkResource(resource, true, false);
 
     LOGGER.debug(
         new LogMessage(
@@ -485,12 +260,7 @@ public class ResourcePersistence {
                     + "] phase.")
             .toString());
     try {
-      LOGGER.debug("delete resource info with resource id:" + resource.getId());
-      deleteResource(SQL_DELETE_RES_INFO, resource.getId());
-      LOGGER.debug("delete resource submission with resource id:" + resource.getId());
-      deleteResource(SQL_DELETE_SUBMISSION, resource.getId());
-      LOGGER.debug("delete resource with resource id:" + resource.getId());
-      deleteResource(SQL_DELETE_RESOURCE, resource.getId());
+      resourceServiceRpc.deleteResource(resource.getId());
 
       // audit deletion
       auditProjectUser(resource, PROJECT_USER_AUDIT_DELETE_TYPE, null, null); // delete
@@ -510,17 +280,6 @@ public class ResourcePersistence {
               .toString());
       throw new ResourcePersistenceException("Fail to delete resource", e);
     }
-  }
-
-  /**
-   * Deletes the resource based on sql and id.
-   *
-   * @param sql the sql to be used for deletion
-   * @param id the id to be deleted.
-   * @throws SQLException if failed to delete the resource
-   */
-  private void deleteResource(String sql, long id) throws SQLException {
-    executeUpdateSql(jdbcTemplate, sql, newArrayList(id));
   }
 
   /**
@@ -546,7 +305,7 @@ public class ResourcePersistence {
    *     , or the <code>Resource</code> is not already in the persistence.
    */
   public void updateResource(Resource resource) throws ResourcePersistenceException {
-    Util.checkResource(resource, false);
+    Util.checkResource(resource, false, false);
 
     LOGGER.debug(
         new LogMessage(
@@ -585,7 +344,7 @@ public class ResourcePersistence {
       Long[] submissions = resource.getSubmissions();
 
       // use the Set to check existing of previous submissions
-      Set<Long> previousSubmissionsSet = new HashSet();
+      Set<Long> previousSubmissionsSet = new HashSet<>();
 
       if (previousSubmissions.length == 0 && submissions.length != 0) {
         // For each submission associated with Resource, insert submission.
@@ -704,9 +463,8 @@ public class ResourcePersistence {
    * @param submission the submission to delete
    * @throws SQLException if failed to delete submission.
    */
-  private void deleteResourceSubmission(Resource resource, Object submission) throws SQLException {
-    executeUpdateSql(
-        jdbcTemplate, SQL_DELETE_ONE_SUBMISSION, newArrayList(resource.getId(), submission));
+  private void deleteResourceSubmission(Resource resource, Long submission) throws SQLException {
+    resourceServiceRpc.deleteResourceSubmission(resource, submission);
   }
 
   /**
@@ -719,17 +477,7 @@ public class ResourcePersistence {
    */
   private void updateResourceTable(Resource resource) {
     LOGGER.debug("update the resource table with resource id : " + resource.getId());
-    executeUpdateSql(
-        jdbcTemplate,
-        SQL_UPDATE_RESOURCE,
-        newArrayList(
-            resource.getResourceRole().getId(),
-            resource.getProject(),
-            resource.getPhase(),
-            resource.getUserId(),
-            resource.getModificationUser(),
-            resource.getModificationTimestamp(),
-            resource.getId()));
+    resourceServiceRpc.updateResource(resource);
   }
 
   /**
@@ -741,10 +489,9 @@ public class ResourcePersistence {
    */
   private Long[] getSubmissionEntry(Resource resource) throws SQLException {
     List<Long> submissions = new ArrayList<>();
-    List<Map<String, Object>> result =
-            executeSql(jdbcTemplate, buildQueryWithIds(SQL_SELECT_SUBMISSIONS, new Long[]{resource.getId()}));
-    for (Map<String, Object> map : result) {
-      submissions.add(getLong(map, "submission_id"));
+    List<ResourceSubmissionProto> result = resourceServiceRpc.getResourceSubmissions(new Long[]{resource.getId()});
+    for (ResourceSubmissionProto r : result) {
+      submissions.add(r.getSubmissionId());
     }
     return submissions.toArray(new Long[submissions.size()]);
   }
@@ -761,11 +508,10 @@ public class ResourcePersistence {
       resourceIds[i] = resources.get(i).getId();
     }
     Map<Long, List<Long>> submissionsMap = new HashMap<>();
-    List<Map<String, Object>> result =
-        executeSql(jdbcTemplate, buildQueryWithIds(SQL_SELECT_SUBMISSIONS, resourceIds));
-    for (Map<String, Object> rs : result) {
-      long resourceId = getLong(rs, "resource_id");
-      long submissionId = getLong(rs, "submission_id");
+    List<ResourceSubmissionProto> result = resourceServiceRpc.getResourceSubmissions(resourceIds);
+    for (ResourceSubmissionProto r : result) {
+      long resourceId = r.getResourceId();
+      long submissionId = r.getSubmissionId();
       List<Long> submissions = submissionsMap.get(resourceId);
       if (submissions == null) {
         submissions = new ArrayList<>();
@@ -788,17 +534,10 @@ public class ResourcePersistence {
    * @param submission the submission to update
    * @throws SQLException if failed to update resource submission
    */
-  private void updateResourceSubmission(Resource resource, Object submission) throws SQLException {
+  private void updateResourceSubmission(Resource resource, Long submission) throws SQLException {
 
     LOGGER.debug("update the resource_submission table with the resource_id:" + resource.getId());
-    executeUpdateSql(
-        jdbcTemplate,
-        SQL_UPDATE_SUBMISSION,
-        newArrayList(
-            resource.getModificationUser(),
-            resource.getModificationTimestamp(),
-            resource.getId(),
-            submission));
+    resourceServiceRpc.updateResourceSubmission(resource, submission);
   }
 
   /**
@@ -819,8 +558,7 @@ public class ResourcePersistence {
             + resourceTypeInfoId
             + " value = "
             + value);
-    executeUpdateSql(
-        jdbcTemplate, SQL_UPDATE_RES_INFO, newArrayList(value, resourceId, resourceTypeInfoId));
+    resourceServiceRpc.updateResourceInfo(resourceId, resourceTypeInfoId, value);
   }
 
   /**
@@ -836,8 +574,7 @@ public class ResourcePersistence {
             + resourceId
             + " and resource_info_type_id:"
             + resourceInfoTypeId);
-    executeUpdateSql(
-        jdbcTemplate, SQL_DELETE_RES_INFO_TYPE, newArrayList(resourceId, resourceInfoTypeId));
+    resourceServiceRpc.deleteResourceInfo(resourceId, resourceInfoTypeId);
   }
 
   /**
@@ -851,10 +588,9 @@ public class ResourcePersistence {
    */
   private Resource selectExternalProperties(Resource resource) throws ResourcePersistenceException {
     try {
-      List<Map<String, Object>> result =
-          executeSqlWithParam(jdbcTemplate, SQL_SELECT_EXT_PROP, newArrayList(resource.getId()));
-      for (Map<String, Object> rs : result) {
-        resource.setProperty(getString(rs, "name"), getString(rs, "value"));
+      List<ResourceInfoProto> result = resourceServiceRpc.getResourceInfo(resource.getId());
+      for (ResourceInfoProto r : result) {
+        resource.setProperty(r.getTypeName(), r.getValue());
       }
       return resource;
     } catch (Exception e) {
@@ -882,10 +618,9 @@ public class ResourcePersistence {
     LOGGER.debug(new LogMessage(resourceId, null, "load resource.").toString());
 
     try {
-      List<Map<String, Object>> result =
-          executeSqlWithParam(jdbcTemplate, SQL_SELECT_LOAD_RES, newArrayList(resourceId));
-      if (!result.isEmpty()) {
-        Resource resource = constructResource(result.get(0));
+      ResourceProto result = resourceServiceRpc.getResource(resourceId);
+      if (result != null) {
+        Resource resource = constructResource(result);
 
         // add submissions into resource
         resource.setSubmissions(getSubmissionEntry(resource));
@@ -908,28 +643,28 @@ public class ResourcePersistence {
    * @return The Resource instance
    * @throws ResourcePersistenceException if failed to construct the <code>Resource</code> instance.
    */
-  private Resource constructResource(Map<String, Object> rs) throws ResourcePersistenceException {
+  private Resource constructResource(ResourceProto r) throws ResourcePersistenceException {
     try {
       Resource resource = new Resource();
-      resource.setId(getLong(rs, "resource_id"));
-      ResourceRole role = this.loadResourceRole(getLong(rs, "resource_role_id"));
+      resource.setId(r.getResourceId());
+      ResourceRole role = this.loadResourceRole(r.getResourceRoleId());
       resource.setResourceRole(role);
-      if (rs.get("project_id") == null) {
+      if (!r.hasProjectId()) {
         resource.setProject(null);
       } else {
-        resource.setProject(getLong(rs, "project_id"));
+        resource.setProject(r.getProjectId());
       }
-      if (rs.get("project_phase_id") == null) {
+      if (!r.hasProjectPhaseId()) {
         resource.setPhase(null);
       } else {
-        resource.setPhase(getLong(rs, "project_phase_id"));
+        resource.setPhase(r.getProjectPhaseId());
       }
-      resource.setUserId(getLong(rs, "user_id"));
+      resource.setUserId(r.getUserId());
 
-      resource.setCreationUser(getString(rs, "create_user"));
-      resource.setCreationTimestamp(getDate(rs, "create_date"));
-      resource.setModificationUser(getString(rs, "modify_user"));
-      resource.setModificationTimestamp(getDate(rs, "modify_date"));
+      resource.setCreationUser(r.getCreateUser());
+      resource.setCreationTimestamp(new Date(r.getCreateDate().getSeconds() * 1000));
+      resource.setModificationUser(r.getModifyUser());
+      resource.setModificationTimestamp(new Date(r.getModifyDate().getSeconds() * 1000));
 
       return resource;
     } catch (Exception e) {
@@ -975,10 +710,7 @@ public class ResourcePersistence {
             .toString());
     try {
       Date time = new Date();
-      executeUpdateSql(
-          jdbcTemplate,
-          SQL_INSERT_NOTIFICATION,
-          newArrayList(project, user, notificationType, operator, time, operator, time));
+      resourceServiceRpc.createNotification(user, project, notificationType, operator, time);
     } catch (Exception e) {
       LOGGER.error(
           new LogMessage(
@@ -1031,8 +763,7 @@ public class ResourcePersistence {
                     + user)
             .toString());
     try {
-      executeUpdateSql(
-          jdbcTemplate, SQL_DELETE_NOTIFICATION, newArrayList(project, user, notificationType));
+      resourceServiceRpc.deleteNotification(user, project, notificationType);
     } catch (Exception e) {
       LOGGER.error(
           new LogMessage(
@@ -1083,14 +814,10 @@ public class ResourcePersistence {
                     + " with external_ref user:"
                     + user)
             .toString());
-    int index = 1;
     try {
-      List<Map<String, Object>> result =
-          executeSqlWithParam(
-              jdbcTemplate, SQL_SELECT_NOTIFICATION, newArrayList(project, user, notificationType));
-
-      if (!result.isEmpty()) {
-        return constructNotification(result.get(0));
+      NotificationProto result = resourceServiceRpc.getNotification(user, project, notificationType);
+      if (result != null) {
+        return constructNotification(result);
       }
 
       return null;
@@ -1118,16 +845,16 @@ public class ResourcePersistence {
    * @throws ResourcePersistenceException if failed to get the <code>Notification</code> instance
    *     from database.
    */
-  private Notification constructNotification(Map<String, Object> rs)
+  private Notification constructNotification(NotificationProto n)
       throws ResourcePersistenceException {
     try {
-      NotificationType type = loadNotificationType(getLong(rs, "notification_type_id"));
+      NotificationType type = loadNotificationType(n.getNotificationTypeId());
       Notification notification =
-          new Notification(getLong(rs, "project_id"), type, getLong(rs, "external_ref_id"));
-      notification.setCreationUser(getString(rs, "create_user"));
-      notification.setCreationTimestamp(getDate(rs, "create_date"));
-      notification.setModificationUser(getString(rs, "modify_user"));
-      notification.setModificationTimestamp(getDate(rs, "modify_date"));
+          new Notification(n.getProjectId(), type, n.getExternalRefId());
+      notification.setCreationUser(n.getCreateUser());
+      notification.setCreationTimestamp(new Date(n.getCreateDate().getSeconds() * 1000));
+      notification.setModificationUser(n.getModifyUser());
+      notification.setModificationTimestamp(new Date(n.getModifyDate().getSeconds() * 1000));
       return notification;
     } catch (Exception e) {
       LOGGER.error(
@@ -1152,20 +879,11 @@ public class ResourcePersistence {
    */
   public void addNotificationType(NotificationType notificationType)
       throws ResourcePersistenceException {
-    Util.checkNotificationType(notificationType, false);
+    Util.checkNotificationType(notificationType, false, true);
     LOGGER.debug("add a notification type with id:" + notificationType.getId());
     try {
-      executeUpdateSql(
-          jdbcTemplate,
-          SQL_INSERT_NOTIFICATION_TYPE,
-          newArrayList(
-              notificationType.getId(),
-              notificationType.getName(),
-              notificationType.getDescription(),
-              notificationType.getCreationUser(),
-              notificationType.getCreationTimestamp(),
-              notificationType.getModificationUser(),
-              notificationType.getCreationTimestamp()));
+      long newId = resourceServiceRpc.createNotificationType(notificationType);
+      notificationType.setId(newId);
     } catch (Exception e) {
       LOGGER.error(
           new LogMessage(
@@ -1190,11 +908,10 @@ public class ResourcePersistence {
    */
   public void deleteNotificationType(NotificationType notificationType)
       throws ResourcePersistenceException {
-    Util.checkNotificationType(notificationType, true);
+    Util.checkNotificationType(notificationType, true, false);
     LOGGER.debug("delete a notification type with id:" + notificationType.getId());
     try {
-      executeUpdateSql(
-          jdbcTemplate, SQL_DELETE_NOTIFICATION_TYPE, newArrayList(notificationType.getId()));
+      resourceServiceRpc.deleteNotificationType(notificationType.getId());
     } catch (Exception ex) {
       LOGGER.error(
           new LogMessage(
@@ -1223,19 +940,11 @@ public class ResourcePersistence {
    */
   public void updateNotificationType(NotificationType notificationType)
       throws ResourcePersistenceException {
-    Util.checkNotificationType(notificationType, false);
+    Util.checkNotificationType(notificationType, false, false);
 
     LOGGER.debug("Update a notification type with id:" + notificationType.getId());
     try {
-      executeUpdateSql(
-          jdbcTemplate,
-          SQL_UPDATE_NOTIFICATION_TYPE,
-          newArrayList(
-              notificationType.getName(),
-              notificationType.getDescription(),
-              notificationType.getModificationUser(),
-              notificationType.getModificationTimestamp(),
-              notificationType.getId()));
+      resourceServiceRpc.updateNotificationType(notificationType);
     } catch (Exception ex) {
       LOGGER.error(
           new LogMessage(
@@ -1266,18 +975,16 @@ public class ResourcePersistence {
 
     LOGGER.debug("load a notification type with id:" + notificationTypeId);
     try {
-      List<Map<String, Object>> result =
-          executeSqlWithParam(
-              jdbcTemplate, SQL_SELECT_NOTIFICATION_TYPE, newArrayList(notificationTypeId));
-      if (!result.isEmpty()) {
+      NotificationTypeProto result = resourceServiceRpc.getNotificationType(notificationTypeId);
+      if (result != null) {
         NotificationType type = new NotificationType();
-        type.setId(getInt(result.get(0), "notification_type_id"));
-        type.setName(getString(result.get(0), "name"));
-        type.setDescription(getString(result.get(0), "description"));
-        type.setCreationUser(getString(result.get(0), "create_user"));
-        type.setCreationTimestamp(getDate(result.get(0), "create_date"));
-        type.setModificationUser(getString(result.get(0), "modify_user"));
-        type.setModificationTimestamp(getDate(result.get(0), "modify_date"));
+        type.setId(result.getNotificationTypeId());
+        type.setName(result.getName());
+        type.setDescription(result.getDescription());
+        type.setCreationUser(result.getCreateUser());
+        type.setCreationTimestamp(new Date(result.getCreateDate().getSeconds() * 1000));
+        type.setModificationUser(result.getModifyUser());
+        type.setModificationTimestamp(new Date(result.getModifyDate().getSeconds() * 1000));
         return type;
       }
       return null;
@@ -1302,22 +1009,12 @@ public class ResourcePersistence {
    * @throws ResourcePersistenceException If there is an error updating the persistence
    */
   public void addResourceRole(ResourceRole resourceRole) throws ResourcePersistenceException {
-    Util.checkResourceRole(resourceRole, false);
+    Util.checkResourceRole(resourceRole, false, true);
     LOGGER.debug(
         "add ResourceRole with id:" + resourceRole.getId() + " name:" + resourceRole.getName());
     try {
-      executeUpdateSql(
-          jdbcTemplate,
-          SQL_INSERT_RES_ROLE,
-          newArrayList(
-              resourceRole.getId(),
-              resourceRole.getName(),
-              resourceRole.getDescription(),
-              resourceRole.getPhaseType(),
-              resourceRole.getCreationUser(),
-              resourceRole.getCreationTimestamp(),
-              resourceRole.getModificationUser(),
-              resourceRole.getCreationTimestamp()));
+      long newId = resourceServiceRpc.createResourceRole(resourceRole);
+      resourceRole.setId(newId);
       if (cachedResourceRoles != null) {
         cachedResourceRoles.put(resourceRole.getId(), resourceRole);
       }
@@ -1340,10 +1037,10 @@ public class ResourcePersistence {
    * @throws ResourcePersistenceException If there is an error updating the persistence
    */
   public void deleteResourceRole(ResourceRole resourceRole) throws ResourcePersistenceException {
-    Util.checkResourceRole(resourceRole, true);
+    Util.checkResourceRole(resourceRole, true, false);
     LOGGER.debug("Delete ResourceRole with id:" + resourceRole.getId());
     try {
-      executeUpdateSql(jdbcTemplate, SQL_DELETE_RES_ROLE, newArrayList(resourceRole.getId()));
+      resourceServiceRpc.deleteResourceRole(resourceRole.getId());
       if (cachedResourceRoles != null) {
         cachedResourceRoles.remove(resourceRole.getId());
       }
@@ -1369,19 +1066,10 @@ public class ResourcePersistence {
    * @throws ResourcePersistenceException if there is an error updating the persistence
    */
   public void updateResourceRole(ResourceRole resourceRole) throws ResourcePersistenceException {
-    Util.checkResourceRole(resourceRole, false);
+    Util.checkResourceRole(resourceRole, false, false);
     LOGGER.debug("update ResourceRole with id:" + resourceRole.getId());
     try {
-      executeUpdateSql(
-          jdbcTemplate,
-          SQL_UPDATE_RES_ROLE,
-          newArrayList(
-              resourceRole.getPhaseType(),
-              resourceRole.getName(),
-              resourceRole.getDescription(),
-              resourceRole.getModificationUser(),
-              resourceRole.getModificationTimestamp(),
-              resourceRole.getId()));
+      resourceServiceRpc.updateResourceRole(resourceRole);
       if (cachedResourceRoles != null) {
         cachedResourceRoles.put(resourceRole.getId(), resourceRole);
       }
@@ -1416,57 +1104,27 @@ public class ResourcePersistence {
   }
 
   /**
-   * Constructs the <code>ResourceRole</code> instance from the given <code>ResultSet</code>
-   * instance.
-   *
-   * @param rs the ResultSet instance
-   * @return the <code>ResourceRole</code> instance
-   * @throws SQLException if failed to get the <code>ResourceRole</code> instance from the <code>
-   *     ResultSet</code>.
-   */
-  private ResourceRole constructResourceRole(ResultSet rs) throws SQLException {
-    ResourceRole role = new ResourceRole();
-    int index = 3;
-    role.setId(rs.getLong(1));
-
-    if (rs.getObject(2) == null) {
-      role.setPhaseType(null);
-    } else {
-      role.setPhaseType(rs.getLong(2));
-    }
-
-    role.setName(rs.getString(index++));
-    role.setDescription(rs.getString(index++));
-    role.setCreationUser(rs.getString(index++));
-    role.setCreationTimestamp(rs.getTimestamp(index++));
-    role.setModificationUser(rs.getString(index++));
-    role.setModificationTimestamp(rs.getTimestamp(index++));
-
-    return role;
-  }
-
-  /**
    * Construct the ResourceRole instance from the given ResultSet instance.
    *
    * @param rs the ResultSet instance
    * @return the ResourceRole instance
    */
-  private ResourceRole constructResourceRole(Map<String, Object> rs) {
+  private ResourceRole constructResourceRole(ResourceRoleProto r) {
     ResourceRole role = new ResourceRole();
 
-    role.setId(getLong(rs, "resource_role_id"));
+    role.setId(r.getResourceRoleId());
 
-    if (rs.get("phase_type_id") == null) {
+    if (!r.hasPhaseTypeId()) {
       role.setPhaseType(null);
     } else {
-      role.setPhaseType(getLong(rs, "phase_type_id"));
+      role.setPhaseType(r.getPhaseTypeId());
     }
-    role.setName(getString(rs, "name"));
-    role.setDescription(getString(rs, "description"));
-    role.setCreationUser(getString(rs, "create_user"));
-    role.setCreationTimestamp(getDate(rs, "create_date"));
-    role.setModificationUser(getString(rs, "modify_user"));
-    role.setModificationTimestamp(getDate(rs, "modify_date"));
+    role.setName(r.getName());
+    role.setDescription(r.getDescription());
+    role.setCreationUser(r.getCreateUser());
+    role.setCreationTimestamp(new Date(r.getCreateDate().getSeconds() * 1000));
+    role.setModificationUser(r.getModifyUser());
+    role.setModificationTimestamp(new Date(r.getModifyDate().getSeconds() * 1000));
 
     return role;
   }
@@ -1479,10 +1137,10 @@ public class ResourcePersistence {
   private void cacheAllResourceRoles() throws ResourcePersistenceException {
     LOGGER.debug("Load and cache all resource roles.");
     try {
-      List<Map<String, Object>> result = executeSql(jdbcTemplate, SQL_SELECT_RES_ALL_ROLES);
+      List<ResourceRoleProto> result = resourceServiceRpc.getResourceRoles();
       Map<Long, ResourceRole> resourceRoles = Collections.synchronizedMap(new HashMap<>());
-      for (Map<String, Object> rs : result) {
-        ResourceRole role = constructResourceRole(rs);
+      for (ResourceRoleProto r : result) {
+        ResourceRole role = constructResourceRole(r);
         resourceRoles.put(role.getId(), role);
       }
       cachedResourceRoles = resourceRoles;
@@ -1509,10 +1167,9 @@ public class ResourcePersistence {
     String idString = getIdString(resourceIds);
     LOGGER.debug("load Resource with ids:" + idString);
     try {
-      List<Map<String, Object>> result =
-          executeSql(jdbcTemplate, buildQueryWithIds(SQL_SELECT_ALL_RES, resourceIds));
+      List<ResourceProto> result = resourceServiceRpc.getAllResources(resourceIds);
       List<Resource> list = new ArrayList<>();
-      for (Map<String, Object> rs : result) {
+      for (ResourceProto rs : result) {
         list.add(constructResource(rs));
       }
       // load submissions for all resources
@@ -1522,16 +1179,16 @@ public class ResourcePersistence {
 
       // select all the external properties once and  add the matching properties into resource
       // instances.
-      Map propertiesMap = getAllExternalProperties(resourceIds);
+      Map<Long, Map<String, String>> propertiesMap = getAllExternalProperties(resourceIds);
       for (int i = 0; i < resources.length; i++) {
         Resource resource = resources[i];
-        Map properties = (Map) propertiesMap.get(resource.getId());
+        Map<String, String> properties = propertiesMap.get(resource.getId());
 
         if (properties == null) {
           continue;
         }
-        for (Iterator iter = properties.entrySet().iterator(); iter.hasNext(); ) {
-          Entry entry = (Entry) iter.next();
+        for (Iterator<Entry<String, String>> iter = properties.entrySet().iterator(); iter.hasNext(); ) {
+          Entry<String, String> entry = iter.next();
 
           resource.setProperty(entry.getKey().toString(), entry.getValue().toString());
         }
@@ -1560,39 +1217,18 @@ public class ResourcePersistence {
   public Resource[] getResourcesByProjects(Long[] projectIds, long userId, Map<Long, ResourceRole> roles) throws ResourcePersistenceException {
     LOGGER.debug("Getting resources by project Ids");
     List<Resource> resourceList= new ArrayList<>();
-    StringBuilder query = new StringBuilder();
-    query.append(SQL_SELECT_ALL_RES_BY_PROJECT);
-    query.append(String.join(",", Arrays.stream(projectIds).map(x -> x.toString()).collect(Collectors.toList())));
-    query.append(")");
-    List<Map<String, Object>> rs = executeSqlWithParam(jdbcTemplate, query.toString(), newArrayList(userId));
-    for (Map<String, Object> row: rs) {
-      long resourceId = getLong(row, "resource_id");
-      Long projectId = getLong(row, "project_id");
-      Long phaseId = getLong(row, "project_phase_id");
-      long resourceRoleId = getLong(row, "resource_role_id");
+    List<ResourceProto> result = resourceServiceRpc.getResourcesByProjects(projectIds, userId);
+    for (ResourceProto r: result) {
+      long resourceId = r.getResourceId();
+      Long projectId = r.hasProjectId() ? r.getProjectId() : null;
+      Long phaseId = r.hasProjectPhaseId() ? r.getProjectPhaseId() : null;
+      long resourceRoleId = r.getResourceRoleId();
       Resource resource = new Resource(resourceId, roles.get(resourceRoleId));
       resource.setProject(projectId);
       resource.setPhase(phaseId);
       resourceList.add(resource);
     }
     return resourceList.toArray(new Resource[resourceList.size()]);
-  }
-
-  /**
-   * Return the id string separated by comma for the given long id array.
-   *
-   * @param ids the id array
-   * @return string separated by comma
-   */
-  private String getIdString(long[] ids) {
-    if (ids == null || ids.length == 0) {
-      return "";
-    }
-    StringBuilder idString = new StringBuilder();
-    for (int i = 0; i < ids.length; i++) {
-      idString.append(',').append(ids);
-    }
-    return idString.substring(1);
   }
 
   /**
@@ -1620,7 +1256,7 @@ public class ResourcePersistence {
    * @throws IllegalArgumentException If any id is <= 0 or the array is null
    * @throws ResourcePersistenceException If there is an error loading the Resources
    */
-  public Resource[] loadResources(List<Map<String, Object>> resultSet)
+  public Resource[] loadResources(List<ResourceProto> resultSet)
       throws ResourcePersistenceException {
     Util.checkNull(resultSet, "resultSet");
     if (resultSet.isEmpty()) {
@@ -1629,7 +1265,7 @@ public class ResourcePersistence {
     try {
       List<Resource> list = new ArrayList<>();
 
-      for (Map<String, Object> rs : resultSet) {
+      for (ResourceProto rs : resultSet) {
         list.add(constructResource(rs));
       }
 
@@ -1645,18 +1281,18 @@ public class ResourcePersistence {
 
       // select all the external properties once and add the matching properties into resource
       // instances
-      Map propertiesMap = getAllExternalProperties(resourceIds);
+      Map<Long, Map<String, String>> propertiesMap = getAllExternalProperties(resourceIds);
 
       for (int i = 0; i < resources.length; ++i) {
         Resource resource = resources[i];
-        Map properties = (Map) propertiesMap.get(resource.getId());
+        Map<String, String> properties = propertiesMap.get(resource.getId());
 
         if (properties == null) {
           continue;
         }
 
-        for (Iterator iter = properties.entrySet().iterator(); iter.hasNext(); ) {
-          Entry entry = (Entry) iter.next();
+        for (Iterator<Entry<String, String>> iter = properties.entrySet().iterator(); iter.hasNext(); ) {
+          Entry<String, String> entry = iter.next();
 
           resource.setProperty(entry.getKey().toString(), entry.getValue().toString());
         }
@@ -1672,29 +1308,6 @@ public class ResourcePersistence {
   }
 
   /**
-   * Builds a select sql query with an argument contains many long values. The structure of the
-   * result string looks like this: ... in ( id, id, id, id...).
-   *
-   * @param baseQuery the sql query
-   * @param ids the ids for select sql query
-   * @return the result string
-   */
-  private String buildQueryWithIds(String baseQuery, Long[] ids) {
-    StringBuffer buffer = new StringBuffer(baseQuery);
-    for (int i = 0; i < ids.length; i++) {
-      if (i > 0) {
-        buffer.append(',');
-      }
-
-      buffer.append(ids[i]);
-    }
-
-    buffer.append(')');
-
-    return buffer.toString();
-  }
-
-  /**
    * Gets all the external properties with one select sql query. Here a <code>HashMap</code>
    * structure is used. The key is an <code>Integer</code> of resourceId and the value is another
    * map which contains the key/value of external properties.
@@ -1703,21 +1316,20 @@ public class ResourcePersistence {
    * @return a <code>Map</code> contained all external properties.
    * @throws ResourcePersistenceException if failed to select all external properties at once.
    */
-  private Map getAllExternalProperties(Long[] resourceIds) throws ResourcePersistenceException {
+  private Map<Long, Map<String, String>> getAllExternalProperties(Long[] resourceIds) throws ResourcePersistenceException {
     // Map from resource id to a Map containing the properties of the resource.
-    Map resourcesProperties = new HashMap();
+    Map<Long, Map<String, String>> resourcesProperties = new HashMap<Long, Map<String, String>>();
     try {
-      List<Map<String, Object>> result =
-          executeSql(jdbcTemplate, buildQueryWithIds(SQL_SELECT_EXT_PROPS, resourceIds));
-      for (Map<String, Object> rs : result) {
-        Long resourceId = getLong(rs, "resource_id");
+      List<ResourceInfoProto> result = resourceServiceRpc.getAllResourceInfo(resourceIds);
+      for (ResourceInfoProto r : result) {
+        Long resourceId = r.getResourceId();
 
-        String key = getString(rs, "name");
-        String value = getString(rs, "value");
+        String key = r.getTypeName();
+        String value = r.getValue();
 
-        Map properties = (Map) resourcesProperties.get(resourceId);
+        Map<String, String> properties = resourcesProperties.get(resourceId);
         if (properties == null) {
-          properties = new HashMap();
+          properties = new HashMap<String, String>();
           resourcesProperties.put(resourceId, properties);
         }
         properties.put(key, value);
@@ -1752,14 +1364,11 @@ public class ResourcePersistence {
     String idString = this.getIdString(notificationTypeIds);
     LOGGER.debug("load NotificationType with ids:" + idString);
     try {
-      List<Map<String, Object>> rs =
-          executeSql(
-              jdbcTemplate, buildQueryWithIds(SQL_SELECT_NOTIFICATION_TYPES, notificationTypeIds));
-
+      List<NotificationTypeProto> result = resourceServiceRpc.getAllNotificationType(notificationTypeIds);
       List<NotificationType> list = new ArrayList<>();
 
-      for (Map<String, Object> row : rs) {
-        list.add(constructNotificationType(row));
+      for (NotificationTypeProto n : result) {
+        list.add(constructNotificationType(n));
       }
 
       return list.toArray(new NotificationType[list.size()]);
@@ -1792,13 +1401,13 @@ public class ResourcePersistence {
    *
    * @return The loaded notification types
    */
-  public NotificationType[] loadNotificationTypes(List<Map<String, Object>> resultSet) {
+  public NotificationType[] loadNotificationTypes(List<NotificationTypeProto> resultSet) {
     Util.checkNull(resultSet, "resultSet");
     if (resultSet.isEmpty()) {
       return new NotificationType[0];
     }
     List<NotificationType> list = new ArrayList<>();
-    for (Map<String, Object> rs : resultSet) {
+    for (NotificationTypeProto rs : resultSet) {
       list.add(constructNotificationType(rs));
     }
     return list.toArray(new NotificationType[list.size()]);
@@ -1811,15 +1420,15 @@ public class ResourcePersistence {
    * @param rs the <code>CustomResultSet</code> instance
    * @return NotificationType instance.
    */
-  private NotificationType constructNotificationType(Map<String, Object> rs) {
+  private NotificationType constructNotificationType(NotificationTypeProto n) {
     NotificationType type = new NotificationType();
-    type.setId(getLong(rs, "notification_type_id"));
-    type.setName(getString(rs, "name"));
-    type.setDescription(getString(rs, "description"));
-    type.setCreationUser(getString(rs, "create_user"));
-    type.setCreationTimestamp(getDate(rs, "create_date"));
-    type.setModificationUser(getString(rs, "modify_user"));
-    type.setModificationTimestamp(getDate(rs, "modify_date"));
+    type.setId(n.getNotificationTypeId());
+    type.setName(n.getName());
+    type.setDescription(n.getDescription());
+    type.setCreationUser(n.getCreateUser());
+    type.setCreationTimestamp(new Date(n.getCreateDate().getSeconds() * 1000));
+    type.setModificationUser(n.getModifyUser());
+    type.setModificationTimestamp(new Date(n.getModifyDate().getSeconds() * 1000));
     return type;
   }
 
@@ -1865,13 +1474,13 @@ public class ResourcePersistence {
    * @throws IllegalArgumentException If any id is <= 0 or the array is null
    * @throws ResourcePersistenceException If there is an error loading from persistence
    */
-  public ResourceRole[] loadResourceRoles(List<Map<String, Object>> resultSet) {
+  public ResourceRole[] loadResourceRoles(List<ResourceRoleProto> resultSet) {
     Util.checkNull(resultSet, "resultSet");
     if (resultSet.isEmpty()) {
       return new ResourceRole[0];
     }
     List<ResourceRole> roles = new ArrayList<>();
-    for (Map<String, Object> rs : resultSet) {
+    for (ResourceRoleProto rs : resultSet) {
       roles.add(constructResourceRole(rs));
     }
     return roles.toArray(new ResourceRole[roles.size()]);
@@ -1907,27 +1516,12 @@ public class ResourcePersistence {
 
     LOGGER.debug("load Notifications with array of userIds/projectIds/notificationTypes.");
 
-    // construct the sql query.
-    StringBuffer buffer = new StringBuffer(SQL_SELECT_NOTIFICATIONS);
-
-    for (int i = 0; i < userIds.length; i++) {
-      if (i > 0) {
-        buffer.append(" OR ");
-      }
-
-      buffer.append('(');
-      buffer.append("project_id = " + projectIds[i]);
-      buffer.append(" AND external_ref_id = " + userIds[i]);
-      buffer.append(" AND notification_type_id = " + notificationTypes[i]);
-      buffer.append(')');
-    }
-    // end of constructing sql query.
     try {
-      List<Map<String, Object>> rs = executeSql(jdbcTemplate, buffer.toString());
+      List<NotificationProto> result = resourceServiceRpc.getAllNotifications(userIds, projectIds, notificationTypes);
       List<Notification> list = new ArrayList<>();
 
-      for (Map<String, Object> r : rs) {
-        list.add(constructNotification(r));
+      for (NotificationProto n : result) {
+        list.add(constructNotification(n));
       }
 
       return list.toArray(new Notification[list.size()]);
@@ -1953,14 +1547,14 @@ public class ResourcePersistence {
    *     (or any array is null) or all three arrays do not have the same length, any id is <= 0
    * @throws ResourcePersistenceException If there is an error loading from the persistence
    */
-  public Notification[] loadNotifications(List<Map<String, Object>> resultSet)
+  public Notification[] loadNotifications(List<NotificationProto> resultSet)
       throws ResourcePersistenceException {
     Util.checkNull(resultSet, "resultSet");
     if (resultSet.isEmpty()) {
       return new Notification[0];
     }
     List<Notification> notifications = new ArrayList<>();
-    for (Map<String, Object> rs : resultSet) {
+    for (NotificationProto rs : resultSet) {
       notifications.add(constructNotification(rs));
     }
     return notifications.toArray(new Notification[notifications.size()]);
@@ -1975,10 +1569,9 @@ public class ResourcePersistence {
    */
   private Resource getShallowResource(long resourceId) throws ResourcePersistenceException {
     try {
-      List<Map<String, Object>> result =
-          executeSqlWithParam(jdbcTemplate, SQL_SELECT_LOAD_RES, newArrayList(resourceId));
-      if (!result.isEmpty()) {
-        return constructResource(result.get(0));
+      ResourceProto result = resourceServiceRpc.getResource(resourceId);
+      if (result != null) {
+        return constructResource(result);
       }
       return null;
     } catch (Exception e) {
@@ -2013,15 +1606,8 @@ public class ResourcePersistence {
               + "since resource doesn't have project id.");
     }
     long resourceUserId = (userId != null) ? userId : resource.getUserId();
-    executeUpdateSql(
-        jdbcTemplate,
-        SQL_INSERT_PROJECT_USER_AUDIT,
-        newArrayList(
-            resource.getProject(),
-            resourceUserId,
-            Optional.ofNullable(resourceRoleId).orElse(resource.getResourceRole().getId()),
-            auditType,
-            resource.getModificationTimestamp(),
-            Long.parseLong(resource.getModificationUser())));
+    resourceServiceRpc.auditProjectUser(resource.getProject(), resourceUserId,
+        Optional.ofNullable(resourceRoleId).orElse(resource.getResourceRole().getId()), auditType,
+        resource.getModificationTimestamp(), Long.parseLong(resource.getModificationUser()));
   }
 }

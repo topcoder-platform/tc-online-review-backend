@@ -1,33 +1,19 @@
 package com.topcoder.onlinereview.component.project.management;
 
-import com.topcoder.onlinereview.component.datavalidator.IntegerValidator;
-import com.topcoder.onlinereview.component.datavalidator.LongValidator;
-import com.topcoder.onlinereview.component.datavalidator.StringValidator;
+import com.topcoder.onlinereview.component.grpcclient.project.ProjectServiceRpc;
 import com.topcoder.onlinereview.component.search.SearchBuilderException;
-import com.topcoder.onlinereview.component.search.SearchBundle;
-import com.topcoder.onlinereview.component.search.SearchBundleManager;
 import com.topcoder.onlinereview.component.search.filter.Filter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 @Component
 public class ProjectManager {
-  private static final String PROJECT_SEARCH_BUNDLE = "ProjectSearchBundle";
   @Autowired private ProjectPersistence persistence;
-  @Autowired private SearchBundleManager searchBundleManager;
-  private SearchBundle searchBundle;
   @Autowired private ProjectValidator validator;
-
-  @PostConstruct
-  public void postRun() {
-    searchBundle = searchBundleManager.getSearchBundle(PROJECT_SEARCH_BUNDLE);
-    this.setValidationMap();
-  }
+  @Autowired
+  private ProjectServiceRpc projectServiceRpc;
 
   public void createProject(Project project, String operator)
       throws PersistenceException, ValidationException {
@@ -52,15 +38,14 @@ public class ProjectManager {
   public Project[] searchProjects(Filter filter) throws PersistenceException {
     Helper.checkObjectNotNull(filter, "filter");
     try {
-      List<Map<String, Object>> result = this.searchBundle.search(filter);
-      return this.persistence.getProjects(result);
+      return projectServiceRpc.searchProjects(filter);
     } catch (ClassCastException | SearchBuilderException var4) {
       throw new PersistenceException("error occurs when trying to get ids.", var4);
     }
   }
 
-  public long[] searchProjectsForIds(String query) throws PersistenceException {
-    return this.persistence.searchProjectsForIds(query);
+  public long[] searchProjectsForIds() throws PersistenceException {
+    return this.persistence.searchProjectsForIds();
   }
 
   public Project[] getAllProjects(Long userId, ProjectStatus status, int page, int perPage, long categoryId,
@@ -166,25 +151,5 @@ public class ProjectManager {
       ProjectStudioSpecification spec, long projectId, String operator)
       throws PersistenceException {
     this.persistence.updateStudioSpecificationForProject(spec, projectId, operator);
-  }
-
-  private void setValidationMap() {
-    Map validationMap = new HashMap();
-    validationMap.put("ProjectTypeID", LongValidator.isPositive());
-    validationMap.put("ProjectCategoryID", LongValidator.isPositive());
-    validationMap.put("ProjectStatusID", LongValidator.isPositive());
-    validationMap.put(
-        "ProjectTypeName", StringValidator.hasLength(IntegerValidator.lessThanOrEqualTo(64)));
-    validationMap.put(
-        "ProjectCategoryName", StringValidator.hasLength(IntegerValidator.lessThanOrEqualTo(64)));
-    validationMap.put(
-        "ProjectStatusName", StringValidator.hasLength(IntegerValidator.lessThanOrEqualTo(64)));
-    validationMap.put(
-        "ProjectPropertyName", StringValidator.hasLength(IntegerValidator.lessThanOrEqualTo(64)));
-    validationMap.put(
-        "ProjectPropertyValue",
-        StringValidator.hasLength(IntegerValidator.lessThanOrEqualTo(4096)));
-    validationMap.put("TCDirectProjectID", LongValidator.isPositive());
-    this.searchBundle.setSearchableFields(validationMap);
   }
 }

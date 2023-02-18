@@ -3,29 +3,23 @@
  */
 package com.topcoder.onlinereview.component.project.payment.calculator;
 
+import com.topcoder.onlinereview.component.grpcclient.payment.PaymentServiceRpc;
 import com.topcoder.onlinereview.component.project.payment.Helper;
+import com.topcoder.onlinereview.grpc.payment.proto.BigDecimalProto;
+import com.topcoder.onlinereview.grpc.payment.proto.DefaultPaymentProto;
+
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.math.MathContext;
 import java.math.RoundingMode;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-
-import static com.google.common.collect.Lists.newArrayList;
-import static com.topcoder.onlinereview.component.util.CommonUtils.executeSqlWithParam;
-import static com.topcoder.onlinereview.component.util.CommonUtils.getDouble;
-import static com.topcoder.onlinereview.component.util.CommonUtils.getFloat;
-import static com.topcoder.onlinereview.component.util.CommonUtils.getInt;
-import static com.topcoder.onlinereview.component.util.CommonUtils.getLong;
-import static java.util.Optional.ofNullable;
-
 
 /**
  * <p>
@@ -284,6 +278,10 @@ import static java.util.Optional.ofNullable;
 @Slf4j
 @Component("defaultProjectPaymentCalculator")
 public class DefaultProjectPaymentCalculator implements ProjectPaymentCalculator {
+
+    @Autowired
+    private PaymentServiceRpc paymentServiceRpc;
+
     /**
      * <p>
      * The default configuration namespace of this class. It refers to the fully qualified name of this class,
@@ -426,82 +424,6 @@ public class DefaultProjectPaymentCalculator implements ProjectPaymentCalculator
 
     /**
      * <p>
-     * The alias for prize_amount column in prize table.
-     * </p>
-     */
-    private static final String PRIZE_COLUMN = "prize";
-
-    /**
-     * <p>
-     * The resource_role_id in default_project_payment table.
-     * </p>
-     */
-    private static final String RESOURCE_ROLE_ID_COLUMN = "resource_role_id";
-
-    /**
-     * <p>
-     * The incremental_coefficient in default_project_payment table.
-     * </p>
-     */
-    private static final String INCREMENTAL_COEFFICIENT_COLUMN = "incremental_coefficient";
-
-    /**
-     * <p>
-     * The base_coefficient in default_project_payment table.
-     * </p>
-     */
-    private static final String BASE_COEFFICIENT_COLUMN = "base_coefficient";
-
-    /**
-     * <p>
-     * The fixed_amount in default_project_payment table.
-     * </p>
-     */
-    private static final String FIXED_AMOUNT_COLUMN = "fixed_amount";
-
-    /**
-     * <p>
-     * The SQL query to retrieve fixed amount, base coefficient and incremental coefficient for calculating project
-     * payment of a specific project category and resource role.
-     * </p>
-     */
-    private static final String GET_DEFAULT_PAYMENT_QUERY =
-        "SELECT fixed_amount, base_coefficient, incremental_coefficient " + "FROM default_project_payment "
-            + "WHERE project_category_id = ? and resource_role_id = ?";
-
-    /**
-     * <p>
-     * The SQL query to retrieve all necessary data (fixed amount, base coefficient and incremental coefficient)
-     * for calculating project payment.
-     * </p>
-     */
-    private static final String GET_DEFAULT_PAYMENTS_QUERY =
-        "SELECT dpp.resource_role_id, dpp.fixed_amount, dpp.base_coefficient, dpp.incremental_coefficient,"
-            + "max(pr.prize_amount) as prize,"
-            + "sum(case when s.submission_type_id = 1 then 1 else 0 end) as total_contest_submissions,"
-            + "sum(case when s.submission_type_id = 1 and s.submission_status_id != 2 then 1 else 0 end) "
-            + "as passed_contest_submissions,"
-            + "sum(case when s.submission_type_id = 3 then 1 else 0 end) as total_checkpoint_submissions,"
-            + "sum(case when s.submission_type_id = 3 and s.submission_status_id != 6 then 1 else 0 end) "
-            + "as passed_checkpoint_submissions, "
-            + "sum(case when s.submission_type_id = 1 and exists (select 1 from review r "
-            + "where r.submission_id = s.submission_id and r.committed = 1) then 1 else 0 end) "
-            + "as total_reviewed_contest_submissions "
-            + "FROM default_project_payment dpp "
-            + "INNER JOIN project p ON dpp.project_category_id = p.project_category_id and p.project_id=? "
-            + "LEFT OUTER JOIN prize pr ON pr.project_id=p.project_id and pr.prize_type_id=15 and pr.place=1 "
-            + "LEFT OUTER JOIN upload u ON u.project_id = p.project_id and u.upload_type_id = 1 "
-            + "LEFT OUTER JOIN submission s ON s.submission_type_id in (1,3) and s.upload_id = u.upload_id "
-            + "and s.submission_status_id in (1,2,3,4,6,7) "
-            + "WHERE dpp.resource_role_id in (2,4,5,6,7,8,9,14,18,19,20,21) "
-            + "GROUP BY dpp.resource_role_id, dpp.fixed_amount, dpp.base_coefficient, dpp.incremental_coefficient";
-
-    @Autowired
-    @Qualifier("tcsJdbcTemplate")
-    private JdbcTemplate jdbcTemplate;
-
-    /**
-     * <p>
      * This method is a concrete implementation of the namesake method defined in the interface.
      * </p>
      * <p>
@@ -555,23 +477,25 @@ public class DefaultProjectPaymentCalculator implements ProjectPaymentCalculator
 
         try {
           // Execute the query and get the result.
-          List<Map<String, Object>> resultSet = executeSqlWithParam(jdbcTemplate, GET_DEFAULT_PAYMENTS_QUERY, newArrayList(projectId));
+          List<DefaultPaymentProto> defaultPayments = paymentServiceRpc.getDefaultPayments(projectId);
 
             Map<Long, BigDecimal> defaultPaymentsMap = new HashMap<Long, BigDecimal>();
 
             // Iterate through the supported resource roles IDs and compute the default payment for each one of the
             // requested resource role
-            for (Map<String, Object> row: resultSet) {
-                long roleId = getLong(row, RESOURCE_ROLE_ID_COLUMN);
+            for (DefaultPaymentProto defaultPayment : defaultPayments) {
+                long roleId = defaultPayment.getResourceRoleId();
                 if (resourceRoleIDs.contains(roleId)) {
-                    BigDecimal fixedAmount =
-                        new BigDecimal(getDouble(row, FIXED_AMOUNT_COLUMN)).setScale(2, RoundingMode.HALF_UP);
-                    float baseCoefficient = ofNullable(getFloat(row, BASE_COEFFICIENT_COLUMN)).orElse(0F);
-                    float incrementalCoefficient = ofNullable(getFloat(row, INCREMENTAL_COEFFICIENT_COLUMN)).orElse(0F);
-                    float prize = ofNullable(getFloat(row, PRIZE_COLUMN)).orElse(0F);
+                    BigDecimalProto serialized = defaultPayment.getFixedAmount();
+                    BigDecimal fixedAmount = new BigDecimal(new BigInteger(serialized.getValue().toByteArray()),
+                            serialized.getScale(), new MathContext(serialized.getPrecision()))
+                            .setScale(2, RoundingMode.HALF_UP);
+                    float baseCoefficient = defaultPayment.hasBaseCoefficient() ? defaultPayment.getBaseCoefficient() : 0F;
+                    float incrementalCoefficient = defaultPayment.hasIncrementalCoefficient() ? defaultPayment.getIncrementalCoefficient() : 0F;
+                    float prize = defaultPayment.hasPrize() ? defaultPayment.getPrize() : 0F;
 
                     // get submission count
-                    int submissionsCount = getSubmissionsCount(row, roleId);
+                    int submissionsCount = getSubmissionsCount(defaultPayment, roleId);
 
                     // calculate the payment
                     BigDecimal augend =
@@ -636,30 +560,33 @@ public class DefaultProjectPaymentCalculator implements ProjectPaymentCalculator
         int submissionsCount) throws ProjectPaymentCalculatorException {
         String signature = DEFAULT_CONFIG_NAMESPACE + "#getDefaultPayment(long, long, BigDecimal, int)";
         Helper.logEntrance(log, signature, new String[] {"projectCategoryId", "resourceRoleId",
-            PRIZE_COLUMN, "submissionsCount"},
+            "prize", "submissionsCount"},
             new Object[] {projectCategoryId, resourceRoleId, prize, submissionsCount});
 
         // arguments checking
         try {
             Helper.checkPositive(projectCategoryId, "projectCategoryId");
             Helper.checkPositive(resourceRoleId, "resourceRoleId");
-            Helper.checkNotNull(prize, PRIZE_COLUMN);
+            Helper.checkNotNull(prize, "prize");
             Helper.checkNotNegative(submissionsCount, "submissionsCount");
         } catch (IllegalArgumentException e) {
             throw Helper.logException(log, signature, e);
         }
 
         // Execute the query and get the result.
-        List<Map<String, Object>> resultSet = executeSqlWithParam(jdbcTemplate, GET_DEFAULT_PAYMENT_QUERY, newArrayList(projectCategoryId, resourceRoleId));
+        DefaultPaymentProto defaultPayment = paymentServiceRpc.getDefaultPayment(projectCategoryId, resourceRoleId);
 
         // initialize the variable to contain the payment result
         BigDecimal payment = null;
 
         // compute the payment value
-        if (!resultSet.isEmpty()) {
-            BigDecimal fixedAmount = new BigDecimal(getDouble(resultSet.get(0), FIXED_AMOUNT_COLUMN)).setScale(2, RoundingMode.HALF_UP);
-            float baseCoefficient = getFloat(resultSet.get(0), BASE_COEFFICIENT_COLUMN);
-            float incrementalCoefficient = getFloat(resultSet.get(0), INCREMENTAL_COEFFICIENT_COLUMN);
+        if (defaultPayment != null) {
+            BigDecimalProto serialized = defaultPayment.getFixedAmount();
+            BigDecimal fixedAmount = new BigDecimal(new BigInteger(serialized.getValue().toByteArray()),
+                    serialized.getScale(), new MathContext(serialized.getPrecision()))
+                    .setScale(2, RoundingMode.HALF_UP);
+            float baseCoefficient = defaultPayment.getBaseCoefficient();
+            float incrementalCoefficient = defaultPayment.getIncrementalCoefficient();
 
             // check if number of submissions is needed by the role
             // if it is needed but the given submissionsCount is 0 then assume there is one submission
@@ -694,28 +621,28 @@ public class DefaultProjectPaymentCalculator implements ProjectPaymentCalculator
      * @throws SQLException
      *             If any error occurs while reading from result set.
      */
-    private static int getSubmissionsCount(Map<String, Object> resultSet, long resourceRoleId) throws SQLException {
+    private static int getSubmissionsCount(DefaultPaymentProto defaultPayment, long resourceRoleId) throws SQLException {
         int submissionsCount = 0;
         if (resourceRoleId == PRIMARY_SCREENER_RESOURCE_ROLE_ID) {
-            submissionsCount = getInt(resultSet, "total_contest_submissions");
+            submissionsCount = defaultPayment.getTotalContestSubmissions();
         }
 
         if (resourceRoleId == REVIEWER_RESOURCE_ROLE_ID || resourceRoleId == ACCURACY_REVIEWER_RESOURCE_ROLE_ID
             || resourceRoleId == FAILURE_REVIEWER_RESOURCE_ROLE_ID
             || resourceRoleId == STRESS_REVIEWER_RESOURCE_ROLE_ID) {
-            submissionsCount = getInt(resultSet, "passed_contest_submissions");
+            submissionsCount = defaultPayment.getPassedContestSubmissions();
         }
 
         if (resourceRoleId == CHECKPOINT_SCREENER_RESOURCE_ROLE_ID) {
-            submissionsCount = getInt(resultSet, "total_checkpoint_submissions");
+            submissionsCount = defaultPayment.getTotalCheckpointSubmissions();
         }
 
         if (resourceRoleId == CHECKPOINT_REVIEWER_RESOURCE_ROLE_ID) {
-            submissionsCount = getInt(resultSet, "passed_checkpoint_submissions");
+            submissionsCount = defaultPayment.getPassedCheckpointSubmissions();
         }
 
         if (resourceRoleId == ITERATIVE_REVIEWER_RESOURCE_ROLE_ID) {
-            submissionsCount = getInt(resultSet, "total_reviewed_contest_submissions");
+            submissionsCount = defaultPayment.getTotalReviewedContestSubmissions();
         }
 
         // check if submissionsCount is still 0 here, then one submission is assumed

@@ -5,20 +5,15 @@ package com.topcoder.onlinereview.component.contest;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
+import com.topcoder.onlinereview.component.grpcclient.contesteligibility.ContestEligibilityServiceRpc;
+
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-
-import static com.topcoder.onlinereview.component.util.CommonUtils.getBoolean;
-import static com.topcoder.onlinereview.component.util.CommonUtils.getLong;
 
 /**
  * <p>
@@ -76,8 +71,7 @@ import static com.topcoder.onlinereview.component.util.CommonUtils.getLong;
 public class ContestEligibilityManager {
 
     @Autowired
-    @Qualifier("tcsJdbcTemplate")
-    private JdbcTemplate jdbcTemplate;
+    private ContestEligibilityServiceRpc contestEligibilityServiceRpc;
     /**
      * Add a contest eligibility.
      *
@@ -95,8 +89,7 @@ public class ContestEligibilityManager {
             new Object[] {contestEligibility});
         checkNull(contestEligibility, "contestEligibility");
         try {
-            jdbcTemplate.update("insert into contest_eligibility(contest_eligibility_id, contest_id, is_studio) VALUES(CONTEST_ELIGIBILITY_SEQ.NEXTVAL, ?, ?)", contestEligibility.getContestId(), contestEligibility.getStudio());
-            Long id = jdbcTemplate.queryForObject("select max(contest_eligibility_id) from contest_eligibility where contest_id=" + contestEligibility.getContestId(), Long.class);
+            Long id = contestEligibilityServiceRpc.create(contestEligibility);
             contestEligibility.setId(id);
         } catch (RuntimeException e) {
             throw logError(new ContestEligibilityPersistenceException(
@@ -121,8 +114,7 @@ public class ContestEligibilityManager {
             new Object[] {contestEligibility});
         checkNull(contestEligibility, "contestEligibility");
         try {
-            jdbcTemplate.update("delete from contest_eligibility where contest_eligibility_id="
-                    + contestEligibility.getId());
+            contestEligibilityServiceRpc.remove(contestEligibility.getContestId());
         } catch (RuntimeException e) {
             throw logError(new ContestEligibilityPersistenceException(
                 "Some error happens while removing the entity.", e));
@@ -165,24 +157,17 @@ public class ContestEligibilityManager {
                 list.stream().filter(c -> c.getId() == 0).collect(Collectors.toList());
         try {
             if (!toDelete.isEmpty()) {
-                StringBuilder sb =
-                        new StringBuilder("delete from contest_eligibility where contest_eligibility_id in (?");
-                for (int i = 1; i < toDelete.size(); i++) {
-                    sb.append(",?");
-                }
-                sb.append(")");
-                jdbcTemplate.update(sb.toString(), toDelete.toArray());
+                contestEligibilityServiceRpc.bulkRemove(toDelete.stream().map(x -> x.getId()).collect(Collectors.toList()));
                 list.removeAll(toDelete);
             }
             if (!toUpdate.isEmpty()) {
                 for (ContestEligibility ce : toUpdate) {
-                    jdbcTemplate.update("update contest_eligibility set contest_id=?, is_studio=? where contest_eligibility_id=?", ce.getContestId(), ce.getStudio(), ce.getId());
+                    contestEligibilityServiceRpc.update(ce);
                 }
             }
             if (!toAdd.isEmpty()) {
                 for (ContestEligibility ce : toUpdate) {
-                    jdbcTemplate.update("insert into contest_eligibility(contest_eligibility_id, contest_id, is_studio) VALUES(CONTEST_ELIGIBILITY_SEQ.NEXTVAL, ?, ?)", ce.getContestId(), ce.getStudio());
-                    Long id = jdbcTemplate.queryForObject("select max(contest_eligibility_id) from contest_eligibility where contest_id=" + ce.getContestId(), Long.class);
+                    Long id = contestEligibilityServiceRpc.create(ce);
                     ce.setId(id);
                 }
             }
@@ -210,22 +195,7 @@ public class ContestEligibilityManager {
         logEntrance("ContestEligibilityManagerBean#getContestEligibility", new String[] {"contestId",
         "isStudio"}, new Object[] {contestId, isStudio});
         checkPositive(contestId, "contestId");
-        List<Map<String, Object>> qr = jdbcTemplate.queryForList(
-                "select c.contest_eligibility_id, c.contest_id, c.is_studio, g.group_id from contest_eligibility AS c JOIN group_contest_eligibility AS g On c.contest_eligibility_id = g.contest_eligibility_id "
-                        + "where c.is_studio = "
-                        + (isStudio ? "1" : "0")
-                        + " and c.contest_id = "
-                        + contestId);
-        List<ContestEligibility> results = new ArrayList<>();
-        for (Map<String, Object> r : qr) {
-            GroupContestEligibility ce = new GroupContestEligibility();
-            ce.setId(getLong(r, "contest_eligibility_id"));
-            ce.setContestId(getLong(r, "contest_id"));
-            ce.setStudio(getBoolean(r, "is_studio"));
-            ce.setDeleted(false);
-            ce.setGroupId(getLong(r, "group_id"));
-            results.add(ce);
-        }
+        List<ContestEligibility> results = contestEligibilityServiceRpc.getContestEligibility(contestId, isStudio);
         logExit("ContestEligibilityManagerBean#getContestEligibility");
         return results;
     
@@ -248,43 +218,11 @@ public class ContestEligibilityManager {
     public Set<Long> haveEligibility(Long[] contestIds, boolean isStudio) throws ContestEligibilityPersistenceException {
         logEntrance("ContestEligibilityManagerBean#haveEligibility", new String[] {"contestIds[]",
             "isStudio"}, new Object[]{contestIds, isStudio});
-
-        Set<Long> result = new HashSet<Long>();
-
         if (contestIds == null || contestIds.length == 0)
         {
-            return result;
+            return new HashSet<Long>();
         }
-
-        int studio = isStudio ? 1 : 0;
-        int startIndex = 0;
-        while (true) {
-            int count = Math.min(100, contestIds.length - startIndex);
-            String ids = "(?";
-            if (count > 1) {
-                for (int i = 1; i < count; i++) {
-                    ids += ", ?";
-                }
-            }
-            ids += ")";
-            Long[] idArray = new Long[count];
-            for (int i = 0; i < count; i++) {
-                idArray[i] =  contestIds[startIndex + i];
-            }
-            List<Map<String, Object>> ps =
-                    jdbcTemplate.queryForList(
-                            "select unique contest_id from contest_eligibility where is_studio = "
-                                    + studio
-                                    + " and  contest_id in "
-                                    + ids, idArray);
-            for (Map<String, Object> r : ps) {
-                result.add(getLong(r, "contest_id"));
-            }
-            startIndex += count;
-            if (startIndex >= contestIds.length) {
-                break;
-            }
-        }
+        Set<Long> result = contestEligibilityServiceRpc.haveEligibility(contestIds, isStudio);
         logExit("ContestEligibilityManagerBean#haveEligibility");
         return result;
     }

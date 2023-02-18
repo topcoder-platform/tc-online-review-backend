@@ -49,15 +49,17 @@ final class Util {
      *             If resource is null or its id is UNSET_ID or its ResourceRole is null or its creation/modification
      *             user/date is null
      */
-    static void checkResource(Resource resource, boolean isDelete) {
+    static void checkResource(Resource resource, boolean isDelete, boolean isCreate) {
         if (resource == null) {
             throw new IllegalArgumentException("The parameter resource can not be null.");
         }
 
-        if (resource.getId() == Resource.UNSET_ID) {
-            throw new IllegalArgumentException("The id of the resource has not been set.");
+        if (!isCreate) {
+            if (resource.getId() == Resource.UNSET_ID) {
+                throw new IllegalArgumentException("The id of the resource has not been set.");
+            }
         }
-
+        
         if (resource.getResourceRole() == null) {
             throw new IllegalArgumentException("The resourceRole should not be null.");
         }
@@ -148,11 +150,13 @@ final class Util {
      * @throws IllegalArgumentException
      *             if the ResourceRole is not valid for certain method.
      */
-    static void checkResourceRole(ResourceRole resourceRole, boolean isDelete) {
+    static void checkResourceRole(ResourceRole resourceRole, boolean isDelete, boolean isCreate) {
         checkNull(resourceRole, "resourceRole");
 
-        if (resourceRole.getId() == ResourceRole.UNSET_ID) {
-            throw new IllegalArgumentException("The id for the resourceRole is not set.");
+        if (!isCreate) {
+            if (resourceRole.getId() == ResourceRole.UNSET_ID) {
+                throw new IllegalArgumentException("The id for the resourceRole is not set.");
+            }
         }
 
         if (!isDelete) {
@@ -176,11 +180,13 @@ final class Util {
      * @throws IllegalArgumentException
      *             if the parameter notificationType is not valid.
      */
-    static void checkNotificationType(NotificationType notificationType, boolean isDelete) {
+    static void checkNotificationType(NotificationType notificationType, boolean isDelete, boolean isCreate) {
         checkNull(notificationType, "notificationType");
 
-        if (notificationType.getId() == NotificationType.UNSET_ID) {
-            throw new IllegalArgumentException("The id of the notificationType is not set.");
+        if (!isCreate) {
+            if (notificationType.getId() == NotificationType.UNSET_ID) {
+                throw new IllegalArgumentException("The id of the notificationType is not set.");
+            }
         }
 
         if (!isDelete) {

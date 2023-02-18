@@ -3,31 +3,19 @@
  */
 package com.topcoder.onlinereview.component.scorecard;
 
-import com.topcoder.onlinereview.component.id.DBHelper;
-import com.topcoder.onlinereview.component.id.IDGenerationException;
-import com.topcoder.onlinereview.component.id.IDGenerator;
+import com.topcoder.onlinereview.component.grpcclient.scorecard.ScorecardServiceRpc;
 import com.topcoder.onlinereview.component.project.management.LogMessage;
+import com.topcoder.onlinereview.grpc.scorecard.proto.GetGroupResponse;
+
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
-
-import static com.google.common.collect.Lists.newArrayList;
-import static com.topcoder.onlinereview.component.util.CommonUtils.executeSqlWithParam;
-import static com.topcoder.onlinereview.component.util.CommonUtils.executeUpdateSql;
-import static com.topcoder.onlinereview.component.util.CommonUtils.getFloat;
-import static com.topcoder.onlinereview.component.util.CommonUtils.getLong;
-import static com.topcoder.onlinereview.component.util.CommonUtils.getString;
 
 /**
  * This class contains operations to create and update group instances into the Informix database.
@@ -43,52 +31,10 @@ import static com.topcoder.onlinereview.component.util.CommonUtils.getString;
 @Slf4j
 @Component
 public class GroupPersistence {
-  /** Selects the groups using the parent id. */
-  private static final String SELECT_SCORECARD_GROUP_BY_PARENT_ID =
-      "SELECT scorecard_group_id, "
-          + "name, weight FROM scorecard_group WHERE scorecard_id = ? ORDER BY sort";
-
-  /** Selects the group be its id. */
-  private static final String SELECT_SCORECARD_GROUP_BY_ID =
-      "SELECT scorecard_group_id, name, "
-          + "weight FROM scorecard_group WHERE scorecard_group_id = ?";
-
-  /** Deletes the set of groups. */
-  private static final String DELETE_SCORECARD_GROUPS =
-      "DELETE FROM scorecard_group WHERE scorecard_group_id IN ";
-
-  /** Selects the section ids for given set of groups. */
-  private static final String SELECT_SCORECARD_SECTION_ID =
-      "SELECT scorecard_section_id FROM scorecard_section " + "WHERE scorecard_group_id IN ";
-
-  /** Updates the group table. */
-  private static final String UPDATE_SCORECARD_GROUP =
-      "UPDATE scorecard_group SET scorecard_id = ?, "
-          + "name = ?, weight = ?, sort = ?, modify_user = ?, modify_date = ? WHERE scorecard_group_id = ?";
-
-  /** Inserts the new group the database. */
-  private static final String INSERT_SCORECARD_GROUP =
-      "INSERT INTO scorecard_group (scorecard_group_id, "
-          + "scorecard_id, name, weight, sort, create_user, create_date, modify_user, modify_date) "
-          + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
-  /** The default name of the id generator for the scorecards. */
-  private static final String SCORECARD_GROUP_ID_SEQUENCE = "scorecard_group_id_seq";
-
-  /** The IDGenerator instance used for scorecards ids. */
-  private IDGenerator groupIdGenerator;
-
-  @Autowired private DBHelper dbHelper;
+  @Autowired
+  ScorecardServiceRpc scorecardServiceRpc;
 
   @Autowired private SectionPersistence sectionPersistence;
-
-  @Autowired
-  @Qualifier("tcsJdbcTemplate")
-  private JdbcTemplate jdbcTemplate;
-
-  @PostConstruct
-  public void postRun() throws IDGenerationException {
-    groupIdGenerator = new IDGenerator(SCORECARD_GROUP_ID_SEQUENCE, dbHelper);
-  }
 
   /**
    * Creates the group in the database using the given group instance. The group instance can
@@ -123,25 +69,9 @@ public class GroupPersistence {
                 operator,
                 "create new Group with order:" + order + " and parentId:" + parentId)
             .toString());
-    Date time = new Date();
     try {
-      // get next id
-      long groupId = groupIdGenerator.getNextID();
-      log.debug("insert record into scorecard_group with group_id:" + groupId);
       // create group and create the sections
-      executeUpdateSql(
-          jdbcTemplate,
-          INSERT_SCORECARD_GROUP,
-          newArrayList(
-              groupId,
-              parentId,
-              group.getName(),
-              group.getWeight(),
-              order,
-              operator,
-              time,
-              operator,
-              time));
+      long groupId = scorecardServiceRpc.createGroup(group, order, operator, parentId);
       sectionPersistence.createSections(group.getAllSections(), operator, groupId);
       // set the group id.
       group.setId(groupId);
@@ -163,28 +93,12 @@ public class GroupPersistence {
   void createGroups(Group[] groups, String operator, long parentId) throws PersistenceException {
     log.debug(
         new LogMessage(null, operator, "create new Groups with parentId:" + parentId).toString());
-    // generate the ids
-    Long[] groupIds = DBUtils.generateIdsArray(groups.length, groupIdGenerator);
-    Date time = new Date();
     try {
+      List<Long> groupIds = scorecardServiceRpc.createGroups(groups, operator, parentId);
       // for each group - set the variables
       for (int i = 0; i < groups.length; i++) {
-        // execute the update and creates sections of this group
-        executeUpdateSql(
-            jdbcTemplate,
-            INSERT_SCORECARD_GROUP,
-            newArrayList(
-                groupIds[i],
-                parentId,
-                groups[i].getName(),
-                groups[i].getWeight(),
-                i,
-                operator,
-                time,
-                operator,
-                time));
-        log.debug("insert record into scorecard_group table with groupId:" + groupIds[i]);
-        sectionPersistence.createSections(groups[i].getAllSections(), operator, groupIds[i]);
+        groups[i].setId(groupIds.get(i));
+        sectionPersistence.createSections(groups[i].getAllSections(), operator, groupIds.get(i));
       }
     } catch (Exception ex) {
       log.error(
@@ -192,11 +106,6 @@ public class GroupPersistence {
                   null, operator, "Failed to create new Groups with parentId:" + parentId, ex)
               .toString());
       throw new PersistenceException("Error occur while creating the scorecard group.", ex);
-    }
-
-    // set ids to groups
-    for (int i = 0; i < groups.length; i++) {
-      groups[i].setId(groupIds[i]);
     }
   }
 
@@ -227,8 +136,8 @@ public class GroupPersistence {
       String operator,
       long parentId,
       Scorecard oldScorecard,
-      List deletedSectionIds,
-      List deletedQuestionIds)
+      List<Long> deletedSectionIds,
+      List<Long> deletedQuestionIds)
       throws PersistenceException {
     if (group == null) {
       throw new IllegalArgumentException("group cannot be null.");
@@ -266,7 +175,7 @@ public class GroupPersistence {
                     + oldScorecard.getId())
             .toString());
 
-    Set oldSectionIds = getSectionsIds(group, oldScorecard);
+    Set<Long> oldSectionIds = getSectionsIds(group, oldScorecard);
     // mark all old section as 'to delete'
     deletedSectionIds.addAll(oldSectionIds);
 
@@ -302,17 +211,7 @@ public class GroupPersistence {
       throws PersistenceException {
     log.debug("update scorecard_group with groupId:" + group.getId());
     try {
-      executeUpdateSql(
-          jdbcTemplate,
-          UPDATE_SCORECARD_GROUP,
-          newArrayList(
-              parentId,
-              group.getName(),
-              group.getWeight(),
-              order,
-              operator,
-              new Date(),
-              group.getId()));
+      scorecardServiceRpc.updateGroup(group, operator, parentId, order);
     } catch (Exception ex) {
       log.error(
           new LogMessage(group.getId(), operator, "Error occurs while updating the group.", ex)
@@ -328,8 +227,8 @@ public class GroupPersistence {
    * @param scorecard the source scorecard.
    * @return the set of sections ids for group.
    */
-  private static Set getSectionsIds(Group group, Scorecard scorecard) {
-    Set ids = new HashSet();
+  private static Set<Long> getSectionsIds(Group group, Scorecard scorecard) {
+    Set<Long> ids = new HashSet<>();
     // get all groups
     Group[] oldGroups = scorecard.getAllGroups();
     for (int i = 0; i < oldGroups.length; i++) {
@@ -363,24 +262,13 @@ public class GroupPersistence {
     try {
       log.debug("delete record from scorecard_groups with ids:" + ids);
       // get all the sections to be removed
-      List<Map<String, Object>> result =
-          executeSqlWithParam(
-              jdbcTemplate,
-              SELECT_SCORECARD_SECTION_ID + DBUtils.createQuestionMarks(ids.length),
-              newArrayList(ids));
-      List idsToDelete = new ArrayList();
-      for (Map<String, Object> row : result) {
-        idsToDelete.add(getLong(row, "scorecard_section_id"));
-      }
+      List<Long> idsToDelete = scorecardServiceRpc.getScorecardSectionIds(ids);
       // delete the sections
       if (idsToDelete.size() > 0) {
         sectionPersistence.deleteSections(DBUtils.listToArray(idsToDelete));
       }
       // delete the groups
-      executeUpdateSql(
-          jdbcTemplate,
-          DELETE_SCORECARD_GROUPS + DBUtils.createQuestionMarks(ids.length),
-          newArrayList(ids));
+      scorecardServiceRpc.deleteGroups(ids);
     } catch (Exception ex) {
       log.error(
           new LogMessage(null, null, "Failed to Delete Groups with ids:" + ids, ex).toString());
@@ -403,12 +291,10 @@ public class GroupPersistence {
     }
     log.debug(new LogMessage(id, null, "retrieve group").toString());
     try {
-      // create the statement and set the id
-      List<Map<String, Object>> rs =
-          executeSqlWithParam(jdbcTemplate, SELECT_SCORECARD_GROUP_BY_ID, newArrayList(id));
+      GetGroupResponse response = scorecardServiceRpc.getGroup(id);
       // if the group exists - create it
-      if (!rs.isEmpty()) {
-        Group group = populateGroup(rs.get(0));
+      if (response != null) {
+        Group group = populateGroup(response);
         group.addSections(sectionPersistence.getSections(group.getId()));
         return group;
       }
@@ -431,12 +317,10 @@ public class GroupPersistence {
   Group[] getGroups(Long parentId) throws PersistenceException {
     try {
       // get all groups
-      List<Map<String, Object>> rs =
-          executeSqlWithParam(
-              jdbcTemplate, SELECT_SCORECARD_GROUP_BY_PARENT_ID, newArrayList(parentId));
-      List result = new ArrayList();
-      for (Map<String, Object> row : rs) {
-        Group group = populateGroup(row);
+      List<GetGroupResponse> gList = scorecardServiceRpc.getGroups(parentId);
+      List<Group> result = new ArrayList<>();
+      for (GetGroupResponse g : gList) {
+        Group group = populateGroup(g);
         // get the sections for the group
         group.addSections(sectionPersistence.getSections(group.getId()));
         result.add(group);
@@ -457,12 +341,17 @@ public class GroupPersistence {
    * @return the Group instance.
    * @throws SQLException if any error with ResultSet occurs.
    */
-  private Group populateGroup(Map<String, Object> rs) throws SQLException {
+  private Group populateGroup(GetGroupResponse g) throws SQLException {
     Group group = new Group();
-    group.setId(getLong(rs, "scorecard_group_id"));
-    group.setName(getString(rs, "name"));
-    group.setWeight(getFloat(rs, "weight"));
-
+    if (g.hasScorecardGroupId()) {
+      group.setId(g.getScorecardGroupId());
+    }
+    if (g.hasName()) {
+      group.setName(g.getName());
+    }
+    if (g.hasWeight()) {
+      group.setWeight(g.getWeight());
+    }
     return group;
   }
 }

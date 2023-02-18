@@ -3,13 +3,15 @@
  */
 package com.topcoder.onlinereview.component.dataaccess;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+
+import com.topcoder.onlinereview.component.grpcclient.dataaccess.DataAccessServiceRpc;
+import com.topcoder.onlinereview.grpc.dataaccess.proto.DeliverableProto;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import static com.topcoder.onlinereview.component.util.CommonUtils.getLong;
 
 /**
  * <p>A simple DAO for deliverables backed up by Query Tool.</p>
@@ -18,7 +20,9 @@ import static com.topcoder.onlinereview.component.util.CommonUtils.getLong;
  * @version 2.0
  */
 @Component
-public class DeliverableDataAccess extends BaseDataAccess {
+public class DeliverableDataAccess {
+    @Autowired
+    DataAccessServiceRpc dataAccessServiceRpc;
 
     /**
      * <p>Gets the configuration for deliverables as set up in <code>deliverable_lu</code> database table.</p>
@@ -27,16 +31,14 @@ public class DeliverableDataAccess extends BaseDataAccess {
      *         deliverables.
      */
     public Map<Long, Map<Long, Long>> getDeliverablesList() {
-        Map<String, List<Map<String, Object>>> results = runQuery("tcs_deliverables", (String) null, null);
+        List<DeliverableProto> result = dataAccessServiceRpc.getDeliverablesList();
 
         Map<Long, Map<Long, Long>> deliverables = new HashMap<Long, Map<Long, Long>>();
-
-        List<Map<String, Object>> resourcesData = results.get("tcs_deliverables");
-        int recordNum = resourcesData.size();
+        int recordNum = result.size();
         for (int i = 0; i < recordNum; i++) {
-            long roleId = getLong(resourcesData.get(i), "resource_role_id");
-            long phaseTypeId = getLong(resourcesData.get(i), "phase_type_id");
-            long deliverableId = getLong(resourcesData.get(i), "deliverable_id");
+            long roleId = result.get(i).getResourceRoleId();
+            long phaseTypeId = result.get(i).getPhaseTypeId();
+            long deliverableId = result.get(i).getDeliverableId();
 
             if (!deliverables.containsKey(roleId)) {
                 deliverables.put(roleId, new HashMap<>());

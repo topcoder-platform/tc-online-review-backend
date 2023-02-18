@@ -3,17 +3,17 @@
  */
 package com.topcoder.onlinereview.component.security.groups.services.hibernate;
 
+import com.topcoder.onlinereview.component.grpcclient.GrpcHelper;
+import com.topcoder.onlinereview.component.grpcclient.security.SecurityServiceRpc;
 import com.topcoder.onlinereview.component.security.groups.model.BillingAccount;
 import com.topcoder.onlinereview.component.security.groups.model.Client;
 import com.topcoder.onlinereview.component.security.groups.services.BillingAccountService;
 import com.topcoder.onlinereview.component.security.groups.services.EntityNotFoundException;
 import com.topcoder.onlinereview.component.security.groups.services.SecurityGroupException;
-import com.topcoder.onlinereview.component.shared.dataaccess.DataAccess;
-import com.topcoder.onlinereview.component.shared.dataaccess.Request;
 import com.topcoder.onlinereview.component.util.LoggingWrapperUtility;
-import org.hibernate.HibernateException;
-import org.hibernate.Query;
-import org.hibernate.Session;
+import com.topcoder.onlinereview.grpc.security.proto.BillingAccountForClientProto;
+import com.topcoder.onlinereview.grpc.security.proto.GetBillingAccountResponse;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,12 +22,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
-
-import static com.topcoder.onlinereview.component.util.CommonUtils.getLong;
-import static com.topcoder.onlinereview.component.util.CommonUtils.getString;
-import static com.topcoder.onlinereview.component.util.SpringUtils.getTcsJdbcTemplate;
 
 /**
  * <p>
@@ -75,18 +70,6 @@ public class HibernateBillingAccountService extends BaseGroupService implements 
     private static final String CLASS_NAME = HibernateBillingAccountService.class.getName();
 
     /**
-     * <p>
-     * HQL to query billingAccount for a given id.
-     * </p>
-     */
-    private static final String HQL_BILLING_ACCOUNT = "from BillingAccount ba where ba.id = :id and ba.deleted != true";
-
-    /**
-     * The DataAccess used to retrieve data from tcs_dw
-     */
-    private DataAccess dataAccess;
-
-    /**
      * This method gets a billing account. If not found, returns null.
      * 
      * @param id
@@ -95,20 +78,49 @@ public class HibernateBillingAccountService extends BaseGroupService implements 
      * @throws SecurityGroupException
      *             If there are any errors during the execution of this method
      */
-    @SuppressWarnings("unchecked")
     public BillingAccount get(long id) throws SecurityGroupException {
         final String signature = CLASS_NAME + ".get(long id)";
         LoggingWrapperUtility.logEntrance(logger, signature, new String[] { "id" }, new Object[] { id });
 
         BillingAccount result = null;
         try {
-            Session session = sessionFactory.getCurrentSession();
-            Query query = session.createQuery(HQL_BILLING_ACCOUNT);
-            query.setLong("id", id);
-            List<BillingAccount> list = (List<BillingAccount>) query.list();
-            if (list.size() > 0)
-                result = list.get(0);
-        } catch (HibernateException e) {
+            SecurityServiceRpc securityServiceRpc = GrpcHelper.getSecurityServiceRpc();
+            GetBillingAccountResponse response = securityServiceRpc.getBillingAccount(id);
+            if (response.hasProjectId()) {
+                result = new BillingAccount();
+                result.setId(response.getProjectId());
+                if (response.hasActive()) {
+                    result.setActive(response.getActive());
+                }
+                if (response.hasCompanyId()) {
+                    result.setCompanyId(response.getCompanyId());
+                }
+                if (response.hasDescription()) {
+                    result.setDescription(response.getDescription());
+                }
+                if (response.hasIsDeleted()) {
+                    result.setDeleted(response.getIsDeleted());
+                }
+                if (response.hasName()) {
+                    result.setName(response.getName());
+                }
+                if (response.hasClientId()) {
+                    Client client = new Client();
+                    client.setId(response.getClientId());
+                    if (response.hasClientCompanyId()) {
+                        client.setCompanyId(response.getClientCompanyId());
+                    }
+                    if (response.hasClientName()) {
+                        client.setName(response.getClientName());
+                    }
+                    if (response.hasClientIsDeleted()) {
+                        client.setDeleted(response.getClientIsDeleted());
+                    }
+                    result.setClient(client);
+                }
+            }
+
+        } catch (Exception e) {
             wrapAndLogSecurityException(e, logger, signature);
         }
 
@@ -136,26 +148,25 @@ public class HibernateBillingAccountService extends BaseGroupService implements 
 
         List<BillingAccount> result = new ArrayList<BillingAccount>();
         try {
-            if (dataAccess == null)
-                dataAccess = new DataAccess(getTcsJdbcTemplate());
-            Request request = new Request();
-            request.setContentHandle("admin_client_billing_accounts_v2");
-            List<Map<String, Object>> resultContainer = dataAccess.getData(request).get("admin_client_billing_accounts_v2");
+            SecurityServiceRpc securityServiceRpc = GrpcHelper.getSecurityServiceRpc();
+            List<BillingAccountForClientProto> response = securityServiceRpc.getBillingAccountsForClient();
             Set<Long> ids = new HashSet<Long>();
-            if (resultContainer != null) {
-                for (Map<String, Object> row : resultContainer) {
-                    if (clientId == getLong(row, "client_id")
-                        && !ids.contains(getLong(row, "billing_account_id"))) {
-                        BillingAccount dto = new BillingAccount();
-                        Client client = new Client();
-                        client.setId(getLong(row, "client_id"));
-                        client.setName(getString(row, "client_name"));
-                        dto.setClient(client);
-                        dto.setId(getLong(row, "billing_account_id"));
-                        dto.setName(getString(row, "billing_account_name"));
-                        result.add(dto);
-                        ids.add(getLong(row, "billing_account_id"));
+            for (BillingAccountForClientProto row : response) {
+                if (row.hasClientId() && row.hasBillingAccountId() && clientId == row.getClientId()
+                        && !ids.contains(row.getBillingAccountId())) {
+                    BillingAccount dto = new BillingAccount();
+                    Client client = new Client();
+                    client.setId(row.getClientId());
+                    if (row.hasClientName()) {
+                        client.setName(row.getClientName());
                     }
+                    dto.setClient(client);
+                    dto.setId(row.getBillingAccountId());
+                    if (row.hasBllingAccountName()) {
+                        dto.setName(row.getBllingAccountName());
+                    }
+                    result.add(dto);
+                    ids.add(row.getBillingAccountId());
                 }
             }
             Collections.sort(result, new Comparator<BillingAccount>() {
@@ -171,15 +182,4 @@ public class HibernateBillingAccountService extends BaseGroupService implements 
 
         return result;
     }
-
-    /**
-     * The setter of dataAccess
-     * 
-     * @param dataAccess
-     *            the dataAccess to set
-     */
-    public void setDataAccess(DataAccess dataAccess) {
-        this.dataAccess = dataAccess;
-    }
-
 }

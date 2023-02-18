@@ -3,19 +3,6 @@
  */
 package com.topcoder.onlinereview.component.project.management;
 
-import org.springframework.jdbc.core.JdbcTemplate;
-
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-
-import static com.google.common.collect.Lists.newArrayList;
-import static com.topcoder.onlinereview.component.util.CommonUtils.executeSql;
-import static com.topcoder.onlinereview.component.util.CommonUtils.executeUpdateSql;
-import static com.topcoder.onlinereview.component.util.CommonUtils.getLong;
-
 /**
  * <p>
  * Helper class for this component.
@@ -98,19 +85,6 @@ class Helper {
          */
         private DataType() {
         }
-
-        /**
-         * This method retrieves the value at the given index from the given resultSet as instance of the
-         * subclass-dependent type.
-         *
-         * @param resultSet the result set from which to retrieve the value
-         * @param index the index at which to retrieve the value
-         * @return the retrieved value
-         * @throws IllegalArgumentException if resultSet is <tt>null</tt>
-         * @throws SQLException if error occurs while working with the given ResultSet or the index does not exist in
-         *             the result set
-         */
-        protected abstract Object getValue(ResultSet resultSet, int index) throws SQLException;
     }
 
     /**
@@ -123,23 +97,6 @@ class Helper {
      * @version 1.0
      */
     private static class StringType extends DataType {
-        /**
-         * This method retrieves the value at the given index from the given resultSet as instance of the
-         * subclass-dependent type.
-         *
-         * @param resultSet the result set from which to retrieve the value
-         * @param index the index at which to retrieve the value
-         * @return the retrieved value as <code>String</code> or <code>null</code> if the value in the
-         *         <code>ResultSet</code> was <code>null</code>.
-         * @throws IllegalArgumentException if resultSet is <code>null</code>
-         * @throws SQLException if error occurs while working with the given ResultSet or the index does not exist in
-         *             the result set
-         */
-        protected Object getValue(ResultSet resultSet, int index) throws SQLException {
-            Helper.assertObjectNotNull(resultSet, "resultSet");
-
-            return resultSet.getString(index);
-        }
     }
 
     /**
@@ -152,28 +109,6 @@ class Helper {
      * @since 1.2
      */
     private static class DoubleType extends DataType {
-        /**
-         * This method retrieves the value at the given index from the given resultSet as instance of the
-         * subclass-dependent type.
-         *
-         * @param resultSet
-         *            the result set from which to retrieve the value
-         * @param index
-         *            the index at which to retrieve the value
-         * @return the retrieved value as <code>Double</code> or <code>null</code> if the value in the
-         *         <code>ResultSet</code> was <code>null</code>.
-         * @throws IllegalArgumentException
-         *             if resultSet is <code>null</code>
-         * @throws SQLException
-         *             if error occurs while working with the given ResultSet or the index does not exist in the result
-         *             set
-         */
-        protected Object getValue(ResultSet resultSet, int index) throws SQLException {
-            Helper.assertObjectNotNull(resultSet, "resultSet");
-
-            double value = resultSet.getDouble(index);
-            return resultSet.wasNull() ? null : value;
-        }
     }
 
     /**
@@ -186,24 +121,6 @@ class Helper {
      * @version 1.0
      */
     private static class LongType extends DataType {
-        /**
-         * This method retrieves the value at the given index from the given resultSet as instance of the
-         * subclass-dependent type.
-         *
-         * @param resultSet the result set from which to retrieve the value
-         * @param index the index at which to retrieve the value
-         * @return the retrieved value as <code>Long</code> or <code>null</code> if the value in the
-         *         <code>ResultSet</code> was <code>null</code>.
-         * @throws IllegalArgumentException if resultSet is <code>null</code>
-         * @throws SQLException if error occurs while working with the given ResultSet or the index does not exist in
-         *             the result set
-         */
-        protected Object getValue(ResultSet resultSet, int index) throws SQLException {
-            Helper.assertObjectNotNull(resultSet, "resultSet");
-
-            long aLong = resultSet.getLong(index);
-            return resultSet.wasNull() ? null : aLong;
-        }
     }
 
     /**
@@ -216,23 +133,6 @@ class Helper {
      * @version 1.0
      */
     private static class DateType extends DataType {
-        /**
-         * This method retrieves the value at the given index from the given resultSet as instance of the
-         * subclass-dependent type.
-         *
-         * @param resultSet the result set from which to retrieve the value
-         * @param index the index at which to retrieve the value
-         * @return the retrieved value as <code>Date</code> or <code>null</code> if the value in the
-         *         <code>ResultSet</code> was <code>null</code>.
-         * @throws IllegalArgumentException if resultSet is <code>null</code>
-         * @throws SQLException if error occurs while working with the given ResultSet or the index does not exist in
-         *             the result set
-         */
-        protected Object getValue(ResultSet resultSet, int index) throws SQLException {
-            Helper.assertObjectNotNull(resultSet, "resultSet");
-
-            return resultSet.getTimestamp(index);
-        }
     }
 
     /**
@@ -247,81 +147,12 @@ class Helper {
      * @since 1.2
      */
     private static class BooleanType extends DataType {
-
-        /**
-         * <p>
-         * This method retrieves the value at the given index from the given resultSet as instance of the
-         * <code>Boolean</code> type.
-         * </p>
-         *
-         * @param resultSet the result set from which to retrieve the value.
-         * @param index the index at which to retrieve the value.
-         * @return the retrieved value as <code>Boolean</code> or <code>null</code> if the value in the
-         *         <code>ResultSet</code> was <code>null</code>.
-         * @throws IllegalArgumentException if resultSet is <code>null</code>.
-         * @throws SQLException if error occurs while working with the given ResultSet or the index does not exist in
-         *             the result set.
-         */
-        protected Object getValue(ResultSet resultSet, int index) throws SQLException {
-            Helper.assertObjectNotNull(resultSet, "resultSet");
-            boolean flag = resultSet.getBoolean(index);
-            return resultSet.wasNull() ? null : flag;
-        }
     }
 
     /**
      * Private constructor to prevent this class be instantiated.
      */
     private Helper() {
-    }
-
-    /**
-     * This method performs the given DML (query on the given connection using the given query arguments. The update
-     * count returned from the query is then returned. <b>Note:</b> The given connection is not closed or committed in
-     * this method.
-     *
-     * @param jdbcTemplate the entityManager to perform the query on
-     * @param queryString the query to be performed
-     * @param queryArgs the arguments to be used in the query
-     * @return the number of database rows affected by the query
-     * @throws IllegalArgumentException if any parameter is null or queryString is empty (trimmed)
-     * @throws PersistenceException if the query fails
-     */
-    static int doDMLQuery(JdbcTemplate jdbcTemplate, String queryString, Object[] queryArgs) throws PersistenceException {
-        Helper.assertObjectNotNull(jdbcTemplate, "jdbcTemplate");
-        Helper.assertStringNotNullNorEmpty(queryString, "queryString");
-        Helper.assertObjectNotNull(queryArgs, "queryArgs");
-        try {
-            return executeUpdateSql(jdbcTemplate, queryString, newArrayList(queryArgs));
-        } catch (Exception e) {
-            throw new PersistenceException("Error occurs while executing query [" + queryString
-                + "] using the query arguments " + Arrays.asList(queryArgs).toString() + ".", e);
-        }
-    }
-
-    /**
-     * Check whether an entity exists or not in the specified table.
-     *
-     * @param tableName the table name
-     * @param columnName the column name
-     * @param id the id to check
-     * @return true if it exists, otherwise false
-     * @throws IllegalArgumentException if tableName or columnName is null or empty, or id is not positive, or conn is
-     *             null
-     * @throws PersistenceException if error happens during querying
-     */
-    static boolean checkEntityExists(String tableName, String columnName, long id, JdbcTemplate jdbcTemplate)
-        throws PersistenceException {
-        Helper.assertStringNotNullNorEmpty(tableName, "tableName");
-        Helper.assertStringNotNullNorEmpty(columnName, "columnName");
-        Helper.assertLongPositive(id, "id");
-        Helper.assertObjectNotNull(jdbcTemplate, "jdbcTemplate");
-
-        List<Map<String, Object>> result = executeSql(jdbcTemplate, String.format("SELECT COUNT(*) as count FROM %s WHERE %s = %d", tableName, columnName, id));
-        if (result.size() > 0 && getLong(result.get(0), "count") > 0) {
-            return true;
-        }
-        return false;
     }
 
     /**

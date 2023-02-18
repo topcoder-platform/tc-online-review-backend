@@ -3,8 +3,7 @@
  */
 package com.topcoder.onlinereview.component.project.phase;
 
-import com.topcoder.onlinereview.component.id.IDGenerationException;
-import com.topcoder.onlinereview.component.id.IDGenerator;
+import com.topcoder.onlinereview.component.grpcclient.phasehandler.PhaseHandlerServiceRpc;
 import com.topcoder.onlinereview.component.project.phase.handler.AbstractPhaseHandler;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -113,7 +112,8 @@ import java.util.TreeSet;
  */
 @Component
 public class PhaseManager {
-
+  @Autowired
+  PhaseHandlerServiceRpc phaseHandlerServiceRpc;
   /**
    * This is an inner class of DefaultPhaseManager. It is a comparator that compares Phase
    * instances.
@@ -223,12 +223,6 @@ public class PhaseManager {
       }
     }
     try {
-      // next, set the ID for any phases that need it
-      for (int i = 0; i < phases.length; ++i) {
-        if (persistence.isNewPhase(phases[i])) {
-          phases[i].setId(persistence.nextId());
-        }
-      }
       // separate the phases into three batches: additions, deletions, and updates
       TreeSet<Phase> delete = new TreeSet<Phase>(new PhaseComparator()); // UPDATED in 1.1
       TreeSet<Phase> add = new TreeSet<Phase>(new PhaseComparator()); // UPDATED in 1.1
@@ -431,7 +425,7 @@ public class PhaseManager {
     if (phase.getPhaseType() != null) {
       handler = getPhaseHandler(phase, PhaseOperationEnum.START);
       if (handler != null) {
-        handler.perform(phase, operator);
+        handler.perform(phaseHandlerServiceRpc, phase, operator);
       }
     }
     String oldStatus = phase.getPhaseStatus().getName();
@@ -528,7 +522,7 @@ public class PhaseManager {
     if (phase.getPhaseType() != null) {
       handler = getPhaseHandler(phase, PhaseOperationEnum.END);
       if (handler != null) {
-        handler.perform(phase, operator);
+        handler.perform(phaseHandlerServiceRpc, phase, operator);
       }
     }
     String oldStatus = phase.getPhaseStatus().getName();

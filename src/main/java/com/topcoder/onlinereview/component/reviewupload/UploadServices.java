@@ -16,6 +16,7 @@ import com.topcoder.onlinereview.component.deliverable.UploadType;
 import com.topcoder.onlinereview.component.external.ExternalUser;
 import com.topcoder.onlinereview.component.external.RetrievalException;
 import com.topcoder.onlinereview.component.external.UserRetrieval;
+import com.topcoder.onlinereview.component.grpcclient.reviewupload.ReviewUploadServiceRpc;
 import com.topcoder.onlinereview.component.project.management.Project;
 import com.topcoder.onlinereview.component.project.phase.Phase;
 import com.topcoder.onlinereview.component.project.phase.PhaseManagementException;
@@ -32,9 +33,6 @@ import com.topcoder.onlinereview.component.search.filter.Filter;
 import com.topcoder.onlinereview.component.search.filter.OrFilter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -44,14 +42,9 @@ import java.util.Date;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import static com.google.common.collect.Lists.newArrayList;
-import static com.topcoder.onlinereview.component.util.CommonUtils.executeSql;
-import static com.topcoder.onlinereview.component.util.CommonUtils.executeSqlWithParam;
-import static com.topcoder.onlinereview.component.util.CommonUtils.executeUpdateSql;
-import static com.topcoder.onlinereview.component.util.CommonUtils.getLong;
 
 /**
  * <p>
@@ -98,6 +91,9 @@ import static com.topcoder.onlinereview.component.util.CommonUtils.getLong;
 @Component
 public class UploadServices {
 
+    @Autowired
+    ReviewUploadServiceRpc reviewUploadServiceRpc;
+
     /**
      * This member variable is a string constant that defines the name of the configuration namespace which the
      * parameters for database connection factory are stored under.
@@ -116,19 +112,6 @@ public class UploadServices {
 
     @Autowired
     private UserRetrieval userRetrieval;
-
-    @Autowired
-    @Qualifier("tcsJdbcTemplate")
-    private JdbcTemplate jdbcTemplate;
-
-    @Value("${component_inquiry.tablename:sequence_object}")
-    private String tableName;
-
-    @Value("${component_inquiry.name:name}")
-    private String nameField;
-
-    @Value("${component_inquiry.current_value:current_value}")
-    private String currentValueField;
 
     /**
      * <p>
@@ -1162,18 +1145,16 @@ public class UploadServices {
             List<List<Object>> componentInquiryParam = new ArrayList<>();
             for (Iterator iter = newSubmitters.iterator(); iter.hasNext();) {
                 String userId = iter.next().toString();
-                boolean existPR = !executeSqlWithParam(jdbcTemplate, "SELECT 1 FROM PROJECT_RESULT WHERE user_id = ? and project_id = ?", newArrayList(userId, projectId)).isEmpty();
+                boolean existPR = reviewUploadServiceRpc.isProjectResultExists(projectId, userId);
 
-                boolean existCI = !executeSqlWithParam(jdbcTemplate, "SELECT 1 FROM component_inquiry WHERE user_id = ? and project_id = ?", newArrayList(userId, projectId)).isEmpty();
+                boolean existCI = reviewUploadServiceRpc.isComponentInquiryExists(projectId, userId);
 
                 // Retrieve oldRating
                 double oldRating = 0;
                 if (!existPR || !existCI) {
-                    List<Map<String, Object>> oldRs = executeSqlWithParam(jdbcTemplate, "SELECT rating from user_rating where user_id = ? and phase_id = "
-                            + "(select 111+project_category_id from project where project_id = ?)",
-                            newArrayList(userId, project));
-                    if (!oldRs.isEmpty()) {
-                        oldRating = getLong(oldRs.get(0), "rating");
+                    Long result = reviewUploadServiceRpc.getUserRating(projectId, userId);
+                    if (result != null) {
+                        oldRating = result.doubleValue();
                     }
                 }
 
@@ -1200,15 +1181,13 @@ public class UploadServices {
                 }
             }
             for (List<Object> proj : projectResultParam) {
-                executeUpdateSql(jdbcTemplate, "INSERT INTO project_result "
-                        + "(project_id, user_id, rating_ind, valid_submission_ind, old_rating) "
-                        + "values (?, ?, ?, ?, ?)", proj);
+                reviewUploadServiceRpc.createProjectResult((long) proj.get(0), (String) proj.get(1), (long) proj.get(2),
+                        (long) proj.get(3), (Double) proj.get(4));
             }
             for (List<Object> comp : componentInquiryParam) {
-                executeUpdateSql(jdbcTemplate, "INSERT INTO component_inquiry "
-                        + "(component_inquiry_id, component_id, user_id, project_id, phase, tc_user_id,"
-                        + " agreed_to_terms, rating, version, create_time) "
-                        + "values (?, ?, ?, ?, ?, ?, 1, ?, ?, current)", comp);
+                reviewUploadServiceRpc.createComponentInquiry((long) comp.get(0), (long) comp.get(1),
+                        (String) comp.get(2), (long) comp.get(3), (Long) comp.get(4), (String) comp.get(5), 1,
+                        (double) comp.get(6), (long) comp.get(7));
             }
         } catch (NumberFormatException e) {
             throw new UploadServicesException("Failed to parse long from project property", e);
@@ -1227,14 +1206,10 @@ public class UploadServices {
      */
     private long getNextComponentInquiryId(int count) throws UploadServicesException {
         log.debug("Getting the next component inquiry id.");
-        String getNextID = "SELECT max(" + currentValueField + ") as cur_value FROM " + tableName + " WHERE " + nameField
-                + " = 'main_sequence'";
-        String updateNextID = "UPDATE " + tableName + " SET " + currentValueField + " = ? " + " WHERE "
-                + nameField + " = 'main_sequence'" + " AND " + currentValueField + " = ? ";
         try {
             while (true) {
-                long currentValue = getLong(executeSql(jdbcTemplate, getNextID).get(0), "cur_value");
-                if (executeUpdateSql(jdbcTemplate, updateNextID, newArrayList(currentValue + count, currentValue)) > 0) {
+                long currentValue = reviewUploadServiceRpc.getNextId();
+                if (reviewUploadServiceRpc.updateNextId(currentValue + count, currentValue) > 0) {
                     return currentValue;
                 }
             }

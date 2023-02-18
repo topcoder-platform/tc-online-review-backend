@@ -5,9 +5,10 @@ package com.topcoder.onlinereview.component.project.management;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
+
+import com.topcoder.onlinereview.component.grpcclient.project.ProjectServiceRpc;
+import com.topcoder.onlinereview.grpc.project.proto.ProjectLinkProto;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -16,14 +17,6 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-
-import static com.google.common.collect.Lists.newArrayList;
-import static com.topcoder.onlinereview.component.util.CommonUtils.executeSql;
-import static com.topcoder.onlinereview.component.util.CommonUtils.executeSqlWithParam;
-import static com.topcoder.onlinereview.component.util.CommonUtils.executeUpdateSql;
-import static com.topcoder.onlinereview.component.util.CommonUtils.getLong;
-import static com.topcoder.onlinereview.component.util.CommonUtils.getString;
-
 
 /**
  * <p>
@@ -46,60 +39,8 @@ import static com.topcoder.onlinereview.component.util.CommonUtils.getString;
 @Slf4j
 @Component
 public class ProjectLinkManager {
-
-    /**
-     * <p>
-     * Represents the name of connection name parameter in configuration.
-     * </p>
-     */
-    private static final String CONNECTION_NAME_PARAMETER = "ConnectionName";
-
-    /**
-     * <p>
-     * Represents the name of connection factory namespace parameter in configuration.
-     * </p>
-     */
-    private static final String CONNECTION_FACTORY_NAMESPACE_PARAMETER = "ConnectionFactoryNS";
-
-    /**
-     * <p>
-     * The SQL to get all project link types.
-     * </p>
-     */
-    private static final String QUERY_ALL_PROJECT_LINK_TYPES_SQL = "SELECT link_type_id, link_type_name, allow_overlap"
-        + " FROM link_type_lu";
-
-    /**
-     * <p>
-     * The SQL to get all destination project links given source project id.
-     * </p>
-     */
-    private static final String QUERY_DEST_PROJECT_LINK_SQL = "SELECT dest_project_id, link_type_id "
-        + " FROM linked_project_xref WHERE source_project_id = ?";
-
-    /**
-     * <p>
-     * The SQL to get all source project links for the given destination project id.
-     * </p>
-     */
-    private static final String QUERY_SOURCE_PROJECT_LINK_SQL = "SELECT source_project_id, link_type_id "
-        + " FROM linked_project_xref WHERE dest_project_id = ?";
-
-    /**
-     * <p>
-     * The SQL to delete project links by source project id.
-     * </p>
-     */
-    private static final String DELETE_PROJECT_LINK_BY_SOURCE_RPOJECT_ID = "DELETE FROM linked_project_xref "
-        + "WHERE source_project_id = ?";
-
-    /**
-     * <p>
-     * The SQL to insert project link.
-     * </p>
-     */
-    private static final String INSERT_PROJECT_LINK = "INSERT INTO linked_project_xref"
-        + "(source_project_id,dest_project_id,link_type_id) VALUES(?,?,?)";
+    @Autowired
+    ProjectServiceRpc projectServiceRpc;
 
     /**
      * <p>
@@ -108,9 +49,6 @@ public class ProjectLinkManager {
      */
     @Autowired
     private ProjectManager projectManager;
-    @Autowired
-    @Qualifier("tcsJdbcTemplate")
-    private JdbcTemplate jdbcTemplate;
 
     /**
      * <p>
@@ -122,19 +60,7 @@ public class ProjectLinkManager {
      */
     public ProjectLinkType[] getAllProjectLinkTypes() throws PersistenceException {
         log.debug( new LogMessage(null, null, "Enter getAllProjectLinkTypes method.").toString());
-        List<Map<String, Object>> rows = executeSql(jdbcTemplate, QUERY_ALL_PROJECT_LINK_TYPES_SQL);
-
-        // create the ProjectLinkType array.
-        ProjectLinkType[] projectLinkTypes = new ProjectLinkType[rows.size()];
-
-        for (int i = 0; i < rows.size(); ++i) {
-            Map<String, Object> row = rows.get(i);
-            // create a new instance of ProjectLinkType class
-            projectLinkTypes[i] = new ProjectLinkType(getLong(row, "link_type_id"), getString(row, "link_type_name"),
-                    "1".equals(getString(row, "allow_overlap")));
-        }
-
-        return projectLinkTypes;
+        return projectServiceRpc.getAllProjectLinkTypes();
     }
 
     /**
@@ -148,21 +74,21 @@ public class ProjectLinkManager {
      */
     public ProjectLink[] getDestProjectLinks(long sourceProjectId) throws PersistenceException {
         log.debug(new LogMessage(null, null, "Enter getDestProjectLinks method.").toString());
-        List<Map<String, Object>> rows = executeSqlWithParam(jdbcTemplate, QUERY_DEST_PROJECT_LINK_SQL, newArrayList(sourceProjectId));
+        List<ProjectLinkProto> pls = projectServiceRpc.getDestProjectLinks(sourceProjectId);
 
-        ProjectLink[] projectLinks = new ProjectLink[rows.size()];
+        ProjectLink[] projectLinks = new ProjectLink[pls.size()];
 
-        Long[] ids = new Long[rows.size() + 1];
+        Long[] ids = new Long[pls.size() + 1];
         ids[0] = sourceProjectId;
-        for (int i = 0; i < rows.size(); ++i) {
-            Map<String, Object> row = rows.get(i);
+        for (int i = 0; i < pls.size(); ++i) {
+            ProjectLinkProto pl = pls.get(i);
 
             // create a new instance of ProjectLink class
             projectLinks[i] = new ProjectLink();
             // we will only provide link type id
             projectLinks[i].setType(new ProjectLinkType());
-            projectLinks[i].getType().setId(getLong(row, "link_type_id"));
-            ids[i + 1] = getLong(row, "dest_project_id");
+            projectLinks[i].getType().setId(pl.getLinkTypeId());
+            ids[i + 1] = pl.getDestProjectId();
         }
 
         // get Project objects
@@ -188,21 +114,21 @@ public class ProjectLinkManager {
      */
     public ProjectLink[] getSourceProjectLinks(long destProjectId) throws PersistenceException {
         log.debug(new LogMessage(null, null, "Enter getSourceProjectLinks method.").toString());
-        List<Map<String, Object>> rows = executeSqlWithParam(jdbcTemplate, QUERY_SOURCE_PROJECT_LINK_SQL, newArrayList(destProjectId));
+        List<ProjectLinkProto> pls = projectServiceRpc.getSourceProjectLinks(destProjectId);
 
-        ProjectLink[] projectLinks = new ProjectLink[rows.size()];
+        ProjectLink[] projectLinks = new ProjectLink[pls.size()];
 
-        Long[] ids = new Long[rows.size() + 1];
+        Long[] ids = new Long[pls.size() + 1];
         ids[0] = destProjectId;
-        for (int i = 0; i < rows.size(); ++i) {
-            Map<String, Object> row = rows.get(i);
+        for (int i = 0; i < pls.size(); ++i) {
+            ProjectLinkProto pl = pls.get(i);
 
             // create a new instance of ProjectLink class
             projectLinks[i] = new ProjectLink();
             // we will only provide link type id
             projectLinks[i].setType(new ProjectLinkType());
-            projectLinks[i].getType().setId(getLong(row, "link_type_id"));
-            ids[i + 1] = getLong(row, "source_project_id");
+            projectLinks[i].getType().setId(pl.getLinkTypeId());
+            ids[i + 1] = pl.getSourceProjectId();
         }
 
         // get Project objects
@@ -262,10 +188,10 @@ public class ProjectLinkManager {
         }
         checkForCycle(sourceProjectId, destProjectIds, linkTypeIds);
         // refresh links
-        executeUpdateSql(jdbcTemplate, DELETE_PROJECT_LINK_BY_SOURCE_RPOJECT_ID, newArrayList(sourceProjectId));
+        projectServiceRpc.deleteProjectLinksBySourceId(sourceProjectId);
 
         for (int i = 0; i < destProjectIds.length; i++) {
-            executeUpdateSql(jdbcTemplate, INSERT_PROJECT_LINK, newArrayList(sourceProjectId, destProjectIds[i], linkTypeIds[i]));
+            projectServiceRpc.createProjectLink(sourceProjectId, destProjectIds[i], linkTypeIds[i]);
         }
     }
 

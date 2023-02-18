@@ -3,30 +3,17 @@
  */
 package com.topcoder.onlinereview.component.scorecard;
 
-import com.topcoder.onlinereview.component.id.DBHelper;
-import com.topcoder.onlinereview.component.id.IDGenerationException;
-import com.topcoder.onlinereview.component.id.IDGenerator;
+import com.topcoder.onlinereview.component.grpcclient.scorecard.ScorecardServiceRpc;
 import com.topcoder.onlinereview.component.project.management.LogMessage;
+import com.topcoder.onlinereview.grpc.scorecard.proto.GetQuestionResponse;
+
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
-import java.util.Map;
-
-import static com.google.common.collect.Lists.newArrayList;
-import static com.topcoder.onlinereview.component.util.CommonUtils.executeSqlWithParam;
-import static com.topcoder.onlinereview.component.util.CommonUtils.executeUpdateSql;
-import static com.topcoder.onlinereview.component.util.CommonUtils.getBoolean;
-import static com.topcoder.onlinereview.component.util.CommonUtils.getFloat;
-import static com.topcoder.onlinereview.component.util.CommonUtils.getLong;
-import static com.topcoder.onlinereview.component.util.CommonUtils.getString;
 
 /**
  * This class contains operations to create and update question instances into the Informix
@@ -42,55 +29,8 @@ import static com.topcoder.onlinereview.component.util.CommonUtils.getString;
 @Slf4j
 @Component
 public class QuestionPersistence {
-  /** Selects all questions by parent id. */
-  private static final String SELECT_SCORECARD_QUESTION_BY_PARENT_ID =
-      "SELECT sq.scorecard_question_id, "
-          + "sq.description, sq.guideline, sq.weight, sq.upload_document, sq.upload_document_required, "
-          + "type.scorecard_question_type_id, type.name AS TypeName FROM scorecard_question AS sq JOIN "
-          + "scorecard_question_type_lu AS type ON sq.scorecard_question_type_id = "
-          + "type.scorecard_question_type_id WHERE sq.scorecard_section_id = ? ORDER BY sort";
-
-  /** Select the question by its id. */
-  private static final String SELECT_SCORECARD_QUESTION_BY_ID =
-      "SELECT sq.scorecard_question_id, "
-          + "sq.description, sq.guideline, sq.weight, sq.upload_document, sq.upload_document_required, "
-          + "type.scorecard_question_type_id, type.name AS TypeName FROM scorecard_question AS sq JOIN "
-          + "scorecard_question_type_lu AS type ON sq.scorecard_question_type_id = type.scorecard_question_type_id "
-          + "WHERE sq.scorecard_question_id = ?";
-
-  /** Deletes all questions with ids. */
-  private static final String DELETE_SCORECARD_QUESTIONS =
-      "DELETE FROM scorecard_question " + "WHERE scorecard_question_id IN ";
-
-  /** Updates the question. */
-  private static final String UPDATE_SCORECARD_QUESTION =
-      "UPDATE scorecard_question SET "
-          + "scorecard_question_type_id = ?, scorecard_section_id = ?, description = ?, guideline = ?, "
-          + "weight = ?, sort = ?, upload_document = ?, upload_document_required = ?, modify_user = ?, "
-          + "modify_date = ? WHERE scorecard_question_id = ?";
-
-  /** Inserts the question to database. */
-  private static final String INSERT_SCORECARD_QUESTION =
-      "INSERT INTO scorecard_question "
-          + "(scorecard_question_id, scorecard_question_type_id, scorecard_section_id, description, "
-          + "guideline, weight, sort, upload_document, upload_document_required, create_user, create_date, "
-          + "modify_user, modify_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-  /** The default name of the id generator for the scorecards. */
-  private static final String SCORECARD_QUESTION_ID_SEQUENCE = "scorecard_question_id_seq";
-
-  /** The IDGenerator instance used for scorecards ids. */
-  private IDGenerator questionIdGenerator;
-
-  @Autowired private DBHelper dbHelper;
-
   @Autowired
-  @Qualifier("tcsJdbcTemplate")
-  private JdbcTemplate jdbcTemplate;
-
-  @PostConstruct
-  public void postRun() throws IDGenerationException {
-    questionIdGenerator = new IDGenerator(SCORECARD_QUESTION_ID_SEQUENCE, dbHelper);
-  }
+  ScorecardServiceRpc scorecardServiceRpc;
 
   /**
    * Create the question in the database using the given question instance. The operator parameter
@@ -126,25 +66,7 @@ public class QuestionPersistence {
             .toString());
     try {
       // get the id
-      long id = questionIdGenerator.getNextID();
-      log.debug("insert record into scorecard_question with question id:" + id);
-      Date time = new Date();
-      executeUpdateSql(
-          jdbcTemplate,
-          INSERT_SCORECARD_QUESTION,
-          newArrayList(
-              id,
-              question.getQuestionType().getId(),
-              parentId,
-              question.getDescription(),
-              question.getGuideline(),
-              question.getWeight(),
-              order,
-              question.isUploadDocument(),
-              question.isUploadRequired(),
-              operator,
-              time,
-              time));
+      long id = scorecardServiceRpc.createQuestion(question, order, operator, parentId);
       // set the id
       question.setId(id);
     } catch (Exception ex) {
@@ -172,30 +94,11 @@ public class QuestionPersistence {
     log.debug(
         new LogMessage(null, operator, "Create new Questions with parentId:" + parentId)
             .toString());
-    // generate the ids
-    Long[] ids = DBUtils.generateIdsArray(questions.length, questionIdGenerator);
     try {
-      Date time = new Date();
-      // set the creation values for all questions.
+      List<Long> questionIds = scorecardServiceRpc.createQuestions(questions, operator, parentId);
+      // for each group - set the variables
       for (int i = 0; i < questions.length; i++) {
-        log.debug("insert record into scorecard_question with question id:" + ids[i]);
-        executeUpdateSql(
-            jdbcTemplate,
-            INSERT_SCORECARD_QUESTION,
-            newArrayList(
-                ids[i],
-                questions[i].getQuestionType().getId(),
-                parentId,
-                questions[i].getDescription(),
-                questions[i].getGuideline(),
-                questions[i].getWeight(),
-                i,
-                questions[i].isUploadDocument(),
-                questions[i].isUploadRequired(),
-                operator,
-                time,
-                operator,
-                time));
+        questions[i].setId(questionIds.get(i));
       }
     } catch (Exception ex) {
       log.error(
@@ -203,10 +106,6 @@ public class QuestionPersistence {
                   null, operator, "Failed to Create new Questions with parentId:" + parentId, ex)
               .toString());
       throw new PersistenceException("Error occurs while creating questions.", ex);
-    }
-    // set the ids to questions
-    for (int i = 0; i < questions.length; i++) {
-      questions[i].setId(ids[i]);
     }
   }
 
@@ -243,21 +142,7 @@ public class QuestionPersistence {
             .toString());
     try {
       log.debug("update record in scorecard_question with question id:" + question.getId());
-      executeUpdateSql(
-          jdbcTemplate,
-          UPDATE_SCORECARD_QUESTION,
-          newArrayList(
-              question.getQuestionType().getId(),
-              parentId,
-              question.getDescription(),
-              question.getGuideline(),
-              question.getWeight(),
-              order,
-              question.isUploadDocument(),
-              question.isUploadRequired(),
-              operator,
-              new Date(),
-              question.getId()));
+      scorecardServiceRpc.updateQuestion(question, order, operator, parentId);
     } catch (Exception ex) {
       log.error(
           new LogMessage(
@@ -283,10 +168,7 @@ public class QuestionPersistence {
     DBUtils.checkIdsArray(ids, "ids");
     log.debug(new LogMessage(null, null, "Delete Questions with ids:" + ids).toString());
     try {
-      executeUpdateSql(
-          jdbcTemplate,
-          DELETE_SCORECARD_QUESTIONS + DBUtils.createQuestionMarks(ids.length),
-          newArrayList(ids));
+      scorecardServiceRpc.deleteQuestions(ids);
     } catch (Exception ex) {
       log.error(
           new LogMessage(null, null, "Failed to delete Questions with ids:" + ids).toString());
@@ -308,10 +190,9 @@ public class QuestionPersistence {
     }
     log.debug(new LogMessage(id, null, "retrieve Question").toString());
     try {
-      List<Map<String, Object>> rs =
-          executeSqlWithParam(jdbcTemplate, SELECT_SCORECARD_QUESTION_BY_ID, newArrayList(id));
-      if (!rs.isEmpty()) {
-        return populateQuestion(rs.get(0));
+      GetQuestionResponse response = scorecardServiceRpc.getQuestion(id);
+      if (response != null) {
+        return populateQuestion(response);
       }
     } catch (SQLException ex) {
       log.error(new LogMessage(id, null, "Failed to retrieve Question", ex).toString());
@@ -332,12 +213,10 @@ public class QuestionPersistence {
     log.debug(
         new LogMessage(null, null, "retrieve Question with parent id:" + parentId).toString());
     try {
-      List<Map<String, Object>> rs =
-          executeSqlWithParam(
-              jdbcTemplate, SELECT_SCORECARD_QUESTION_BY_PARENT_ID, newArrayList(parentId));
-      List result = new ArrayList();
-      for (Map<String, Object> row : rs) {
-        result.add(populateQuestion(row));
+      List<GetQuestionResponse> qList = scorecardServiceRpc.getQuestions(parentId);
+      List<Question> result = new ArrayList<>();
+      for (GetQuestionResponse q : qList) {
+        result.add(populateQuestion(q));
       }
       return (Question[]) result.toArray(new Question[result.size()]);
     } catch (SQLException ex) {
@@ -355,19 +234,29 @@ public class QuestionPersistence {
    * @return the Questio instance.
    * @throws SQLException if any error occurs.
    */
-  private Question populateQuestion(Map<String, Object> rs) throws SQLException {
+  private Question populateQuestion(GetQuestionResponse q) throws SQLException {
     Question question = new Question();
-    question.setId(getLong(rs, "scorecard_question_id"));
-    question.setDescription(getString(rs, "description"));
-    question.setGuideline(getString(rs, "guideline"));
-    question.setUploadDocument(getBoolean(rs, "upload_document"));
-    question.setUploadRequired(getBoolean(rs, "upload_document_required"));
-    question.setWeight(getFloat(rs, "weight"));
-
+    question.setId(q.getScorecardQuestionId());
+    if (q.hasDescription()) {
+      question.setDescription(q.getDescription());
+    }
+    if (q.hasGuideline()) {
+      question.setGuideline(q.getGuideline());
+    }
+    if (q.hasUploadDocument()) {
+      question.setUploadDocument(q.getUploadDocument());
+    }
+    if (q.hasUploadDocumentRequired()) {
+      question.setUploadRequired(q.getUploadDocumentRequired());
+    }
+    if(q.hasWeight()) {
+      question.setWeight(q.getWeight());
+    }
     QuestionType type = new QuestionType();
-    type.setId(getLong(rs, "scorecard_question_type_id"));
-    type.setName(getString(rs, "TypeName"));
-
+    type.setId(q.getScorecardQuestionTypeId());
+    if (q.hasScorecardQuestionTypeName()) {
+      type.setName(q.getScorecardQuestionTypeName());
+    }
     question.setQuestionType(type);
     return question;
   }

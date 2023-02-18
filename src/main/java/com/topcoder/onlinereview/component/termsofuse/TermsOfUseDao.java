@@ -3,26 +3,17 @@
  */
 package com.topcoder.onlinereview.component.termsofuse;
 
-import com.topcoder.onlinereview.component.id.DBHelper;
-import com.topcoder.onlinereview.component.id.IDGenerationException;
-import com.topcoder.onlinereview.component.id.IDGenerator;
+import com.topcoder.onlinereview.component.grpcclient.termsofuse.TermsOfUseServiceRpc;
+import com.topcoder.onlinereview.grpc.termsofuse.proto.GetTermsOfUseResponse;
+
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
-import java.sql.PreparedStatement;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
-
-import static com.google.common.collect.Lists.newArrayList;
-import static com.topcoder.onlinereview.component.util.CommonUtils.executeSqlWithParam;
-import static com.topcoder.onlinereview.component.util.CommonUtils.getLong;
-import static com.topcoder.onlinereview.component.util.CommonUtils.getString;
 
 /**
  * <p>
@@ -201,239 +192,14 @@ import static com.topcoder.onlinereview.component.util.CommonUtils.getString;
 @Slf4j
 @Component
 public class TermsOfUseDao {
+    @Autowired
+    TermsOfUseServiceRpc termsOfUseServiceRpc;
     /**
      * <p>
      * Represents the class name.
      * </p>
      */
     private static final String CLASS_NAME = TermsOfUseDao.class.getName();
-
-    /**
-     * <p>
-     * Represents the property key 'idGeneratorName'.
-     * </p>
-     */
-    private static final String TERMS_OF_USE_SEQ = "TERMS_OF_USE_SEQ";
-
-    /**
-     * <p>
-     * Represents the SQL string to insert a terms of use entity.
-     * </p>
-     *
-     * <p>
-     * <em>Changes in 1.1:</em>
-     * <ol>
-     * <li>Removed electronically_signable and member_agreeable columns.</li>
-     * <li>Added terms_of_use_agreeability_type_id column.</li>
-     * </ol>
-     * </p>
-     */
-    private static final String INSERT_TERMS = "INSERT INTO terms_of_use (terms_of_use_id, terms_text,"
-        + " terms_of_use_type_id, title, url, terms_of_use_agreeability_type_id) VALUES (?, ?, ?, ?, ?, ?)";
-
-    /**
-     * <p>
-     * Represents the SQL string to update the terms of use entity.
-     * </p>
-     *
-     * <p>
-     * <em>Changes in 1.1:</em>
-     * <ol>
-     * <li>Removed electronically_signable and member_agreeable columns.</li>
-     * <li>Added terms_of_use_agreeability_type_id column.</li>
-     * </ol>
-     * </p>
-     */
-    private static final String UPDATE_TERMS = "UPDATE terms_of_use SET terms_of_use_type_id = ?, title = ?,"
-        + " url = ?, terms_of_use_agreeability_type_id=? WHERE terms_of_use_id = ?";
-
-
-    /**
-     * <p>
-     * Represents the SQL string to query a terms of use entity.
-     * </p>
-     *
-     * <p>
-     * <em>Changes in 1.1:</em>
-     * <ol>
-     * <li>Removed electronically_signable and member_agreeable columns.</li>
-     * <li>Added JOIN to terms_of_use_agreeability_type_lu table.</li>
-     * </ol>
-     * </p>
-     */
-    private static final String QUERY_TERMS = "SELECT terms_of_use_type_id, title, url,"
-        + " tou.terms_of_use_agreeability_type_id, touat.name as terms_of_use_agreeability_type_name,"
-        + " touat.description as terms_of_use_agreeability_type_description FROM terms_of_use tou"
-        + " INNER JOIN terms_of_use_agreeability_type_lu touat ON touat.terms_of_use_agreeability_type_id"
-        + " = tou.terms_of_use_agreeability_type_id WHERE terms_of_use_id=?";
-
-    /**
-     * <p>
-     * Represents the SQL string to delete a terms of use entity.
-     * </p>
-     */
-    private static final String DELETE_TERMS = "DELETE FROM terms_of_use WHERE terms_of_use_id=?";
-
-
-    /**
-     * <p>
-     * Represents the SQL string to query terms of use entities by the terms of use type id.
-     * </p>
-     *
-     * <p>
-     * <em>Changes in 1.1:</em>
-     * <ol>
-     * <li>Removed electronically_signable and member_agreeable columns.</li>
-     * <li>Added JOIN to terms_of_use_agreeability_type_lu table.</li>
-     * </ol>
-     * </p>
-     */
-    private static final String QUERY_TERMS_BY_TYPE_ID =
-        "SELECT terms_of_use_id, title, url, tou.terms_of_use_agreeability_type_id,"
-        + " touat.name as terms_of_use_agreeability_type_name,"
-        + " touat.description as terms_of_use_agreeability_type_description"
-        + " FROM terms_of_use tou INNER JOIN terms_of_use_agreeability_type_lu touat"
-        + " ON touat.terms_of_use_agreeability_type_id = tou.terms_of_use_agreeability_type_id"
-        + " WHERE terms_of_use_type_id=?";
-
-
-    /**
-     * <p>
-     * Represents the SQL string to query all terms of use entities.
-     * </p>
-     *
-     * <p>
-     * <em>Changes in 1.1:</em>
-     * <ol>
-     * <li>Removed electronically_signable and member_agreeable columns.</li>
-     * <li>Added JOIN to terms_of_use_agreeability_type_lu table.</li>
-     * </ol>
-     * </p>
-     */
-    private static final String QUERY_ALL_TERMS = "SELECT terms_of_use_id, terms_of_use_type_id, title, url,"
-        + " tou.terms_of_use_agreeability_type_id, touat.name as terms_of_use_agreeability_type_name,"
-        + " touat.description as terms_of_use_agreeability_type_description FROM terms_of_use tou"
-        + " INNER JOIN terms_of_use_agreeability_type_lu touat ON touat.terms_of_use_agreeability_type_id"
-        + " = tou.terms_of_use_agreeability_type_id";
-
-    /**
-     * <p>
-     * Represents the SQL string to query the terms of use type.
-     * </p>
-     */
-    private static final String QUERY_TERMS_TYPE = "SELECT terms_of_use_type_desc FROM terms_of_use_type"
-        + " WHERE terms_of_use_type_id=?";
-
-    /**
-     * <p>
-     * Represents the SQL string to update the terms of use type.
-     * </p>
-     */
-    private static final String UPDATE_TERMS_TYPE = "UPDATE terms_of_use_type SET terms_of_use_type_desc = ?"
-        + " WHERE terms_of_use_type_id = ?";
-
-
-    /**
-     * <p>
-     * Represents the SQL string to query the terms text.
-     * </p>
-     */
-    private static final String QUERY_TERMS_TEXT = "SELECT terms_text FROM terms_of_use WHERE terms_of_use_id=?";
-
-
-    /**
-     * <p>
-     * Represents the SQL string to update the terms text.
-     * </p>
-     */
-    private static final String UPDATE_TERMS_TEXT = "UPDATE terms_of_use SET terms_text=? WHERE terms_of_use_id=?";
-    /**
-     * Represents the SQL string to be used for inserting a terms of use dependency record.
-     *
-     * @since 1.1
-     */
-    private static final String INSERT_DEPENDENCY =
-        "INSERT INTO terms_of_use_dependency(dependency_terms_of_use_id, dependent_terms_of_use_id) VALUES (?, ?)";
-
-    /**
-     * Represents the SQL string to query IDs of all dependencies of a list of terms of use.
-     *
-     * @since 1.1
-     */
-    private static final String QUERY_DEPENDENCY_IDS =
-        "SELECT DISTINCT dependency_terms_of_use_id FROM terms_of_use_dependency"
-        + " WHERE dependent_terms_of_use_id IN (%1$s)";
-
-    /**
-     * Represents the SQL string to query IDs of all direct dependencies of a list of terms of use.
-     *
-     * @since 1.1
-     */
-    private static final String QUERY_DEPENDENCIES =
-        "SELECT terms_of_use_id, terms_of_use_type_id, title, url, tou.terms_of_use_agreeability_type_id,"
-        + " touat.name as terms_of_use_agreeability_type_name,"
-        + " touat.description as terms_of_use_agreeability_type_description FROM terms_of_use_dependency d"
-        + " INNER JOIN terms_of_use tou ON tou.terms_of_use_id = d.dependency_terms_of_use_id"
-        + " INNER JOIN terms_of_use_agreeability_type_lu touat ON touat.terms_of_use_agreeability_type_id"
-        + " = tou.terms_of_use_agreeability_type_id WHERE d.dependent_terms_of_use_id = ?";
-
-    /**
-     * Represents the SQL string to query IDs of all direct dependents of a list of terms of use.
-     *
-     * @since 1.1
-     */
-    private static final String QUERY_DEPENDENTS =
-        "SELECT terms_of_use_id, terms_of_use_type_id, title, url, tou.terms_of_use_agreeability_type_id,"
-        + " touat.name as terms_of_use_agreeability_type_name,"
-        + " touat.description as terms_of_use_agreeability_type_description FROM terms_of_use_dependency d"
-        + " INNER JOIN terms_of_use tou ON tou.terms_of_use_id = d.dependent_terms_of_use_id"
-        + " INNER JOIN terms_of_use_agreeability_type_lu touat ON touat.terms_of_use_agreeability_type_id"
-        + " = tou.terms_of_use_agreeability_type_id WHERE d.dependency_terms_of_use_id = ?";
-
-    /**
-     * Represents the SQL string to delete one dependency relationship record.
-     *
-     * @since 1.1
-     */
-    private static final String DELETE_DEPENDENCY =
-        "DELETE FROM terms_of_use_dependency WHERE dependency_terms_of_use_id = ? AND dependent_terms_of_use_id = ?";
-
-    /**
-     * Represents the SQL string to delete all relationships for specific dependent terms of use.
-     *
-     * @since 1.1
-     */
-    private static final String DELETE_RELATIONSHIPS_FOR_DEPENDENT =
-        "DELETE FROM terms_of_use_dependency WHERE dependent_terms_of_use_id = ?";
-
-    /**
-     * Represents the SQL string to delete all relationships for specific dependency terms of use.
-     *
-     * @since 1.1
-     */
-    private static final String DELETE_RELATIONSHIPS_FOR_DEPENDENCY =
-        "DELETE FROM terms_of_use_dependency WHERE dependency_terms_of_use_id = ?";
-
-    /**
-     * <p>
-     * The id generator, used to generate ids for the entities.
-     * </p>
-     *
-     * <p>
-     * It is initialized in the constructor and never changed afterwards. It is used in the dao operations whenever
-     * generation of id is necessary. It can not be null.
-     * </p>
-     */
-    private IDGenerator idGenerator;
-    @Autowired private DBHelper dbHelper;
-    @Autowired
-    @Qualifier("commonJdbcTemplate")
-    private JdbcTemplate jdbcTemplate;
-
-    @PostConstruct
-    public void postRun() throws IDGenerationException {
-        idGenerator = new IDGenerator(TERMS_OF_USE_SEQ, dbHelper);
-    }
 
     /**
      * <p>
@@ -473,19 +239,9 @@ public class TermsOfUseDao {
 
             TermsOfUseAgreeabilityType agreeabilityType = termsOfUse.getAgreeabilityType();
             Helper.checkNull(agreeabilityType, "termsOfUse.getAgreeabilityType()");
-
-            long termsOfUseId;
-            try {
-                termsOfUseId = idGenerator.getNextID();
-            } catch (IDGenerationException e) {
-                throw new TermsOfUsePersistenceException("Failed to generate a new ID.", e);
-            }
+            
+            long termsOfUseId = termsOfUseServiceRpc.createTermsOfUse(termsOfUse, termsText);
             termsOfUse.setTermsOfUseId(termsOfUseId);
-
-            Helper.executeUpdate(jdbcTemplate, INSERT_TERMS,
-                new Object[] {termsOfUseId, (termsText == null) ? null : termsText.getBytes(),
-                    termsOfUse.getTermsOfUseTypeId(), termsOfUse.getTitle(),
-                    termsOfUse.getUrl(), agreeabilityType.getTermsOfUseAgreeabilityTypeId()});
 
             // Log method exit
             Helper.logExit(log, signature, new Object[] {termsOfUse});
@@ -539,12 +295,10 @@ public class TermsOfUseDao {
             TermsOfUseAgreeabilityType agreeabilityType = termsOfUse.getAgreeabilityType();
             Helper.checkNull(agreeabilityType, "termsOfUse.getAgreeabilityType()");
 
-            Helper.executeUpdate(jdbcTemplate, UPDATE_TERMS,
-                new Object[] {termsOfUse.getTermsOfUseTypeId(), termsOfUse.getTitle(),
-                    termsOfUse.getUrl(), agreeabilityType.getTermsOfUseAgreeabilityTypeId(),
-                    termsOfUse.getTermsOfUseId()},
-                Long.toString(termsOfUse.getTermsOfUseId()));
-
+            int num = termsOfUseServiceRpc.updateTermsOfUse(termsOfUse);
+            if (num != 1) {
+                throw new EntityNotFoundException("The entity was not found for id (" + Long.toString(termsOfUse.getTermsOfUseId()) + ").");
+            }
             // Log method exit
             Helper.logExit(log, signature, new Object[] {termsOfUse});
             return termsOfUse;
@@ -580,10 +334,10 @@ public class TermsOfUseDao {
             new Object[] {termsOfUseId});
 
         try {
-            List<Map<String, Object>> rs = executeSqlWithParam(jdbcTemplate, QUERY_TERMS, newArrayList(termsOfUseId));
+            GetTermsOfUseResponse rs = termsOfUseServiceRpc.getTermsOfUse(termsOfUseId);
             TermsOfUse terms = null;
-            if (!rs.isEmpty()) {
-                terms = Helper.getTermsOfUse(rs.get(0), termsOfUseId, null);
+            if (rs != null) {
+                terms = Helper.getTermsOfUse(rs);
             }
             // Log method exit
             Helper.logExit(log, signature, new Object[] {terms});
@@ -614,10 +368,10 @@ public class TermsOfUseDao {
             new Object[] {termsOfUseId});
 
         try {
-            Helper.executeUpdate(jdbcTemplate, DELETE_TERMS,
-                new Object[] {termsOfUseId},
-                Long.toString(termsOfUseId));
-
+            int num = termsOfUseServiceRpc.deleteTermsOfUse(termsOfUseId);
+            if (num != 1) {
+                throw new EntityNotFoundException("The entity was not found for id (" + Long.toString(termsOfUseId) + ").");
+            }
             // Log method exit
             Helper.logExit(log, signature, null);
         } catch (EntityNotFoundException e) {
@@ -647,10 +401,19 @@ public class TermsOfUseDao {
         Helper.logEntrance(log, signature,
             new String[] {"termsOfUseTypeId"},
             new Object[] {termsOfUseTypeId});
-
-        // Delegate to Helper.getTermsOfUse
-        return Helper.getTermsOfUse(signature, log, jdbcTemplate, QUERY_TERMS_BY_TYPE_ID, null,
-            termsOfUseTypeId);
+        try {
+            List<GetTermsOfUseResponse> response = termsOfUseServiceRpc.getTermsOfUseByTypeId(termsOfUseTypeId);
+            List<TermsOfUse> result = new ArrayList<TermsOfUse>();
+            for (GetTermsOfUseResponse r : response) {
+                result.add(Helper.getTermsOfUse(r));
+            }
+            // Log method exit
+            Helper.logExit(log, signature, new Object[] {result});
+            return result;
+        } catch (TermsOfUsePersistenceException e) {
+            // Log exception
+            throw Helper.logException(log, signature, e);
+        }
     }
 
     /**
@@ -667,8 +430,19 @@ public class TermsOfUseDao {
         // Log method entry
         Helper.logEntrance(log, signature, null, null);
 
-        // Delegate to Helper.getTermsOfUse
-        return Helper.getTermsOfUse(signature, log, jdbcTemplate, QUERY_ALL_TERMS, null, null);
+        try {
+            List<GetTermsOfUseResponse> response = termsOfUseServiceRpc.getAllTermsOfUse();
+            List<TermsOfUse> result = new ArrayList<TermsOfUse>();
+            for (GetTermsOfUseResponse r : response) {
+                result.add(Helper.getTermsOfUse(r));
+            }
+            // Log method exit
+            Helper.logExit(log, signature, new Object[] {result});
+            return result;
+        } catch (TermsOfUsePersistenceException e) {
+            // Log exception
+            throw Helper.logException(log, signature, e);
+        }
     }
 
     /**
@@ -691,14 +465,7 @@ public class TermsOfUseDao {
             new Object[] {termsOfUseTypeId});
 
         try {
-            List<Map<String, Object>> rs = executeSqlWithParam(jdbcTemplate, QUERY_TERMS_TYPE, newArrayList(termsOfUseTypeId));
-            TermsOfUseType termsType = null;
-            if (!rs.isEmpty()) {
-                termsType = new TermsOfUseType();
-                termsType.setTermsOfUseTypeId(termsOfUseTypeId);
-                termsType.setDescription(getString(rs.get(0), "terms_of_use_type_desc"));
-            }
-
+            TermsOfUseType termsType = termsOfUseServiceRpc.getTermsOfUseType(termsOfUseTypeId);
             // Log method exit
             Helper.logExit(log, signature, new Object[] {termsType});
             return termsType;
@@ -734,11 +501,10 @@ public class TermsOfUseDao {
 
         try {
             Helper.checkNull(termsType, "termsType");
-
-            Helper.executeUpdate(jdbcTemplate, UPDATE_TERMS_TYPE,
-                new Object[] {termsType.getDescription(), termsType.getTermsOfUseTypeId()},
-                Long.toString(termsType.getTermsOfUseTypeId()));
-
+            int num = termsOfUseServiceRpc.updateTermsOfUseType(termsType);
+            if (num != 1) {
+                throw new EntityNotFoundException("The entity was not found for id (" + Long.toString(termsType.getTermsOfUseTypeId()) + ").");
+            }
             // Log method exit
             Helper.logExit(log, signature, new Object[] {termsType});
             return termsType;
@@ -776,11 +542,10 @@ public class TermsOfUseDao {
             new Object[] {termsOfUseId});
 
         try {
-            List<Map<String, Object>> rs = executeSqlWithParam(jdbcTemplate, QUERY_TERMS_TEXT, newArrayList(termsOfUseId));
-            if (rs.isEmpty()) {
+            String termsText = termsOfUseServiceRpc.getTermsOfUseText(termsOfUseId);
+            if (termsText == null) {
                 throw new EntityNotFoundException("The entity was not found for id  (" + termsOfUseId + ").");
             }
-            String termsText = getString(rs.get(0), "terms_text");
 
             // Log method exit
             Helper.logExit(log, signature, new Object[] {termsText});
@@ -817,10 +582,10 @@ public class TermsOfUseDao {
             new Object[] {termsOfUseId, text});
 
         try {
-            Helper.executeUpdate(jdbcTemplate, UPDATE_TERMS_TEXT,
-                new Object[] {(text == null) ? null : text.getBytes(), termsOfUseId},
-                Long.toString(termsOfUseId));
-
+            int num = termsOfUseServiceRpc.setTermsOfUseText(termsOfUseId, text);
+            if (num != 1) {
+                throw new EntityNotFoundException("The entity was not found for id (" + Long.toString(termsOfUseId) + ").");
+            }
             // Log method exit
             Helper.logExit(log, signature, null);
         } catch (EntityNotFoundException e) {
@@ -876,8 +641,7 @@ public class TermsOfUseDao {
             checkDependencyLoop(dependentTermsOfUseId, dependencyTermsOfUseId);
 
             // Insert the dependency
-            Helper.executeUpdate(jdbcTemplate, INSERT_DEPENDENCY,
-                new Object[] {dependencyTermsOfUseId, dependentTermsOfUseId});
+            termsOfUseServiceRpc.createDependencyRelationship(dependentTermsOfUseId, dependencyTermsOfUseId);
 
             // Log method exit
             Helper.logExit(log, signature, null);
@@ -910,9 +674,19 @@ public class TermsOfUseDao {
             new String[] {"dependentTermsOfUseId"},
             new Object[] {dependentTermsOfUseId});
 
-        // Delegate to Helper.getTermsOfUse
-        return Helper.getTermsOfUse(signature, log, jdbcTemplate, QUERY_DEPENDENCIES,
-            dependentTermsOfUseId, null);
+        try {
+            List<GetTermsOfUseResponse> response = termsOfUseServiceRpc.getDependencyTermsOfUse(dependentTermsOfUseId);
+            List<TermsOfUse> result = new ArrayList<TermsOfUse>();
+            for (GetTermsOfUseResponse r : response) {
+                result.add(Helper.getTermsOfUse(r));
+            }
+            // Log method exit
+            Helper.logExit(log, signature, new Object[] {result});
+            return result;
+        } catch (TermsOfUsePersistenceException e) {
+            // Log exception
+            throw Helper.logException(log, signature, e);
+        }
     }
 
     /**
@@ -936,9 +710,19 @@ public class TermsOfUseDao {
             new String[] {"dependencyTermsOfUseId"},
             new Object[] {dependencyTermsOfUseId});
 
-        // Delegate to Helper.getTermsOfUse
-        return Helper.getTermsOfUse(signature, log, jdbcTemplate, QUERY_DEPENDENTS,
-            dependencyTermsOfUseId, null);
+        try {
+            List<GetTermsOfUseResponse> response = termsOfUseServiceRpc.getDependentTermsOfUse(dependencyTermsOfUseId);
+            List<TermsOfUse> result = new ArrayList<TermsOfUse>();
+            for (GetTermsOfUseResponse r : response) {
+                result.add(Helper.getTermsOfUse(r));
+            }
+            // Log method exit
+            Helper.logExit(log, signature, new Object[] {result});
+            return result;
+        } catch (TermsOfUsePersistenceException e) {
+            // Log exception
+            throw Helper.logException(log, signature, e);
+        }
     }
 
     /**
@@ -968,8 +752,7 @@ public class TermsOfUseDao {
             new Object[] {dependentTermsOfUseId, dependencyTermsOfUseId});
 
         try {
-            int deletedNum = Helper.executeUpdate(jdbcTemplate, DELETE_DEPENDENCY, new Object[] {
-                dependencyTermsOfUseId, dependentTermsOfUseId});
+            int deletedNum = termsOfUseServiceRpc.deleteDependencyRelationship(dependentTermsOfUseId, dependencyTermsOfUseId);
             if (deletedNum == 0) {
                 // Log exception
                 throw Helper.logException(log, signature, new TermsOfUseDependencyNotFoundException(
@@ -1005,8 +788,7 @@ public class TermsOfUseDao {
             new Object[] {dependentTermsOfUseId});
 
         try {
-            Helper.executeUpdate(jdbcTemplate, DELETE_RELATIONSHIPS_FOR_DEPENDENT,
-                new Object[] {dependentTermsOfUseId});
+            termsOfUseServiceRpc.deleteAllDependencyRelationshipsForDependent(dependentTermsOfUseId);
 
             // Log method exit
             Helper.logExit(log, signature, null);
@@ -1037,8 +819,7 @@ public class TermsOfUseDao {
             new Object[] {dependencyTermsOfUseId});
 
         try {
-            Helper.executeUpdate(jdbcTemplate, DELETE_RELATIONSHIPS_FOR_DEPENDENCY,
-                new Object[] {dependencyTermsOfUseId});
+            termsOfUseServiceRpc.deleteAllDependencyRelationshipsForDependency(dependencyTermsOfUseId);
 
             // Log method exit
             Helper.logExit(log, signature, null);
@@ -1072,8 +853,6 @@ public class TermsOfUseDao {
         // Add dependencyTermsOfUseId to the set:
         termsOfUseIdsToCheck.add(dependencyTermsOfUseId);
 
-        PreparedStatement ps;
-
         while (!termsOfUseIdsToCheck.isEmpty()) {
             // Create string builder for dynamic part of the query:
             StringBuilder sb = new StringBuilder();
@@ -1093,17 +872,15 @@ public class TermsOfUseDao {
             termsOfUseIdsToCheck.clear();
 
             // Execute the query:
-            List<Map<String, Object>> rs = executeSqlWithParam(jdbcTemplate, String.format(QUERY_DEPENDENCY_IDS, sb), newArrayList(termsOfUseIdsToCheck));
-            for (Map<String, Object> row: rs) {
-                // Get the next dependency ID:
-                long nextDependencyId = getLong(row, "dependency_terms_of_use_id");
-                if (nextDependencyId == dependentTermsOfUseId) {
+            List<Long> dependencyIds = termsOfUseServiceRpc.getDependencyTermsOfUseIds(new ArrayList<>(termsOfUseIdsToCheck));
+            for (long dependencyId: dependencyIds) {
+                if (dependencyId == dependentTermsOfUseId) {
                     throw new TermsOfUseCyclicDependencyException(
                         "Creation of the specified relationship will lead to a dependency loop.");
                 }
-                if (!deepDependencyTermsOfUseIds.contains(nextDependencyId)) {
+                if (!deepDependencyTermsOfUseIds.contains(dependencyId)) {
                     // Add ID to the set of terms of use IDs that need to be checked:
-                    termsOfUseIdsToCheck.add(nextDependencyId);
+                    termsOfUseIdsToCheck.add(dependencyId);
                 }
             }
         }

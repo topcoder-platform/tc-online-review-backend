@@ -5,21 +5,13 @@ package com.topcoder.onlinereview.component.project.payment;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import com.topcoder.onlinereview.component.grpcclient.payment.PaymentServiceRpc;
 
-import static com.google.common.collect.Lists.newArrayList;
-import static com.topcoder.onlinereview.component.util.CommonUtils.executeSqlWithParam;
-import static com.topcoder.onlinereview.component.util.CommonUtils.executeUpdateSql;
-import static com.topcoder.onlinereview.component.util.CommonUtils.getDouble;
-import static com.topcoder.onlinereview.component.util.CommonUtils.getLong;
+import java.math.BigDecimal;
+import java.util.List;
 
 /**
  * <p>
@@ -39,6 +31,9 @@ import static com.topcoder.onlinereview.component.util.CommonUtils.getLong;
 @Slf4j
 @Component
 public class ProjectPaymentAdjustmentPersistence {
+
+    @Autowired
+    private PaymentServiceRpc paymentServiceRpc;
     /**
      * <p>
      * Represents the class name.
@@ -46,33 +41,6 @@ public class ProjectPaymentAdjustmentPersistence {
      */
     private static final String CLASS_NAME = ProjectPaymentAdjustmentPersistence.class.getName();
 
-    /**
-     * <p>
-     * Represents the SQL string to update payment adjustment.
-     * </p>
-     */
-    private static final String SQL_UPDATE_PAYMENT_ADJUSTMENT = "UPDATE project_payment_adjustment"
-        + " SET fixed_amount = ?, multiplier = ? WHERE project_id = ? AND resource_role_id = ?";
-
-    /**
-     * <p>
-     * Represents the SQL string to insert payment adjustment.
-     * </p>
-     */
-    private static final String SQL_INSERT_PAYMENT_ADJUSTMENT = "INSERT INTO project_payment_adjustment"
-        + " (project_id, resource_role_id, fixed_amount, multiplier) VALUES (?, ?, ?, ?)";
-
-    /**
-     * <p>
-     * Represents the SQL string to query payment adjustment.
-     * </p>
-     */
-    private static final String SQL_QUERY_PAYMENT_ADJUSTMENT = "SELECT project_id, resource_role_id,"
-        + " fixed_amount, multiplier FROM project_payment_adjustment where project_id = ?";
-
-    @Autowired
-    @Qualifier("tcsJdbcTemplate")
-    private JdbcTemplate jdbcTemplate;
     /**
      * Creates or updates the given project payment adjustment in persistence.
      *
@@ -104,13 +72,9 @@ public class ProjectPaymentAdjustmentPersistence {
             // Validate the parameter
             validateProjectPaymentAdjustment(projectPaymentAdjustment);
                 // Update
-            if (executeUpdateSql(jdbcTemplate, SQL_UPDATE_PAYMENT_ADJUSTMENT,
-                newArrayList(projectPaymentAdjustment.getFixedAmount(), projectPaymentAdjustment.getMultiplier(),
-                projectPaymentAdjustment.getProjectId(), projectPaymentAdjustment.getResourceRoleId())) == 0) {
+            if (paymentServiceRpc.updatePaymentAdjustment(projectPaymentAdjustment) == 0) {
                 // Insert
-                executeUpdateSql(jdbcTemplate, SQL_INSERT_PAYMENT_ADJUSTMENT,
-                        newArrayList(projectPaymentAdjustment.getProjectId(), projectPaymentAdjustment.getResourceRoleId(),
-                    projectPaymentAdjustment.getFixedAmount(), projectPaymentAdjustment.getMultiplier()));
+                paymentServiceRpc.createPaymentAdjustment(projectPaymentAdjustment);
             }
             // Log Exit
             Helper.logExit(log, signature, null);
@@ -144,18 +108,7 @@ public class ProjectPaymentAdjustmentPersistence {
             new String[] {"projectId"},
             new Object[] {projectId});
 
-        // Execute the statement
-        List<Map<String, Object>> resultSet = executeSqlWithParam(jdbcTemplate, SQL_QUERY_PAYMENT_ADJUSTMENT, newArrayList(projectId));
-
-        List<ProjectPaymentAdjustment> result = new ArrayList<ProjectPaymentAdjustment>();
-        for (Map<String, Object> row: resultSet) {
-            ProjectPaymentAdjustment projectPaymentAdjustment = new ProjectPaymentAdjustment();
-            projectPaymentAdjustment.setProjectId(getLong(row, "project_id"));
-            projectPaymentAdjustment.setResourceRoleId(getLong(row, "resource_role_id"));
-            projectPaymentAdjustment.setFixedAmount(new BigDecimal(getDouble(row, "fixed_amount")));
-            projectPaymentAdjustment.setMultiplier(getDouble(row, "multiplier"));
-            result.add(projectPaymentAdjustment);
-        }
+        List<ProjectPaymentAdjustment> result = paymentServiceRpc.getPaymentAdjustments(projectId);
         // Log Exit
         Helper.logExit(log, signature, new Object[] {result.toString()});
         return result;

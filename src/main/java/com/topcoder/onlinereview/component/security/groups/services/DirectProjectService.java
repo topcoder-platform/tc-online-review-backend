@@ -3,8 +3,8 @@
  */
 package com.topcoder.onlinereview.component.security.groups.services;
 
-import com.topcoder.onlinereview.component.security.groups.model.BillingAccount;
 import com.topcoder.onlinereview.component.security.groups.services.dto.ProjectDTO;
+import com.topcoder.onlinereview.grpc.security.proto.BillingAccountProto;
 
 import java.util.List;
 
@@ -63,5 +63,5 @@ public interface DirectProjectService {
      * @throws SecurityGroupException
      *             If there are any errors during the execution of this method
      */
-    public List<ProjectDTO> getProjectsByBillingAccounts(List<BillingAccount> billingAccounts) throws SecurityGroupException;
+    public List<ProjectDTO> getProjectsByBillingAccounts(List<BillingAccountProto> billingAccounts) throws SecurityGroupException;
 }
