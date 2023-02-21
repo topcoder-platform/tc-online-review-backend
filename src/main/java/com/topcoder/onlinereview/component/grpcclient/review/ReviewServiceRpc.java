@@ -152,19 +152,19 @@ public class ReviewServiceRpc {
     }
 
     public int updateReviewComment(Comment comment, Long sort, String operator, Date date) {
-        ReviewCommentProto request = buildReviewComment(comment, null, sort, operator, date, false);
+        ReviewCommentProto request = buildReviewComment(comment, null, sort, operator, date, true);
         CountProto response = stub.updateReviewComment(request);
         return response.getCount();
     }
 
     public long updateReviewItem(Item item, Long sort, String operator, Date date) {
-        ReviewItemProto request = buildReviewItem(item, null, sort, operator, date, false);
+        ReviewItemProto request = buildReviewItem(item, null, sort, operator, date, true);
         CountProto response = stub.updateReviewItem(request);
         return response.getCount();
     }
 
     public long updateReviewItemComment(Comment comment, Long sort, String operator, Date date) {
-        ReviewItemCommentProto request = buildReviewItemComment(comment, null, sort, operator, date, false);
+        ReviewItemCommentProto request = buildReviewItemComment(comment, null, sort, operator, date, true);
         CountProto response = stub.updateReviewItemComment(request);
         return response.getCount();
     }

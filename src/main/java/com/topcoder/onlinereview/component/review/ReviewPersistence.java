@@ -823,7 +823,9 @@ public class ReviewPersistence {
    * @throws ReviewPersistenceException if any error occurs during the deletion
    */
   private void deleteReviewComments(Set<Long> reviewCommentIDs) throws ReviewPersistenceException {
-    reviewServiceRpc.deleteReviewComments(new ArrayList<>(reviewCommentIDs));
+    if (reviewCommentIDs.size() > 0) {
+        reviewServiceRpc.deleteReviewComments(new ArrayList<>(reviewCommentIDs));
+    }
   }
 
   /**
@@ -833,7 +835,9 @@ public class ReviewPersistence {
    * @throws ReviewPersistenceException if any error occurs during the deletion
    */
   private void deleteReviewItems(Set<Long> reviewItemIDs) throws ReviewPersistenceException {
-    reviewServiceRpc.deleteReviewItems(new ArrayList<>(reviewItemIDs));
+    if (reviewItemIDs.size() > 0) {
+        reviewServiceRpc.deleteReviewItems(new ArrayList<>(reviewItemIDs));
+    }
   }
 
   /**
@@ -843,8 +847,10 @@ public class ReviewPersistence {
    * @throws ReviewPersistenceException if any error occurs during the deletion
    */
   private void deleteReviewItemComments(Set<Long> reviewItemCommentIDs)
-      throws ReviewPersistenceException {
-    reviewServiceRpc.deleteReviewItemComments(new ArrayList<>(reviewItemCommentIDs));
+          throws ReviewPersistenceException {
+      if (reviewItemCommentIDs.size() > 0) {
+          reviewServiceRpc.deleteReviewItemComments(new ArrayList<>(reviewItemCommentIDs));
+      }
   }
 
   /**
