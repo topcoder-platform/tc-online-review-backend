@@ -27,7 +27,7 @@ public class PhaseHandlerServiceRpc {
 
     public int updateProjectResultPayment(long projectId, Double totalPayment, Long userId) {
         UpdateProjectResultPaymentRequest.Builder request = UpdateProjectResultPaymentRequest.newBuilder()
-                .setProjectId(projectId).setPayment(totalPayment);
+                .setProjectId(projectId);
         if (totalPayment != null) {
             request.setPayment(totalPayment);
         }
