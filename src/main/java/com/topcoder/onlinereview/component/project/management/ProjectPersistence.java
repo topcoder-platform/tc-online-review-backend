@@ -276,6 +276,10 @@ public class ProjectPersistence {
           + "SET project_status_id=?, project_category_id=?, modify_user=?, modify_date=?, tc_direct_project_id=? "
           + "WHERE project_id=?";
 
+  private static final String UPDATE_PROJECT_STATUS_SQL = "UPDATE project "
+      + "SET project_status_id=? "
+      + "WHERE project_id=?";
+
   /** Represents the sql statement to update project property. */
   private static final String UPDATE_PROJECT_PROPERTY_SQL =
       "UPDATE project_info "
@@ -2630,5 +2634,20 @@ public class ProjectPersistence {
       projects[i] = project;
     }
     return projects;
+  }
+
+  public void updateProjectStatus(Project project, ProjectStatus status, String operator)
+      throws PersistenceException {
+    Long projectId = project.getId();
+    log.debug(
+        new LogMessage(projectId, operator, "update project status with projectId:" + projectId)
+            .toString());
+    // update the project type and project category
+    Object[] queryArgs =
+        new Object[] {
+          status.getId(),
+          projectId
+        };
+    Helper.doDMLQuery(jdbcTemplate, UPDATE_PROJECT_STATUS_SQL, queryArgs);
   }
 }

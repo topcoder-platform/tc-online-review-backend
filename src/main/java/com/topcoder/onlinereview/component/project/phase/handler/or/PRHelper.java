@@ -540,17 +540,29 @@ public class PRHelper {
      */
     static void completeProject(ManagerHelper managerHelper, Phase phase, String operator)
         throws PhaseHandlingException {
+        ProjectManager projectManager = null;
+        Project project = null;
+        ProjectStatus previousStatus = null;
+        boolean statusChanged = false;
         try {
-            ProjectManager projectManager = managerHelper.getProjectManager();
-            Project project = projectManager.getProject(phase.getProject().getId());
+            projectManager = managerHelper.getProjectManager();
+            project = projectManager.getProject(phase.getProject().getId());
 
             Format format = new SimpleDateFormat(dateFormat);
             project.setProperty("Completion Timestamp", format.format(new Date()));
 
             ProjectStatus completedStatus = PRHelper.findProjectStatusByName(projectManager, "Completed");
+            previousStatus = project.getProjectStatus();
             project.setProjectStatus(completedStatus);
+            if (previousStatus.getId() != completedStatus.getId()) {
+                statusChanged = true;
+            }
             projectManager.updateProject(project, "Setting the project status to Completed automatically", operator);
         } catch (PersistenceException e) {
+            if (statusChanged && projectManager != null && project != null && previousStatus != null) {
+                logger.info(new LogMessage(project.getId(), null, "Rolling back project status").toString());
+                projectManager.updateProjectStatus(project, previousStatus, operator);
+            }
             throw new PhaseHandlingException("Problem when updating project", e);
         } catch (ValidationException e) {
             throw new PhaseHandlingException("Problem when updating project", e);
