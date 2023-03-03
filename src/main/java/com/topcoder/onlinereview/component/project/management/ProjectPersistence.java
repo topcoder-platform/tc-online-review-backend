@@ -256,10 +256,12 @@ public class ProjectPersistence {
 
   /** Represents the sql statement to create project property. */
   private static final String CREATE_PROJECT_PROPERTY_SQL =
-      "INSERT INTO project_info "
+          "SET LOCK MODE TO WAIT 10;"
+          + " INSERT INTO project_info "
           + "(project_id, project_info_type_id, value, "
           + "create_user, create_date, modify_user, modify_date) "
-          + "VALUES (?, ?, ?, ?, CURRENT, ?, CURRENT)";
+          + "VALUES (?, ?, ?, ?, CURRENT, ?, CURRENT);"
+          + " SET LOCK MODE TO NOT WAIT;";
 
   /** Represents the sql statement to create project audit. */
   private static final String CREATE_PROJECT_AUDIT_SQL =
@@ -273,6 +275,10 @@ public class ProjectPersistence {
       "UPDATE project "
           + "SET project_status_id=?, project_category_id=?, modify_user=?, modify_date=?, tc_direct_project_id=? "
           + "WHERE project_id=?";
+
+  private static final String UPDATE_PROJECT_STATUS_SQL = "UPDATE project "
+      + "SET project_status_id=? "
+      + "WHERE project_id=?";
 
   /** Represents the sql statement to update project property. */
   private static final String UPDATE_PROJECT_PROPERTY_SQL =
@@ -2628,5 +2634,20 @@ public class ProjectPersistence {
       projects[i] = project;
     }
     return projects;
+  }
+
+  public void updateProjectStatus(Project project, ProjectStatus status, String operator)
+      throws PersistenceException {
+    Long projectId = project.getId();
+    log.debug(
+        new LogMessage(projectId, operator, "update project status with projectId:" + projectId)
+            .toString());
+    // update the project type and project category
+    Object[] queryArgs =
+        new Object[] {
+          status.getId(),
+          projectId
+        };
+    Helper.doDMLQuery(jdbcTemplate, UPDATE_PROJECT_STATUS_SQL, queryArgs);
   }
 }

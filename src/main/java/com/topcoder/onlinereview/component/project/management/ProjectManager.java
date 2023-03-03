@@ -168,6 +168,11 @@ public class ProjectManager {
     this.persistence.updateStudioSpecificationForProject(spec, projectId, operator);
   }
 
+  public void updateProjectStatus(Project project, ProjectStatus status, String operator)
+      throws PersistenceException {
+    this.persistence.updateProjectStatus(project, status, operator);
+  }
+
   private void setValidationMap() {
     Map validationMap = new HashMap();
     validationMap.put("ProjectTypeID", LongValidator.isPositive());
