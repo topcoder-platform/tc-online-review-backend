@@ -17,6 +17,18 @@ public class GrpcChannelManager {
     private String orSyncAddress;
     @Value("${grpc.client.orsync.port}")
     private String orSyncPort;
+    @Value("${managerHelper.authClientId}")
+    private String authClientId;
+    @Value("${managerHelper.authClientSecret}")
+    private String authClientSecret;
+    @Value("${managerHelper.authAudience}")
+    private String authAudience;
+    @Value("${managerHelper.authDomain}")
+    private String authDomain;
+    @Value("${managerHelper.authExpirationTime}")
+    private String authExpirationTime;
+    @Value("${managerHelper.authProxyURL}")
+    private String authProxyURL;
 
     private static ManagedChannel channel;
     private static ManagedChannel channelSync;
@@ -24,11 +36,19 @@ public class GrpcChannelManager {
     @Autowired
     public GrpcChannelManager(@Value("${grpc.client.or.address}") String address,
             @Value("${grpc.client.or.port}") String port, @Value("${grpc.client.orsync.address}") String syncAddress,
-            @Value("${grpc.client.orsync.port}") String syncPort) {
+            @Value("${grpc.client.orsync.port}") String syncPort,
+            @Value("${managerHelper.authClientId}") String authClientId,
+            @Value("${managerHelper.authClientSecret}") String authClientSecret,
+            @Value("${managerHelper.authAudience}") String authAudience,
+            @Value("${managerHelper.authDomain}") String authDomain,
+            @Value("${managerHelper.authExpirationTime}") String authExpirationTime,
+            @Value("${managerHelper.authProxyURL}") String authProxyURL) {
         channel = ManagedChannelBuilder.forAddress(address, Integer.parseInt(port))
                 .usePlaintext()
                 .build();
         channelSync = ManagedChannelBuilder.forAddress(syncAddress, Integer.parseInt(syncPort))
+                .intercept(new GrpcInterceptor(authClientId, authClientSecret, authAudience, authDomain,
+                        authExpirationTime, authProxyURL))
                 .usePlaintext()
                 .build();
     }
