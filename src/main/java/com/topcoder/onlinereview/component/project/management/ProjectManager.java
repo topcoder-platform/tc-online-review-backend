@@ -152,4 +152,9 @@ public class ProjectManager {
       throws PersistenceException {
     this.persistence.updateStudioSpecificationForProject(spec, projectId, operator);
   }
+
+  public void updateProjectStatus(Project project, ProjectStatus status, String operator)
+      throws PersistenceException {
+    this.persistence.updateProjectStatus(project, status, operator);
+  }
 }

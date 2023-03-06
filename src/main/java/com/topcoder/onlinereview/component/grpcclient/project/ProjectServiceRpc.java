@@ -500,6 +500,16 @@ public class ProjectServiceRpc {
         return response.getCount();
     }
 
+    public int updateProjectStatus(Long projectId, long statusId) {
+        UpdateProjectStatusRequest.Builder request = UpdateProjectStatusRequest.newBuilder();
+        if (projectId != null) {
+            request.setProjectId(projectId);
+        }
+        request.setStatusId(statusId);
+        CountProto response = stub.updateProjectStatus(request.build());
+        return response.getCount();
+    }
+
     private Project loadProject(ProjectProto p) {
         ProjectStatus status = new ProjectStatus(p.getProjectStatus().getId(), p.getProjectStatus().getName());
         ProjectType type = new ProjectType(p.getProjectCategory().getProjectType().getId(),
