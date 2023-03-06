@@ -558,13 +558,11 @@ public class PRHelper {
                 statusChanged = true;
             }
             projectManager.updateProject(project, "Setting the project status to Completed automatically", operator);
-        } catch (PersistenceException e) {
+        } catch (Exception e) {
             if (statusChanged && projectManager != null && project != null && previousStatus != null) {
                 logger.info(new LogMessage(project.getId(), null, "Rolling back project status").toString());
                 projectManager.updateProjectStatus(project, previousStatus, operator);
             }
-            throw new PhaseHandlingException("Problem when updating project", e);
-        } catch (ValidationException e) {
             throw new PhaseHandlingException("Problem when updating project", e);
         }
     }
