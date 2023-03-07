@@ -9,27 +9,6 @@ import io.grpc.ManagedChannelBuilder;
 
 @Component
 public class GrpcChannelManager {
-    @Value("${grpc.client.or.address}")
-    private String orAddress;
-    @Value("${grpc.client.or.port}")
-    private String orPort;
-    @Value("${grpc.client.orsync.address}")
-    private String orSyncAddress;
-    @Value("${grpc.client.orsync.port}")
-    private String orSyncPort;
-    @Value("${managerHelper.authClientId}")
-    private String authClientId;
-    @Value("${managerHelper.authClientSecret}")
-    private String authClientSecret;
-    @Value("${managerHelper.authAudience}")
-    private String authAudience;
-    @Value("${managerHelper.authDomain}")
-    private String authDomain;
-    @Value("${managerHelper.authExpirationTime}")
-    private String authExpirationTime;
-    @Value("${managerHelper.authProxyURL}")
-    private String authProxyURL;
-
     private static ManagedChannel channel;
     private static ManagedChannel channelSync;
 
