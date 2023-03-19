@@ -13,8 +13,11 @@ import org.springframework.stereotype.Service;
 import com.topcoder.onlinereview.component.grpcclient.GrpcChannelManager;
 import com.topcoder.onlinereview.grpc.sync.proto.*;
 
+import lombok.extern.slf4j.Slf4j;
+
 @Service
 @DependsOn({ "grpcChannelManager" })
+@Slf4j
 public class SyncServiceRpc {
 
     @Autowired
@@ -61,14 +64,24 @@ public class SyncServiceRpc {
         if (submissionUpdated) {
             request.addUpdatedTables(getSubmissionTable(null));
         }
-        stub.syncLegacy(request.build());
+        try {
+            if (request.getUpdatedTablesCount() > 0) {
+                stub.syncLegacy(request.build());
+            }
+        } catch (Exception e) {
+            log.error("Sync Error", e);
+        }
     }
 
     public void advanceFailedScreeningSubmissionSync(Long projectId, Long submissionId, boolean postMortemDeleted) {
-        if (postMortemDeleted) {
-            SyncInput.Builder request = getSyncInput(projectId);
-            request.addUpdatedTables(getProjectPhaseTable(null));
-            stub.syncLegacy(request.build());
+        try {
+            if (postMortemDeleted) {
+                SyncInput.Builder request = getSyncInput(projectId);
+                request.addUpdatedTables(getProjectPhaseTable(null));
+                stub.syncLegacy(request.build());
+            }
+        } catch (Exception e) {
+            log.error("Sync Error", e);
         }
     }
 
@@ -84,7 +97,13 @@ public class SyncServiceRpc {
         if (resourceIds != null && !resourceIds.isEmpty()) {
             request.addUpdatedTables(getResourceTable(resourceIds));
         }
-        stub.syncLegacy(request.build());
+        try {
+            if (request.getUpdatedTablesCount() > 0) {
+                stub.syncLegacy(request.build());
+            }
+        } catch (Exception e) {
+            log.error("Sync Error", e);
+        }
     }
 
     public void saveReviewPaymentsSync(Long projectId) {
@@ -94,13 +113,21 @@ public class SyncServiceRpc {
     public void SaveProjectPaymentsSync(Long projectId, List<Long> resourceIds) {
         SyncInput.Builder request = getSyncInput(projectId);
         request.addUpdatedTables(getProjectPaymentTable(null));
-        stub.syncLegacy(request.build());
+        try {
+            stub.syncLegacy(request.build());
+        } catch (Exception e) {
+            log.error("Sync Error", e);
+        }
     }
 
     public void SaveReviewSync(Long projectId) {
         SyncInput.Builder request = getSyncInput(projectId);
         request.addUpdatedTables(getSubmissionTable(null));
-        stub.syncLegacy(request.build());
+        try {
+            stub.syncLegacy(request.build());
+        } catch (Exception e) {
+            log.error("Sync Error", e);
+        }
     }
 
     private SyncInput.Builder getSyncInput(Long projectId) {
