@@ -130,6 +130,29 @@ public class SyncServiceRpc {
         }
     }
 
+    public void autopilotSync(Long projectId, boolean statusHasChanged, boolean phaseUpdated,
+            boolean submissionUpdated) {
+        SyncInput.Builder request = getSyncInput(projectId);
+        if (statusHasChanged) {
+            List<String> changedColumnNames = new ArrayList<>();
+            changedColumnNames.add("project_status_id");
+            request.addUpdatedTables(getProjectTable(changedColumnNames));
+        }
+        if (phaseUpdated) {
+            request.addUpdatedTables(getProjectPhaseTable(null));
+        }
+        if (submissionUpdated) {
+            request.addUpdatedTables(getSubmissionTable(null));
+        }
+        try {
+            if (request.getUpdatedTablesCount() > 0) {
+                stub.syncLegacy(request.build());
+            }
+        } catch (Exception e) {
+            log.error("Sync Error", e);
+        }
+    }
+
     private SyncInput.Builder getSyncInput(Long projectId) {
         return SyncInput.newBuilder().setProjectId(projectId.intValue());
     }
