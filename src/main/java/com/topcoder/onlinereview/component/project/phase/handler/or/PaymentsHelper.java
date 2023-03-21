@@ -4,6 +4,7 @@
 package com.topcoder.onlinereview.component.project.phase.handler.or;
 
 import com.topcoder.onlinereview.component.deliverable.Submission;
+import com.topcoder.onlinereview.component.grpcclient.phasehandler.PhaseHandlerServiceRpc;
 import com.topcoder.onlinereview.component.project.management.PersistenceException;
 import com.topcoder.onlinereview.component.project.management.Project;
 import com.topcoder.onlinereview.component.project.payment.ProjectPayment;
@@ -11,7 +12,6 @@ import com.topcoder.onlinereview.component.project.payment.ProjectPaymentFilterB
 import com.topcoder.onlinereview.component.project.payment.ProjectPaymentManagementException;
 import com.topcoder.onlinereview.component.project.payment.ProjectPaymentManager;
 import com.topcoder.onlinereview.component.project.payment.ProjectPaymentType;
-import com.topcoder.onlinereview.component.project.payment.calculator.ProjectPaymentCalculator;
 import com.topcoder.onlinereview.component.project.payment.calculator.ProjectPaymentCalculatorException;
 import com.topcoder.onlinereview.component.project.phase.ManagerHelper;
 import com.topcoder.onlinereview.component.project.phase.PhaseHandlingException;
@@ -37,10 +37,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import static com.topcoder.onlinereview.component.util.CommonUtils.executeUpdateSql;
-import static com.topcoder.onlinereview.component.util.SpringUtils.getBean;
-import static com.topcoder.onlinereview.component.util.SpringUtils.getTcsJdbcTemplate;
 
 /**
  * <p>
@@ -263,7 +259,7 @@ public final class PaymentsHelper {
      * @param projectId the id of the given project.
      * @throws PhaseHandlingException if any error occurs.
      */
-    public static void updateProjectResultPayments(long projectId) throws PhaseHandlingException {
+    public static void updateProjectResultPayments(PhaseHandlerServiceRpc phaseHandlerServiceRpc, long projectId) throws PhaseHandlingException {
         // get all resources
         try {
             ResourceManager resourceManager = managerHelper.getResourceManager();
@@ -276,21 +272,13 @@ public final class PaymentsHelper {
                     ProjectPaymentFilterBuilder.createProjectIdFilter(projectId));
 
             for (Resource resource : submitterResources) {
-                List<Object> params = new ArrayList<>();
                 double totalPayment = 0;
                 for (ProjectPayment payment : payments) {
                     if (payment.getResourceId().equals(resource.getId())) {
                         totalPayment += payment.getAmount().doubleValue();
                     }
                 }
-                if (totalPayment == 0) {
-                    params.add(null);
-                } else {
-                    params.add(totalPayment);
-                }
-                params.add(projectId);
-                params.add(resource.getUserId());
-                executeUpdateSql(getTcsJdbcTemplate(), "UPDATE project_result SET payment = ? WHERE project_id = ? AND user_id = ?", params);
+                phaseHandlerServiceRpc.updateProjectResultPayment(projectId, totalPayment == 0 ? null : totalPayment, resource.getUserId());
             }
         } catch (ResourcePersistenceException e) {
             throw new PhaseHandlingException("There was a resource retrieval error", e);
@@ -449,17 +437,6 @@ public final class PaymentsHelper {
      */
     private static boolean isManualPayment(Resource resource) {
         return "true".equalsIgnoreCase((String) resource.getProperty("Manual Payments"));
-    }
-
-    /**
-     * Creates new instance of calculator for the project payments based on the available application configuration.
-     *
-     * @return a <code>ProjectPaymentCalculator</code> to be used for calculating the payments for reviewer roles for
-     *         desired projects.
-     */
-    private static ProjectPaymentCalculator createProjectPaymentCalculator() {
-        return getBean("projectPaymentAdjustmentCalculator", ProjectPaymentCalculator.class);
-
     }
 
     /**

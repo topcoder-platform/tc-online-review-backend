@@ -3,19 +3,14 @@
  */
 package com.topcoder.onlinereview.component.resource;
 
-import com.topcoder.onlinereview.component.id.DBHelper;
-import com.topcoder.onlinereview.component.id.IDGenerationException;
-import com.topcoder.onlinereview.component.id.IDGenerator;
+import com.topcoder.onlinereview.component.grpcclient.resource.ResourceServiceRpc;
 import com.topcoder.onlinereview.component.search.SearchBuilderException;
-import com.topcoder.onlinereview.component.search.SearchBundle;
-import com.topcoder.onlinereview.component.search.SearchBundleManager;
 import com.topcoder.onlinereview.component.search.filter.AndFilter;
 import com.topcoder.onlinereview.component.search.filter.Filter;
 import com.topcoder.onlinereview.component.search.filter.GreaterThanOrEqualToFilter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -80,62 +75,8 @@ import java.util.Set;
 @Component
 public class ResourceManager {
 
-  /**
-   * Represents the name under which the resource search bundle should appear in the
-   * SearchBundleManager, if the SearchBundleManager constructor is used.
-   *
-   * <p>This field is public, static, and final.
-   */
-  public static final String RESOURCE_SEARCH_BUNDLE_NAME = "Resource Search Bundle";
-
-  /**
-   * The name under which the resource role search bundle should appear in the SearchBundleManager,
-   * if the SearchBundleManager constructor is used.
-   *
-   * <p>This field is public, static, and final.
-   */
-  public static final String RESOURCE_ROLE_SEARCH_BUNDLE_NAME = "Resource Role Search Bundle";
-
-  /**
-   * Represents the name under which the notification search bundle should appear in the
-   * SearchBundleManager, if the SearchBundleManager constructor is used.
-   *
-   * <p>This field is public, static, and final.
-   */
-  public static final String NOTIFICATION_SEARCH_BUNDLE_NAME = "Notification Search Bundle";
-
-  /**
-   * Represents the name under which the notification type search bundle should appear in the
-   * SearchBundleManager, if the SearchBundleManager constructor is used.
-   *
-   * <p>This field is public, static, and final.
-   */
-  public static final String NOTIFICATION_TYPE_SEARCH_BUNDLE_NAME =
-      "Notification Type Search Bundle";
-
-  /**
-   * Represents the name under which the id generator for resources should appear in the
-   * IDGeneratorFactory if the IDGeneratorFactory constructor is used.
-   *
-   * <p>This field is public, static, and final.
-   */
-  public static final String RESOURCE_ID_GENERATOR_NAME = "resource_id_seq";
-
-  /**
-   * Represents the name under which the id generator for resource roles should appear in the
-   * IDGeneratorFactory if the IDGeneratorFactory constructor is used.
-   *
-   * <p>This field is public, static, and final.
-   */
-  public static final String RESOURCE_ROLE_ID_GENERATOR_NAME = "resource_role_id_seq";
-
-  /**
-   * Represents the name under which the id generator for notification types should appear in the
-   * IDGeneratorFactory if the IDGeneratorFactory constructor is used.
-   *
-   * <p>This field is public, static, and final.
-   */
-  public static final String NOTIFICATION_TYPE_ID_GENERATOR_NAME = "notification_type_id_seq";
+  @Autowired
+  private ResourceServiceRpc resourceServiceRpc;
 
   /**
    * Represents the persistence store for Resources, ResourceRoles, Notifications, and
@@ -148,103 +89,6 @@ public class ResourceManager {
    */
   @Autowired private ResourcePersistence persistence;
 
-  @Autowired private DBHelper dbHelper;
-
-  /**
-   * Represents the search bundle that is used when searching for resources.
-   *
-   * <p>This field is set in the constructor, and is immutable, and can never be null. This field is
-   * used to search resources, in the searchResources method.
-   */
-  private SearchBundle resourceSearchBundle;
-
-  /**
-   * Represents the search bundle that is used when searching for resource roles.
-   *
-   * <p>This field is set in the constructor, is immutable, and can never be null. This field is
-   * used to search resource roles, in the searchResourceRoles method.
-   */
-  private SearchBundle resourceRoleSearchBundle;
-
-  /**
-   * Represents the search bundle that is used when searching for notifications.
-   *
-   * <p>This field is set in the constructor, and is immutable, and can never be null. This field is
-   * used to search notifications, in the searchNotifications method.
-   */
-  private SearchBundle notificationSearchBundle;
-
-  /**
-   * Represents the search bundle that is used when searching for notification types.
-   *
-   * <p>This field is set in the constructor, is immutable, and can never be null. This field is
-   * used to search notification types, in the searchNotificationTypes method.
-   */
-  private SearchBundle notificationTypeSearchBundle;
-
-  /**
-   * Represents the generator used to create ids for new Resources.
-   *
-   * <p>This field is set in the constructor, and is immutable, and can never be null. This field is
-   * used when an id is needed for a new Resource, which occurs in the updateResource and
-   * updateResources methods.
-   */
-  private IDGenerator resourceIdGenerator;
-
-  /**
-   * Represents the generator used to create ids for new ResourceRoles.
-   *
-   * <p>This field is set in the constructor, is and immutable, and can never be null. This field is
-   * used when an id is needed for a new ResourceRole, which occurs in the updateResourceRole
-   * method.
-   */
-  private IDGenerator resourceRoleIdGenerator;
-
-  /**
-   * Represents the generator used to create ids for new NotificationTypes.
-   *
-   * <p>This field is set in the constructor, and is immutable, and can never be null. This field is
-   * used when an id is needed for a new NotificationType, which occurs in the
-   * updateNotificationType method.
-   */
-  private IDGenerator notificationTypeIdGenerator;
-
-  @Autowired private SearchBundleManager searchBundleManager;
-
-  @PostConstruct
-  public void postRun() throws IDGenerationException {
-    // sets the notificationSearchBundle via SearchBundleManager, or throw IllegalArgumentException
-    // if not found
-    this.notificationSearchBundle =
-        searchBundleManager.getSearchBundle(NOTIFICATION_SEARCH_BUNDLE_NAME);
-
-    // sets the resourceRoleSearchBundle via SearchBundleManager, or throw IllegalArgumentException
-    // if not found
-    this.resourceRoleSearchBundle =
-        searchBundleManager.getSearchBundle(RESOURCE_ROLE_SEARCH_BUNDLE_NAME);
-
-    // sets the resourceSearchBundle via SearchBundleManager, or throw IllegalArgumentException if
-    // not found
-    this.resourceSearchBundle = searchBundleManager.getSearchBundle(RESOURCE_SEARCH_BUNDLE_NAME);
-
-    // sets the notificationTypeSearchBundle via SearchBundleManager,
-    // or throw IllegalArgumentException if not found
-    this.notificationTypeSearchBundle =
-        searchBundleManager.getSearchBundle(NOTIFICATION_TYPE_SEARCH_BUNDLE_NAME);
-
-    // sets the notificationTypeIdGenerator via IDGeneratorFactory,
-    // or throw IllegalArgumentException if the Generator is not available
-    this.notificationTypeIdGenerator =
-        new IDGenerator(NOTIFICATION_TYPE_ID_GENERATOR_NAME, dbHelper);
-
-    // sets the resourceIdGenerator via IDGeneratorFactory,
-    // or throw IllegalArgumentException if the Generator is not available
-    this.resourceIdGenerator = new IDGenerator(RESOURCE_ID_GENERATOR_NAME, dbHelper);
-
-    // sets the resourceRoleIdGenerator via IDGeneratorFactory,
-    // or throw IllegalArgumentException if the Generator is not available
-    this.resourceRoleIdGenerator = new IDGenerator(RESOURCE_ROLE_ID_GENERATOR_NAME, dbHelper);
-  }
 
   /**
    * Updates the given resource in the persistence store.
@@ -268,12 +112,6 @@ public class ResourceManager {
 
     // if the id is unset
     if (resource.getId() == Resource.UNSET_ID) {
-
-      // create a new id
-      long newId = getNextID(resourceIdGenerator);
-
-      // set it back to the resource
-      resource.setId(newId);
 
       // set the information
       setAudit(resource, operator, true);
@@ -399,11 +237,11 @@ public class ResourceManager {
     }
 
     // a set of ids for checking the existence
-    Set ids = new HashSet();
+    Set<Long> ids = new HashSet<>();
 
     // load the resources id to a set for existing searching later
     for (int i = 0; i < resources.length; i++) {
-      ids.add(new Long(resources[i].getId()));
+      ids.add(Long.valueOf(resources[i].getId()));
     }
 
     // find all the resources belonging to the project
@@ -491,7 +329,7 @@ public class ResourceManager {
 
     Helper.checkNull(filter, "filter");
 
-    return persistence.loadResources(resourceSearchBundle.search(filter));
+    return persistence.loadResources(resourceServiceRpc.searchResources(filter));
   }
 
   /**
@@ -514,12 +352,6 @@ public class ResourceManager {
 
     // if the id is unset
     if (resourceRole.getId() == ResourceRole.UNSET_ID) {
-
-      // create a new id
-      long newId = getNextID(resourceRoleIdGenerator);
-
-      // set it back to the resourceRole
-      resourceRole.setId(newId);
 
       // set the information
       setAudit(resourceRole, operator, true);
@@ -619,7 +451,7 @@ public class ResourceManager {
     Helper.checkNull(filter, "filter");
 
     // load the resource roles from the resultSet
-    return persistence.loadResourceRoles(resourceRoleSearchBundle.search(filter));
+    return persistence.loadResourceRoles(resourceServiceRpc.searchResourceRoles(filter));
   }
 
   /**
@@ -755,7 +587,7 @@ public class ResourceManager {
 
     Helper.checkNull(filter, "filter");
 
-    return persistence.loadNotifications(notificationSearchBundle.search(filter));
+    return persistence.loadNotifications(resourceServiceRpc.searchNotifications(filter));
   }
 
   /**
@@ -780,12 +612,6 @@ public class ResourceManager {
 
     // if the id is unset
     if (notificationType.getId() == NotificationType.UNSET_ID) {
-
-      // create a new id
-      long newId = getNextID(notificationTypeIdGenerator);
-
-      // set it back to the notificationType
-      notificationType.setId(newId);
 
       // set the information
       setAudit(notificationType, operator, true);
@@ -856,7 +682,7 @@ public class ResourceManager {
 
     Helper.checkNull(filter, "filter");
 
-    return persistence.loadNotificationTypes(notificationTypeSearchBundle.search(filter));
+    return persistence.loadNotificationTypes(resourceServiceRpc.searchNotificationTypes(filter));
   }
 
   /**
@@ -906,25 +732,6 @@ public class ResourceManager {
     }
 
     return persistence.getResourcesByProjects(projectIds, userId, cachedRoles);
-  }
-
-  /**
-   * Returns the next id from a given IDGenerator and wrap the IDGeneratorException to
-   * ResourcePersistenceException.
-   *
-   * @param idGenerator the IDGenerator
-   * @return the next id
-   * @throws ResourcePersistenceException if any error occurs
-   */
-  private long getNextID(IDGenerator idGenerator) throws ResourcePersistenceException {
-    long res = 0;
-    try {
-      res = idGenerator.getNextID();
-    } catch (IDGenerationException e) {
-      // wrap it to ResourcePersistenceException
-      throw new ResourcePersistenceException("Cannot get the next id.", e);
-    }
-    return res;
   }
 
   /**

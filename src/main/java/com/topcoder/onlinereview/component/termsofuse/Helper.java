@@ -4,23 +4,15 @@
 package com.topcoder.onlinereview.component.termsofuse;
 
 import org.slf4j.Logger;
-import org.springframework.jdbc.core.JdbcTemplate;
+
+import com.topcoder.onlinereview.grpc.termsofuse.proto.GetTermsOfUseResponse;
+import com.topcoder.onlinereview.grpc.termsofuse.proto.ProjectRoleTermsOfUseProto;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-
-import static com.google.common.collect.Lists.newArrayList;
-import static com.topcoder.onlinereview.component.util.CommonUtils.executeSqlWithParam;
-import static com.topcoder.onlinereview.component.util.CommonUtils.executeUpdateSql;
-import static com.topcoder.onlinereview.component.util.CommonUtils.getInt;
-import static com.topcoder.onlinereview.component.util.CommonUtils.getLong;
-import static com.topcoder.onlinereview.component.util.CommonUtils.getString;
 
 /**
  * <p>
@@ -133,129 +125,53 @@ final class Helper {
      *
      * @return the terms of use entity.
      *
-     * @throws SQLException
-     *             is any error occurs.
      */
-    static TermsOfUse getTermsOfUse(Map<String, Object> rs, Long termsOfUseId, Integer termsOfUseTypeId) {
+    static TermsOfUse getTermsOfUse(ProjectRoleTermsOfUseProto rs) {
         TermsOfUse terms = new TermsOfUse();
-        terms.setTermsOfUseId((termsOfUseId != null) ? termsOfUseId : getLong(rs, "terms_of_use_id"));
-        terms.setTermsOfUseTypeId((termsOfUseTypeId != null) ? termsOfUseTypeId : getInt(rs, "terms_of_use_type_id"));
-        terms.setTitle(getString(rs, "title"));
-        terms.setUrl(getString(rs, "url"));
+        terms.setTermsOfUseId(rs.getTermsOfUseId());
+        terms.setTermsOfUseTypeId(rs.getTermsOfUseTypeId());
+        if (rs.hasTitle()) {
+            terms.setTitle(rs.getTitle());
+        }
+        if (rs.hasUrl()) {
+            terms.setUrl(rs.getUrl());
+        }
 
         TermsOfUseAgreeabilityType termsOfUseAgreeabilityType = new TermsOfUseAgreeabilityType();
-        termsOfUseAgreeabilityType.setTermsOfUseAgreeabilityTypeId(getInt(rs, "terms_of_use_agreeability_type_id"));
-        termsOfUseAgreeabilityType.setName(getString(rs, "terms_of_use_agreeability_type_name"));
-        termsOfUseAgreeabilityType.setDescription(getString(rs, "terms_of_use_agreeability_type_description"));
+        termsOfUseAgreeabilityType.setTermsOfUseAgreeabilityTypeId(rs.getTermsOfUseAgreeabilityTypeId());
+        if (rs.hasTermsOfUseAgreeabilityTypeName()) {
+            termsOfUseAgreeabilityType.setName(rs.getTermsOfUseAgreeabilityTypeName());
+        }
+        if (rs.hasTermsOfUseAgreeabilityTypeDescription()) {
+            termsOfUseAgreeabilityType.setDescription(rs.getTermsOfUseAgreeabilityTypeDescription());
+        }
         terms.setAgreeabilityType(termsOfUseAgreeabilityType);
 
         return terms;
     }
 
-    /**
-     * <p>
-     * Retrieves terms of use entities from the database.
-     * </p>
-     *
-     * <p>
-     * <em>NOTE: </em> Method exit and exception will be logged.
-     * </p>
-     *
-     * <p>
-     * <em>Changes in 1.1:</em>
-     * <ol>
-     * <li>Renamed "userId" parameter to "queryParam".</li>
-     * </ol>
-     * </p>
-     *
-     * @param signature
-     *            the signature.
-     * @param log
-     *            the logger.
-     * @param jdbcTemplate
-     *            the db connection factory.
-     * @param sql
-     *            the SQL string.
-     * @param queryParam
-     *            the long query parameter to be passed to the prepared statement (used if not <code>null</code>).
-     * @param termsOfUseTypeId
-     *            an int containing the terms of use type id to retrieve (used if not <code>null</code>).
-     *
-     * @return a list of TermsOfUse entities with the requested terms of use or empty list if not found.
-     *
-     * @throws TermsOfUsePersistenceException
-     *             if any persistence error occurs.
-     */
-    static List<TermsOfUse> getTermsOfUse(String signature, Logger log, JdbcTemplate jdbcTemplate,
-        String sql, Long queryParam, Integer termsOfUseTypeId) throws TermsOfUsePersistenceException {
-        try {
-            List<Object> param = new ArrayList<>();
-            if (queryParam != null) {
-                param.add(queryParam);
-            } else if (termsOfUseTypeId != null) {
-                param.add(termsOfUseTypeId);
-            }
-
-            List<Map<String, Object>> rs = executeSqlWithParam(jdbcTemplate, sql, param);
-            List<TermsOfUse> result = new ArrayList<TermsOfUse>();
-            for (Map<String, Object> r : rs) {
-                result.add(getTermsOfUse(r, null, termsOfUseTypeId));
-            }
-
-            // Log method exit
-            Helper.logExit(log, signature, new Object[] {result});
-            return result;
-        } catch (TermsOfUsePersistenceException e) {
-            // Log exception
-            throw Helper.logException(log, signature, e);
+    static TermsOfUse getTermsOfUse(GetTermsOfUseResponse rs) {
+        TermsOfUse terms = new TermsOfUse();
+        terms.setTermsOfUseId(rs.getTermsOfUseId());
+        terms.setTermsOfUseTypeId(rs.getTermsOfUseTypeId());
+        if (rs.hasTitle()) {
+            terms.setTitle(rs.getTitle());
         }
-    }
-
-    /**
-     * Executes the sql.
-     *
-     * @param jdbcTemplate
-     *            the db connection.
-     * @param sql
-     *            the sql string.
-     * @param values
-     *            the values.
-     *
-     * @return the row count.
-     *
-     * @throws TermsOfUsePersistenceException
-     *             if any error occurs.
-     *
-     * @since 1.1
-     */
-    static int executeUpdate(JdbcTemplate jdbcTemplate, String sql, Object[] values) throws TermsOfUsePersistenceException {
-        return executeUpdateSql(jdbcTemplate, sql, newArrayList(values));
-    }
-
-    /**
-     *
-     * Executes the sql.
-     *
-     * @param jdbcTemplate
-     *            the db connection factory.
-     * @param sql
-     *            the sql string.
-     * @param values
-     *            the values.
-     * @param id
-     *            the id.
-     *
-     * @throws EntityNotFoundException
-     *             if the entity was not found.
-     * @throws TermsOfUsePersistenceException
-     *             if any other error occurs.
-     */
-    static void executeUpdate(JdbcTemplate jdbcTemplate, String sql, Object[] values,
-        String id) throws TermsOfUsePersistenceException, EntityNotFoundException {
-        int num = executeUpdate(jdbcTemplate, sql, values);
-        if (num != 1) {
-            throw new EntityNotFoundException("The entity was not found for id (" + id + ").");
+        if (rs.hasUrl()) {
+            terms.setUrl(rs.getUrl());
         }
+
+        TermsOfUseAgreeabilityType termsOfUseAgreeabilityType = new TermsOfUseAgreeabilityType();
+        termsOfUseAgreeabilityType.setTermsOfUseAgreeabilityTypeId(rs.getTermsOfUseAgreeabilityTypeId());
+        if (rs.hasTermsOfUseAgreeabilityTypeName()) {
+            termsOfUseAgreeabilityType.setName(rs.getTermsOfUseAgreeabilityTypeName());
+        }
+        if (rs.hasTermsOfUseAgreeabilityTypeDescription()) {
+            termsOfUseAgreeabilityType.setDescription(rs.getTermsOfUseAgreeabilityTypeDescription());
+        }
+        terms.setAgreeabilityType(termsOfUseAgreeabilityType);
+
+        return terms;
     }
 
     /**
@@ -366,24 +282,6 @@ final class Helper {
         }
 
         return String.valueOf(obj);
-    }
-
-    /**
-     * Sets the parameters.
-     *
-     * @param ps
-     *            the prepared statement.
-     * @param values
-     *            the values.
-     *
-     * @throws SQLException
-     *             is any error occurs.
-     */
-    private static void setParameters(PreparedStatement ps, Object[] values) throws SQLException {
-        int index = 1;
-        for (Object value : values) {
-            ps.setObject(index++, value);
-        }
     }
 
     /**

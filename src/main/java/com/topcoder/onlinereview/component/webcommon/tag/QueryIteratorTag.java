@@ -1,19 +1,18 @@
 package com.topcoder.onlinereview.component.webcommon.tag;
 
-import com.topcoder.onlinereview.component.shared.dataaccess.DataAccess;
-import com.topcoder.onlinereview.component.shared.dataaccess.Request;
+import com.topcoder.onlinereview.component.grpcclient.GrpcHelper;
+import com.topcoder.onlinereview.component.grpcclient.webcommon.WebCommonServiceRpc;
+import com.topcoder.onlinereview.grpc.webcommon.proto.DoStartTagResponse;
+import com.topcoder.onlinereview.grpc.webcommon.proto.ParameterListProto;
+import com.topcoder.onlinereview.grpc.webcommon.proto.ParameterProto;
 
-import javax.naming.NamingException;
 import javax.servlet.jsp.JspException;
-import java.sql.SQLException;
-import java.util.Enumeration;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Hashtable;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.StringTokenizer;
-
-import static com.topcoder.onlinereview.component.util.SpringUtils.getOltpJdbcTemplate;
 
 /**
  * My comments/description/notes go here
@@ -32,36 +31,20 @@ public class QueryIteratorTag extends IteratorTag {
      */
     public int doStartTag() throws JspException {
         try {
-            DataAccess dai = new DataAccess(getOltpJdbcTemplate());
-            Request dataRequest = new Request();
-            dataRequest.setContentHandle(command);
-
-            if (params != null) {
-                Enumeration e = params.keys();
-                while (e.hasMoreElements()) {
-                    Object key = e.nextElement();
-                    dataRequest.setProperty(
-                            (String) key,
-                            (String) params.get(key)
-                    );
+            WebCommonServiceRpc webCommonServiceRpc = GrpcHelper.getWebCommonServiceRpc();
+            DoStartTagResponse result = webCommonServiceRpc.doStartTag(command, params);
+    
+            rsc = new ArrayList<Map<String, Object>>();
+            for (ParameterListProto parameters : result.getParameterListsList()) {
+                Map<String, Object> row = new HashMap<>();
+                for (ParameterProto parameter : parameters.getParametersList()) {
+                    String key = parameter.hasKey() ? parameter.getKey() : null;
+                    Object value = parameter.hasValue() ? parameter.getValue() : null;
+                    row.put(key, value);
                 }
-            }
-
-            Map<String, List<Map<String, Object>>> result = dai.getData(dataRequest);
-            // for now will take first of queries results
-            Iterator i = result.keySet().iterator();
-            if (i.hasNext()) {
-                rsc = result.get(i.next());
-            } else {
-                rsc = null;
+                rsc.add(row);
             }
             setCollection(rsc);
-        } catch (NamingException ne) {
-            ne.printStackTrace();
-            throw new JspException("NamingException occured: " + ne.getMessage());
-        } catch (SQLException sqle) {
-            sqle.printStackTrace();
-            throw new JspException("SQLException occured: " + sqle.getMessage());
         } catch (Exception e) {
             e.printStackTrace();
             throw new JspException("Exception occured: " + e.getMessage());

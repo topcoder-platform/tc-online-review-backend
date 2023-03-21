@@ -3,31 +3,19 @@
  */
 package com.topcoder.onlinereview.component.scorecard;
 
-import com.topcoder.onlinereview.component.id.DBHelper;
-import com.topcoder.onlinereview.component.id.IDGenerationException;
-import com.topcoder.onlinereview.component.id.IDGenerator;
+import com.topcoder.onlinereview.component.grpcclient.scorecard.ScorecardServiceRpc;
 import com.topcoder.onlinereview.component.project.management.LogMessage;
+import com.topcoder.onlinereview.grpc.scorecard.proto.GetSectionResponse;
+
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
-
-import static com.google.common.collect.Lists.newArrayList;
-import static com.topcoder.onlinereview.component.util.CommonUtils.executeSqlWithParam;
-import static com.topcoder.onlinereview.component.util.CommonUtils.executeUpdateSql;
-import static com.topcoder.onlinereview.component.util.CommonUtils.getFloat;
-import static com.topcoder.onlinereview.component.util.CommonUtils.getLong;
-import static com.topcoder.onlinereview.component.util.CommonUtils.getString;
 
 /**
  * This class contains operations to create and update section instances into the Informix database.
@@ -43,51 +31,10 @@ import static com.topcoder.onlinereview.component.util.CommonUtils.getString;
 @Slf4j
 @Component
 public class SectionPersistence {
-  /** Select sections by parent group id. */
-  private static final String SELECT_SECTIONS_BY_PARENT_ID =
-      "SELECT scorecard_section_id, name, "
-          + "weight FROM scorecard_section WHERE scorecard_group_id = ? ORDER BY sort";
-
-  /** Select the section by its id. */
-  private static final String SELECT_SCORECARD_SECTION_BY_ID =
-      "SELECT scorecard_section_id, name, "
-          + "weight FROM scorecard_section WHERE scorecard_section_id = ?";
-
-  /** Deletes the sections with ids. */
-  private static final String DELETE_SCORECARD_SECTIONS =
-      "DELETE FROM scorecard_section WHERE " + "scorecard_section_id IN ";
-
-  /** Selects questions ids for sections. */
-  private static final String SELECT_QUESTION_IDS =
-      "SELECT scorecard_question_id FROM scorecard_question " + "WHERE scorecard_section_id IN ";
-
-  /** Updates the section in database. */
-  private static final String UPDATE_SCORECARD_SECTION =
-      "UPDATE scorecard_section SET scorecard_group_id = ?, "
-          + "name = ?, weight = ?, sort = ?, modify_user = ?, modify_date = ? WHERE scorecard_section_id = ?";
-
-  /** Inserts the section informations. */
-  private static final String INSERT_SCORECARD_SECTION =
-      "INSERT INTO scorecard_section (scorecard_section_id, "
-          + "scorecard_group_id, name, weight, sort, create_user, create_date, modify_user, modify_date) "
-          + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
-  /** The default name of the id generator for the scorecards. */
-  private static final String SCORECARD_SECTION_ID_SEQUENCE = "scorecard_section_id_seq";
-
-  /** The IDGenerator instance used for scorecards ids. */
-  private IDGenerator sectionIdGenerator;
-
-  @Autowired private DBHelper dbHelper;
-  @Autowired private QuestionPersistence questionPersistence;
-
   @Autowired
-  @Qualifier("tcsJdbcTemplate")
-  private JdbcTemplate jdbcTemplate;
+  ScorecardServiceRpc scorecardServiceRpc;
 
-  @PostConstruct
-  public void postRun() throws IDGenerationException {
-    sectionIdGenerator = new IDGenerator(SCORECARD_SECTION_ID_SEQUENCE, dbHelper);
-  }
+  @Autowired private QuestionPersistence questionPersistence;
 
   /**
    * Create the section in the database using the given section instance. The section instance can
@@ -122,24 +69,8 @@ public class SectionPersistence {
                 operator,
                 "create new Section with order:" + order + " and parentId:" + parentId)
             .toString());
-
-    Date time = new Date();
     try {
-      long id = sectionIdGenerator.getNextID();
-      log.debug("insert record into scorecard_section with group_id:" + id);
-      executeUpdateSql(
-          jdbcTemplate,
-          INSERT_SCORECARD_SECTION,
-          newArrayList(
-              id,
-              parentId,
-              section.getName(),
-              section.getWeight(),
-              order,
-              operator,
-              time,
-              operator,
-              time));
+      long id = scorecardServiceRpc.createSection(section, order, operator, parentId);
       questionPersistence.createQuestions(section.getAllQuestions(), operator, id);
       section.setId(id);
     } catch (Exception ex) {
@@ -160,36 +91,17 @@ public class SectionPersistence {
       throws PersistenceException {
     log.debug(
         new LogMessage(null, operator, "create new Sections with parentId:" + parentId).toString());
-    Long[] ids = DBUtils.generateIdsArray(sections.length, sectionIdGenerator);
-    Date time = new Date();
     try {
+      List<Long> sectionIds = scorecardServiceRpc.createSections(sections, operator, parentId);
       for (int i = 0; i < sections.length; i++) {
-        executeUpdateSql(
-            jdbcTemplate,
-            INSERT_SCORECARD_SECTION,
-            newArrayList(
-                ids[i],
-                parentId,
-                sections[i].getName(),
-                sections[i].getWeight(),
-                i,
-                operator,
-                time,
-                operator,
-                time));
-        log.debug("insert record into scorecard_section table with groupId:" + ids[i]);
-
-        questionPersistence.createQuestions(sections[i].getAllQuestions(), operator, ids[i]);
+        sections[i].setId(sectionIds.get(i));
+        questionPersistence.createQuestions(sections[i].getAllQuestions(), operator, sectionIds.get(i));
       }
     } catch (Exception ex) {
       log.error(
           new LogMessage(null, operator, "create new Sections with parentId:" + parentId, ex)
               .toString());
       throw new PersistenceException("Error occurs while creating sections.", ex);
-    }
-    // assign the ids
-    for (int i = 0; i < sections.length; i++) {
-      sections[i].setId(ids[i]);
     }
   }
 
@@ -217,7 +129,7 @@ public class SectionPersistence {
       String operator,
       long parentId,
       Scorecard oldScorecard,
-      List deletedQuestionIds)
+      List<Long> deletedQuestionIds)
       throws PersistenceException {
     if (section == null) {
       throw new IllegalArgumentException("section cannot be null.");
@@ -251,7 +163,7 @@ public class SectionPersistence {
                     + oldScorecard.getId())
             .toString());
 
-    Set oldSectionIds = getQuestionsIds(section, oldScorecard, parentId);
+    Set<Long> oldSectionIds = getQuestionsIds(section, oldScorecard, parentId);
     // add all old questions to be deleted
     deletedQuestionIds.addAll(oldSectionIds);
     Question[] questions = section.getAllQuestions();
@@ -279,17 +191,7 @@ public class SectionPersistence {
   private void updateSection(Section section, String operator, long parentId, int order)
       throws PersistenceException {
     try {
-      executeUpdateSql(
-          jdbcTemplate,
-          UPDATE_SCORECARD_SECTION,
-          newArrayList(
-              parentId,
-              section.getName(),
-              section.getWeight(),
-              order,
-              operator,
-              new Date(),
-              section.getId()));
+      scorecardServiceRpc.updateSection(section, operator, parentId, order);
     } catch (Exception ex) {
       log.error(
           new LogMessage(section.getId(), operator, "Error occurs while updating the Section.", ex)
@@ -306,8 +208,8 @@ public class SectionPersistence {
    * @param groupId the id of the parent group.
    * @return the set of ids of the questions.
    */
-  private static Set getQuestionsIds(Section section, Scorecard scorecard, long groupId) {
-    Set ids = new HashSet();
+  private static Set<Long> getQuestionsIds(Section section, Scorecard scorecard, long groupId) {
+    Set<Long> ids = new HashSet<>();
     Group[] oldGroups = scorecard.getAllGroups();
     for (int i = 0; i < oldGroups.length; i++) {
       // find group first
@@ -345,22 +247,12 @@ public class SectionPersistence {
     try {
       log.debug("delete record from scorecard_sections with ids:" + ids);
       // execute the select query
-      List<Map<String, Object>> rs =
-          executeSqlWithParam(
-              jdbcTemplate,
-              SELECT_QUESTION_IDS + DBUtils.createQuestionMarks(ids.length),
-              newArrayList(ids));
-      List idsToDelete = new ArrayList();
-      // collect all the question ids
-      for (Map<String, Object> row : rs) {
-        idsToDelete.add(getLong(row, "scorecard_question_id"));
-      }
+      List<Long> idsToDelete = scorecardServiceRpc.getQuestionIds(ids);
       // if there is anything to delete - create the persistence and drop questions
       if (idsToDelete.size() > 0) {
         questionPersistence.deleteQuestions(DBUtils.listToArray(idsToDelete));
       }
-
-      executeUpdateSql(jdbcTemplate, DELETE_SCORECARD_SECTIONS, newArrayList(ids));
+      scorecardServiceRpc.deleteSections(ids);
     } catch (Exception ex) {
       log.error(
           new LogMessage(null, null, "Failed to Delete Sections with ids:" + ids, ex).toString());
@@ -383,11 +275,9 @@ public class SectionPersistence {
     }
     log.debug(new LogMessage(id, null, "retrieve Section").toString());
     try {
-      List<Map<String, Object>> rs =
-          executeSqlWithParam(jdbcTemplate, SELECT_SCORECARD_SECTION_BY_ID, newArrayList(id));
-
-      if (!rs.isEmpty()) {
-        Section section = prepareSection(rs.get(0));
+      GetSectionResponse response = scorecardServiceRpc.getSection(id);
+      if (response != null) {
+        Section section = prepareSection(response);
         section.addQuestions(questionPersistence.getQuestions(section.getId()));
         return section;
       }
@@ -408,11 +298,10 @@ public class SectionPersistence {
    */
   Section[] getSections(long parentId) throws PersistenceException {
     try {
-      List<Map<String, Object>> rs =
-          executeSqlWithParam(jdbcTemplate, SELECT_SECTIONS_BY_PARENT_ID, newArrayList(parentId));
-      List result = new ArrayList();
-      for (Map<String, Object> row : rs) {
-        Section section = prepareSection(row);
+      List<GetSectionResponse> sList = scorecardServiceRpc.getSections(parentId);
+      List<Section> result = new ArrayList<>();
+      for (GetSectionResponse s : sList) {
+        Section section = prepareSection(s);
         section.addQuestions(questionPersistence.getQuestions(section.getId()));
         result.add(section);
       }
@@ -432,11 +321,15 @@ public class SectionPersistence {
    * @return the Section instance.
    * @throws SQLException if error occurs.
    */
-  private Section prepareSection(Map<String, Object> rs) throws SQLException {
+  private Section prepareSection(GetSectionResponse s) throws SQLException {
     Section section = new Section();
-    section.setId(getLong(rs, "scorecard_section_id"));
-    section.setName(getString(rs, "name"));
-    section.setWeight(getFloat(rs, "weight"));
+    section.setId(s.getScorecardSectionId());
+    if (s.hasName()) {
+      section.setName(s.getName());
+    }
+    if (s.hasWeight()) {
+      section.setWeight(s.getWeight());
+    }
     return section;
   }
 }

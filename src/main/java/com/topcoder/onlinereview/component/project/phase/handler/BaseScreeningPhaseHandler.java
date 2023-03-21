@@ -7,6 +7,7 @@ import com.topcoder.onlinereview.component.deliverable.Submission;
 import com.topcoder.onlinereview.component.deliverable.SubmissionStatus;
 import com.topcoder.onlinereview.component.deliverable.UploadManager;
 import com.topcoder.onlinereview.component.deliverable.UploadPersistenceException;
+import com.topcoder.onlinereview.component.grpcclient.phasehandler.PhaseHandlerServiceRpc;
 import com.topcoder.onlinereview.component.project.management.PersistenceException;
 import com.topcoder.onlinereview.component.project.management.Project;
 import com.topcoder.onlinereview.component.project.phase.ManagerHelper;
@@ -224,7 +225,7 @@ abstract class BaseScreeningPhaseHandler extends AbstractPhaseHandler {
      * @throws IllegalArgumentException if the input parameters is null or empty
      *             string.
      */
-    public void perform(Phase phase, String operator) throws PhaseHandlingException {
+    public void perform(PhaseHandlerServiceRpc phaseHandlerServiceRpc, Phase phase, String operator) throws PhaseHandlingException {
         PhasesHelper.checkNull(phase, "phase");
         PhasesHelper.checkString(operator, "operator");
         PhasesHelper.checkPhaseType(phase, phaseTypeName);

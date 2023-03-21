@@ -3,9 +3,14 @@
  */
 package com.topcoder.onlinereview.component.webcommon;
 
+import com.topcoder.onlinereview.component.grpcclient.GrpcHelper;
+import com.topcoder.onlinereview.component.grpcclient.webcommon.WebCommonServiceRpc;
 import com.topcoder.onlinereview.component.security.RolePrincipal;
-import com.topcoder.onlinereview.component.shared.dataaccess.Request;
 import com.topcoder.onlinereview.component.webcommon.security.WebAuthentication;
+import com.topcoder.onlinereview.grpc.webcommon.proto.GetMemberCountResponse;
+import com.topcoder.onlinereview.grpc.webcommon.proto.GetMemberImageResponse;
+import com.topcoder.onlinereview.grpc.webcommon.proto.GetUserTimezoneResponse;
+
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.codehaus.jackson.map.ObjectMapper;
@@ -18,14 +23,9 @@ import java.net.URI;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TimeZone;
-
-import static com.topcoder.onlinereview.component.util.CommonUtils.getInt;
-import static com.topcoder.onlinereview.component.util.CommonUtils.getString;
-import static com.topcoder.onlinereview.component.util.SpringUtils.getOltpJdbcTemplate;
 
 /**
  * <p>
@@ -204,20 +204,18 @@ public class SessionInfo implements Serializable {
     }
 
     private String loadTimezone() throws Exception {
-        CachedDataAccess tzDai = new CachedDataAccess(getOltpJdbcTemplate());
-        Request tzReq = new Request();
-        tzReq.setContentHandle("user_timezone");
-        tzReq.setProperty("uid", String.valueOf(getUserId()));
-        return getString(tzDai.getData(tzReq).get("user_timezone").get(0), "timezone_desc");
+        WebCommonServiceRpc webCommonServiceRpc = GrpcHelper.getWebCommonServiceRpc();
+        GetUserTimezoneResponse result = webCommonServiceRpc.getUserTimezone(getUserId());
+        if (result.hasTimezoneDesc()) {
+            return result.getTimezoneDesc();
+        }
+        return null;
     }
 
     private int loadMemberCount() throws Exception {
-			
-        CachedDataAccess countDai = new CachedDataAccess(getOltpJdbcTemplate());
-        Request countReq = new Request();
-        countReq.setContentHandle("member_count");
-        int mc = getInt(countDai.getData(countReq).get("member_count").get(0), "member_count");
-		return mc;
+		WebCommonServiceRpc webCommonServiceRpc = GrpcHelper.getWebCommonServiceRpc();
+        GetMemberCountResponse result = webCommonServiceRpc.getMemberCount();
+        return result.getMemberCount();
     }
 
     /**
@@ -228,20 +226,13 @@ public class SessionInfo implements Serializable {
      * @since 1.1
      */
     private String loadImage() throws Exception {
-        Request r = new Request();
-        r.setContentHandle("member_image");
-        r.setProperty("cr", String.valueOf(getUserId()));
-        List<Map<String, Object>> imageResult = new CachedDataAccess(getOltpJdbcTemplate()).getData(r).get("coder_image_data");
-
+        WebCommonServiceRpc webCommonServiceRpc = GrpcHelper.getWebCommonServiceRpc();
+        GetMemberImageResponse result = webCommonServiceRpc.getMemberImage(getUserId());
         Integer image = null;
-
-        if ((imageResult.size() > 0) && (imageResult.get(0).get("image_id") != null) && (getInt(imageResult.get(0), "image_id") != 0)) {
-            image = getInt(imageResult.get(0), "image_id");
-            if(image != null && image > 0) {
-                String image_path = getString(imageResult.get(0), "image_path");
-                String fileName = getString(imageResult.get(0), "file_name");
-                imagePath = image_path + fileName;
-            }
+        if (result.hasImageId() && result.getImageId() > 0) {
+            String image_path = result.hasImagePath() ? result.getImagePath() : null;
+            String fileName = result.hasFileName() ? result.getFileName() : null;
+            imagePath = image_path + fileName;
         }
 
         if (imagePath == null) {

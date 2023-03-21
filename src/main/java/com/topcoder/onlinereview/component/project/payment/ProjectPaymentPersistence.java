@@ -5,25 +5,11 @@ package com.topcoder.onlinereview.component.project.payment;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
-import java.math.BigDecimal;
-import java.sql.SQLException;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
+import com.topcoder.onlinereview.component.grpcclient.payment.PaymentServiceRpc;
 
-import static com.google.common.collect.Lists.newArrayList;
-import static com.topcoder.onlinereview.component.util.CommonUtils.executeSqlWithParam;
-import static com.topcoder.onlinereview.component.util.CommonUtils.executeUpdateSql;
-import static com.topcoder.onlinereview.component.util.CommonUtils.executeUpdateSqlWithReturn;
-import static com.topcoder.onlinereview.component.util.CommonUtils.getBoolean;
-import static com.topcoder.onlinereview.component.util.CommonUtils.getDate;
-import static com.topcoder.onlinereview.component.util.CommonUtils.getDouble;
-import static com.topcoder.onlinereview.component.util.CommonUtils.getLong;
-import static com.topcoder.onlinereview.component.util.CommonUtils.getString;
+import java.sql.SQLException;
 
 /**
  * This class is an implementation of ProjectPaymentPersistence that uses JDBC and DB Connection
@@ -42,36 +28,8 @@ public class ProjectPaymentPersistence {
   /** Represents the class name. */
   private static final String CLASS_NAME = ProjectPaymentPersistence.class.getName();
 
-  /** Represents the SQL string to insert project payment. */
-  private static final String SQL_INSERT_PAYMENT =
-      "INSERT INTO project_payment (resource_id, submission_id,"
-          + " amount, pacts_payment_id, create_user, create_date, modify_user, modify_date, project_payment_type_id)"
-          + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
-
-  /** Represents the SQL string to update project payment. */
-  private static final String SQL_UPDATE_PAYMENT =
-      "UPDATE project_payment set project_payment_type_id = ?,"
-          + " resource_id = ?, submission_id = ?, amount = ?, pacts_payment_id = ?, modify_user = ?, modify_date = ?"
-          + " WHERE project_payment_id = ?";
-
-  /** Represents the SQL string to query project payment. */
-  private static final String SQL_QUERY_PAYMENT =
-      "SELECT pp.resource_id, pp.submission_id, pp.amount,"
-          + " pp.pacts_payment_id, pp.create_user, pp.create_date, pp.modify_user, pp.modify_date,"
-          + " ppt.project_payment_type_id, ppt.name, ppt.mergeable"
-          + " FROM project_payment pp LEFT JOIN project_payment_type_lu ppt"
-          + " on pp.project_payment_type_id = ppt.project_payment_type_id WHERE pp.project_payment_id = ?";
-
-  /** Represents the SQL string to delete project payment. */
-  private static final String SQL_DELETE_PAYMENT =
-      "DELETE FROM project_payment WHERE project_payment_id = ?";
-
-  /** Represents the SQL string to query foreign key. */
-  private static final String SQL_QUERY_FK = "SELECT COUNT(*) as count FROM %1$s WHERE %2$s = ?";
-
   @Autowired
-  @Qualifier("tcsJdbcTemplate")
-  private JdbcTemplate jdbcTemplate;
+  private PaymentServiceRpc paymentServiceRpc;
 
   public ProjectPayment create(ProjectPayment projectPayment, String operator)
       throws ProjectPaymentValidationException, ProjectPaymentManagementDataIntegrityException,
@@ -84,24 +42,7 @@ public class ProjectPaymentPersistence {
     try {
       // Check project payment integrity
       checkProjectPaymentIntegrity(projectPayment);
-      Date date = new Date();
-
-      // INSERT
-      long projectPaymentId =
-          executeUpdateSqlWithReturn(
-              jdbcTemplate,
-              SQL_INSERT_PAYMENT,
-              newArrayList(
-                  projectPayment.getResourceId(),
-                  projectPayment.getSubmissionId(),
-                  projectPayment.getAmount(),
-                  projectPayment.getPactsPaymentId(),
-                  operator,
-                  date,
-                  operator,
-                  date,
-                  projectPayment.getProjectPaymentType().getProjectPaymentTypeId()));
-
+      long projectPaymentId = paymentServiceRpc.createPayment(projectPayment, operator);
       projectPayment.setProjectPaymentId(projectPaymentId);
 
       log.trace(String.join(" ", signature, operator, "Exit"));
@@ -118,27 +59,13 @@ public class ProjectPaymentPersistence {
       throws ProjectPaymentValidationException, ProjectPaymentNotFoundException,
           ProjectPaymentManagementDataIntegrityException,
           ProjectPaymentManagementPersistenceException {
-    Date entranceTimestamp = new Date();
     String signature = CLASS_NAME + ".update(ProjectPayment projectPayment, String operator)";
     // Log Entrance
     log.trace(String.join(" ", signature, operator));
     try {
       // Check project payment integrity
       checkProjectPaymentIntegrity(projectPayment);
-      int result =
-          executeUpdateSql(
-              jdbcTemplate,
-              SQL_UPDATE_PAYMENT,
-              newArrayList(
-                  projectPayment.getProjectPaymentType().getProjectPaymentTypeId(),
-                  projectPayment.getResourceId(),
-                  projectPayment.getSubmissionId(),
-                  projectPayment.getAmount(),
-                  projectPayment.getPactsPaymentId(),
-                  operator,
-                  new Date(),
-                  projectPayment.getProjectPaymentId()));
-
+      int result = paymentServiceRpc.updatePayment(projectPayment, operator);
       // UPDATE
       if (result == 0) {
         // Log exception
@@ -167,39 +94,11 @@ public class ProjectPaymentPersistence {
    */
   public ProjectPayment retrieve(long projectPaymentId)
       throws ProjectPaymentManagementPersistenceException {
-    Date entranceTimestamp = new Date();
     String signature = CLASS_NAME + ".retrieve(long projectPaymentId)";
     log.trace(String.join(" ", signature, "retrieve", String.valueOf(projectPaymentId)));
 
     try {
-      // Execute the statement
-      List<Map<String, Object>> resultSet =
-          executeSqlWithParam(jdbcTemplate, SQL_QUERY_PAYMENT, newArrayList(projectPaymentId));
-      ProjectPayment result = null;
-      if (!resultSet.isEmpty()) {
-        Map<String, Object> f = resultSet.get(0);
-        result = new ProjectPayment();
-        result.setProjectPaymentId(projectPaymentId);
-        result.setResourceId(getLong(f, "resource_id"));
-
-        result.setSubmissionId(getLong(f, "submission_id"));
-
-        result.setAmount(new BigDecimal(getDouble(f, "amount")));
-
-        result.setPactsPaymentId(getLong(f, "pacts_payment_id"));
-
-        result.setCreateUser(getString(f, "create_user"));
-        result.setCreateDate(getDate(f, "create_date"));
-        result.setModifyUser(getString(f, "modify_user"));
-        result.setModifyDate(getDate(f, "modify_date"));
-
-        ProjectPaymentType projectPaymentType = new ProjectPaymentType();
-        projectPaymentType.setProjectPaymentTypeId(getLong(f, "project_payment_type_id"));
-        projectPaymentType.setName(getString(f, "name"));
-        projectPaymentType.setMergeable(getBoolean(f, "mergeable"));
-        result.setProjectPaymentType(projectPaymentType);
-      }
-
+      ProjectPayment result = paymentServiceRpc.getPayment(projectPaymentId);
       // Log Exit
       log.trace(String.join(" ", signature, "retrieve", "Exit"));
       return result;
@@ -225,7 +124,7 @@ public class ProjectPaymentPersistence {
     String signature = CLASS_NAME + ".delete(long projectPaymentId)";
     log.trace(String.join(" ", signature, "delete", String.valueOf(projectPaymentId)));
     try {
-      executeUpdateSql(jdbcTemplate, SQL_DELETE_PAYMENT, newArrayList(projectPaymentId));
+      paymentServiceRpc.deletePayment(projectPaymentId);
       // Log Exit
       log.trace(String.join(" ", signature, "delete", "Exit"));
       return true;
@@ -248,36 +147,21 @@ public class ProjectPaymentPersistence {
    */
   private void checkProjectPaymentIntegrity(ProjectPayment projectPayment)
       throws ProjectPaymentManagementDataIntegrityException, SQLException {
-    checkRecord(
-        "projectPaymentTypeId",
-        "project_payment_type_lu",
-        "project_payment_type_id",
-        projectPayment.getProjectPaymentType().getProjectPaymentTypeId());
-    checkRecord("resourceId", "resource", "resource_id", projectPayment.getResourceId());
+    if (!paymentServiceRpc.isProjectPaymentTypeExists(projectPayment.getProjectPaymentType().getProjectPaymentTypeId())) {
+      throw new ProjectPaymentManagementDataIntegrityException(
+          "'projectPaymentTypeId' doesn't exist.");
+    }
+    if (!paymentServiceRpc.isResourceExists(projectPayment.getResourceId())) {
+      throw new ProjectPaymentManagementDataIntegrityException(
+          "'resourceId' doesn't exist.");
+    }
 
     Long submissionId = projectPayment.getSubmissionId();
     if (submissionId != null) {
-      checkRecord("submissionId", "submission", "submission_id", submissionId);
-    }
-  }
-
-  /**
-   * Checks if the record exists.
-   *
-   * @param fieldName the field name.
-   * @param table the table.
-   * @param key the key.
-   * @param value the value.
-   * @throws ProjectPaymentManagementDataIntegrityException if the record is not found.
-   * @throws SQLException if any other error occurs
-   */
-  private void checkRecord(String fieldName, String table, String key, Object value)
-      throws ProjectPaymentManagementDataIntegrityException {
-    String sql = String.format(SQL_QUERY_FK, table, key);
-    List<Map<String, Object>> result = executeSqlWithParam(jdbcTemplate, sql, newArrayList(value));
-    if (result.isEmpty() || getLong(result.get(0), "count") == 0) {
-      throw new ProjectPaymentManagementDataIntegrityException(
-          "'" + fieldName + "' doesn't exist.");
+      if (!paymentServiceRpc.isSubmissionExists(submissionId)) {
+        throw new ProjectPaymentManagementDataIntegrityException(
+            "'submissionId' doesn't exist.");
+      }
     }
   }
 }
