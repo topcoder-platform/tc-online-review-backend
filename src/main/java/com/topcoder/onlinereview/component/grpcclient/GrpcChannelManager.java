@@ -28,6 +28,7 @@ public class GrpcChannelManager {
         channelSync = ManagedChannelBuilder.forAddress(syncAddress, Integer.parseInt(syncPort))
                 .intercept(new GrpcInterceptor(authClientId, authClientSecret, authAudience, authDomain,
                         authExpirationTime, authProxyURL))
+                .useTransportSecurity()
                 .usePlaintext()
                 .build();
     }
