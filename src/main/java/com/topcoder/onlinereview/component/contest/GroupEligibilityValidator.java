@@ -3,10 +3,10 @@
  */
 package com.topcoder.onlinereview.component.contest;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import javax.persistence.Persistence;
-import javax.persistence.Query;
+import com.topcoder.onlinereview.component.grpcclient.contesteligibility.ContestEligibilityServiceRpc;
 
 /**
  * GroupEligibilityValidator is used to validate whether the user is in the group of
@@ -20,29 +20,12 @@ import javax.persistence.Query;
 @Component
 public class GroupEligibilityValidator implements ContestEligibilityValidator {
 
-  /**
-   * The persistence unit name is used to create entity manager by entity manager factory.Default
-   * value is persistenceUnitName. You can change it by using the second constructor.
-   */
-  private String persistenceUnitName = "persistenceUnitName";
+  @Autowired
+  private ContestEligibilityServiceRpc contestEligibilityServiceRpc;
 
   /** Default constructor. */
   public GroupEligibilityValidator() {
     // does nothing
-  }
-
-  /**
-   * Creates an instance of GroupEligibilityValidator with the specified persistence unit name.
-   *
-   * @param persistenceUnitName the specified persistenceUnitName
-   * @throws IllegalArgumentException if the persistenceUnitName is null or empty
-   */
-  public GroupEligibilityValidator(String persistenceUnitName) {
-    if (persistenceUnitName == null || persistenceUnitName.trim().length() == 0) {
-      throw new IllegalArgumentException(
-          "Argument persistenceUnitName should be non-empty and non-null string value.");
-    }
-    this.persistenceUnitName = persistenceUnitName;
   }
 
   /**
@@ -60,13 +43,6 @@ public class GroupEligibilityValidator implements ContestEligibilityValidator {
       throw new IllegalArgumentException(
           "The contestEligibility should be a non-null GroupContestEligibility instance.");
     }
-    final Query query =
-        Persistence.createEntityManagerFactory(persistenceUnitName)
-            .createEntityManager()
-            .createNativeQuery(
-                "select * from user_group_xref where security_status_id = 1 and login_id=:userId and group_id=:groupId");
-    query.setParameter("userId", userId);
-    query.setParameter("groupId", ((GroupContestEligibility) contestEligibility).getGroupId());
-    return query.getResultList().size() > 0;
+    return contestEligibilityServiceRpc.validateUserContestEligibility(userId, ((GroupContestEligibility) contestEligibility).getGroupId());
   }
 }

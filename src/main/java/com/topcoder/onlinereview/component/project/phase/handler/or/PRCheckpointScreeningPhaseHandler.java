@@ -3,6 +3,7 @@
  */
 package com.topcoder.onlinereview.component.project.phase.handler.or;
 
+import com.topcoder.onlinereview.component.grpcclient.phasehandler.PhaseHandlerServiceRpc;
 import com.topcoder.onlinereview.component.project.management.ProjectManager;
 import com.topcoder.onlinereview.component.project.phase.ManagerHelper;
 import com.topcoder.onlinereview.component.project.phase.Phase;
@@ -55,8 +56,8 @@ public class PRCheckpointScreeningPhaseHandler extends CheckpointScreeningPhaseH
      * @throws IllegalArgumentException if the input parameters is null or empty string.
      */
     @Override
-    public void perform(Phase phase, String operator) throws PhaseHandlingException {
-        super.perform(phase, operator);
+    public void perform(PhaseHandlerServiceRpc phaseHandlerServiceRpc, Phase phase, String operator) throws PhaseHandlingException {
+        super.perform(phaseHandlerServiceRpc, phase, operator);
         boolean toStart = PhasesHelper.checkPhaseStatus(phase.getPhaseStatus());
         ProjectManager projectManager = getManagerHelper().getProjectManager();
         long projectId = phase.getProject().getId();

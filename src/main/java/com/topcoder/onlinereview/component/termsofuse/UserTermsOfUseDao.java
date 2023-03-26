@@ -5,17 +5,13 @@ package com.topcoder.onlinereview.component.termsofuse;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
+
+import com.topcoder.onlinereview.component.grpcclient.termsofuse.TermsOfUseServiceRpc;
+import com.topcoder.onlinereview.grpc.termsofuse.proto.GetTermsOfUseResponse;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-
-import static com.google.common.collect.Lists.newArrayList;
-import static com.topcoder.onlinereview.component.util.CommonUtils.executeSqlWithParam;
-import static com.topcoder.onlinereview.component.util.CommonUtils.getLong;
 
 /**
  * <p>
@@ -113,6 +109,8 @@ import static com.topcoder.onlinereview.component.util.CommonUtils.getLong;
 @Slf4j
 @Component
 public class UserTermsOfUseDao {
+    @Autowired
+    TermsOfUseServiceRpc termsOfUseServiceRpc;
     /**
      * <p>
      * Represents the class name.
@@ -120,72 +118,6 @@ public class UserTermsOfUseDao {
      */
     private static final String CLASS_NAME = UserTermsOfUseDao.class.getName();
 
-    /**
-     * <p>
-     * Represents the SQL string to insert the the fact of acceptance of specified terms of use by specified user.
-     * </p>
-     */
-    private static final String INSERT_TERMS = "INSERT INTO user_terms_of_use_xref (user_id,terms_of_use_id)"
-        + " VALUES (?,?)";
-
-    /**
-     * <p>
-     * Represents the SQL string to delete the fact of acceptance of specified terms of use by specified user.
-     * </p>
-     */
-    private static final String DELETE_TERMS = "DELETE FROM user_terms_of_use_xref WHERE user_id=?"
-        + " AND terms_of_use_id=?";
-
-
-    /**
-     * <p>
-     * Represents the SQL string to query the terms of use entities by user id.
-     * </p>
-     *
-     * <p>
-     * <em>Changes in 1.1:</em>
-     * <ol>
-     * <li>Removed electronically_signable and member_agreeable columns.</li>
-     * <li>Added JOIN to terms_of_use_agreeability_type_lu table.</li>
-     * </ol>
-     * </p>
-     */
-    private static final String QUERY_TERMS = "SELECT tou.terms_of_use_id, terms_of_use_type_id, title, url,"
-        + " tou.terms_of_use_agreeability_type_id, touat.name as terms_of_use_agreeability_type_name,"
-        + " touat.description as terms_of_use_agreeability_type_description FROM user_terms_of_use_xref"
-        + " INNER JOIN terms_of_use tou ON user_terms_of_use_xref.terms_of_use_id = tou.terms_of_use_id"
-        + " INNER JOIN terms_of_use_agreeability_type_lu touat ON touat.terms_of_use_agreeability_type_id"
-        + " = tou.terms_of_use_agreeability_type_id WHERE user_id=?";
-
-    /**
-     * <p>
-     * Represents the SQL string to query the user id by terms of use id.
-     * </p>
-     */
-    private static final String QUERY_USER_ID = "SELECT user_id FROM user_terms_of_use_xref WHERE terms_of_use_id=?";
-
-
-    /**
-     * <p>
-     * Represents the SQL string to query if there is a record on the fact of acceptance of specified terms of use by
-     * specified user.
-     * </p>
-     */
-    private static final String QUERY_HAS_TERMS = "SELECT '1' FROM user_terms_of_use_xref WHERE user_id=?"
-        + " AND terms_of_use_id=?";
-
-    /**
-     * <p>
-     * Represents the SQL string to query if there is a record on the fact of banning the specified user from
-     * accepting the specified terms of use.
-     * </p>
-     */
-    private static final String QUERY_HAS_TERMS_BAN = "SELECT '1' FROM user_terms_of_use_ban_xref WHERE user_id=?"
-        + " AND terms_of_use_id=?";
-
-    @Autowired
-    @Qualifier("commonJdbcTemplate")
-    private JdbcTemplate jdbcTemplate;
     /**
      * Records the fact of acceptance of specified terms of use by specified user.
      *
@@ -215,8 +147,7 @@ public class UserTermsOfUseDao {
         }
 
         try {
-            Helper.executeUpdate(jdbcTemplate, INSERT_TERMS,
-                new Object[] {userId, termsOfUseId});
+            termsOfUseServiceRpc.createUserTermsOfUse(userId, termsOfUseId);
 
             // Log method exit
             Helper.logExit(log, signature, null);
@@ -249,10 +180,10 @@ public class UserTermsOfUseDao {
             new Object[] {userId, termsOfUseId});
 
         try {
-            Helper.executeUpdate(jdbcTemplate, DELETE_TERMS,
-                new Object[] {userId, termsOfUseId},
-                Long.toString(userId) + ", " + termsOfUseId);
-
+            int num = termsOfUseServiceRpc.deleteUserTermsOfUse(userId, termsOfUseId);
+            if (num != 1) {
+                throw new EntityNotFoundException("The entity was not found for id (" + Long.toString(userId) + ", " + termsOfUseId + ").");
+            }
             // Log method exit
             Helper.logExit(log, signature, null);
         } catch (EntityNotFoundException e) {
@@ -283,8 +214,19 @@ public class UserTermsOfUseDao {
             new String[] {"userId"},
             new Object[] {userId});
 
-        // Delegate to Helper.getTermsOfUse
-        return Helper.getTermsOfUse(signature, log, jdbcTemplate, QUERY_TERMS, userId, null);
+        try {
+            List<GetTermsOfUseResponse> response = termsOfUseServiceRpc.getTermsOfUseByUserId(userId);
+            List<TermsOfUse> result = new ArrayList<TermsOfUse>();
+            for (GetTermsOfUseResponse r : response) {
+                result.add(Helper.getTermsOfUse(r));
+            }
+            // Log method exit
+            Helper.logExit(log, signature, new Object[] {result});
+            return result;
+        } catch (TermsOfUsePersistenceException e) {
+            // Log exception
+            throw Helper.logException(log, signature, e);
+        }
     }
 
     /**
@@ -306,11 +248,7 @@ public class UserTermsOfUseDao {
             new String[] {"termsOfUseId"},
             new Object[] {termsOfUseId});
         try {
-            List<Long> result = new ArrayList<>();
-            List<Map<String, Object>> rs = executeSqlWithParam(jdbcTemplate, QUERY_USER_ID, newArrayList(termsOfUseId));
-            for (Map<String, Object> r: rs) {
-                result.add(getLong(r, "user_id"));
-            }
+            List<Long> result = termsOfUseServiceRpc.getUsersByTermsOfUseId(termsOfUseId);
             // Log method exit
             Helper.logExit(log, signature, new Object[] {result});
             return result;
@@ -336,9 +274,19 @@ public class UserTermsOfUseDao {
      */
     public boolean hasTermsOfUse(long userId, long termsOfUseId) throws TermsOfUsePersistenceException {
         String signature = CLASS_NAME + ".hasTermsOfUse(long userId, long termsOfUseId)";
+        Helper.logEntrance(log, signature,
+                new String[] { "userId", "termsOfUseId" },
+                new Object[] { userId, termsOfUseId });
 
-        // Delegates to hasRecord
-        return hasRecord(signature, QUERY_HAS_TERMS, userId, termsOfUseId);
+        try {
+            boolean result = termsOfUseServiceRpc.isTermsOfUseExists(userId, termsOfUseId);
+            // Log method exit
+            Helper.logExit(log, signature, new Object[] { result });
+            return result;
+        } catch (TermsOfUsePersistenceException e) {
+            // Log exception
+            throw Helper.logException(log, signature, e);
+        }
     }
 
     /**
@@ -359,39 +307,14 @@ public class UserTermsOfUseDao {
     public boolean hasTermsOfUseBan(long userId, long termsOfUseId) throws TermsOfUsePersistenceException {
         String signature = CLASS_NAME + ".hasTermsOfUseBan(long userId, long termsOfUseId)";
 
-        // Delegates to hasRecord
-        return hasRecord(signature, QUERY_HAS_TERMS_BAN, userId, termsOfUseId);
-    }
-
-    /**
-     * Checks if there is a record.
-     *
-     * @param signature
-     *            the signature.
-     * @param sql
-     *            the SQL string.
-     * @param userId
-     *            a long providing the user ID.
-     * @param termsOfUseId
-     *            a long providing the terms of use ID.
-     *
-     * @return <code>true</code> if there is a record; <code>false</code> otherwise.
-     *
-     * @throws TermsOfUsePersistenceException
-     *             if any persistence error occurs.
-     */
-    private boolean hasRecord(String signature, String sql, long userId, long termsOfUseId)
-        throws TermsOfUsePersistenceException {
-
-        // Log method entry
         Helper.logEntrance(log, signature,
-            new String[] {"userId", "termsOfUseId"},
-            new Object[] {userId, termsOfUseId});
+                new String[] { "userId", "termsOfUseId" },
+                new Object[] { userId, termsOfUseId });
 
         try {
-            boolean result = !executeSqlWithParam(jdbcTemplate, sql, newArrayList(userId, termsOfUseId)).isEmpty();
+            boolean result = termsOfUseServiceRpc.isTermsOfUseBanExists(userId, termsOfUseId);
             // Log method exit
-            Helper.logExit(log, signature, new Object[] {result});
+            Helper.logExit(log, signature, new Object[] { result });
             return result;
         } catch (TermsOfUsePersistenceException e) {
             // Log exception

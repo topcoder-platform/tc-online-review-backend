@@ -3,36 +3,22 @@
  */
 package com.topcoder.onlinereview.component.scorecard;
 
-import com.topcoder.onlinereview.component.id.DBHelper;
-import com.topcoder.onlinereview.component.id.IDGenerationException;
-import com.topcoder.onlinereview.component.id.IDGenerator;
+import com.topcoder.onlinereview.component.grpcclient.scorecard.ScorecardServiceRpc;
 import com.topcoder.onlinereview.component.project.management.LogMessage;
+import com.topcoder.onlinereview.grpc.scorecard.proto.ScorecardProto;
+
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import javax.annotation.PostConstruct;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
-
-import static com.google.common.collect.Lists.newArrayList;
-import static com.topcoder.onlinereview.component.util.CommonUtils.executeSql;
-import static com.topcoder.onlinereview.component.util.CommonUtils.executeSqlWithParam;
-import static com.topcoder.onlinereview.component.util.CommonUtils.executeUpdateSql;
-import static com.topcoder.onlinereview.component.util.CommonUtils.getDate;
-import static com.topcoder.onlinereview.component.util.CommonUtils.getFloat;
-import static com.topcoder.onlinereview.component.util.CommonUtils.getLong;
-import static com.topcoder.onlinereview.component.util.CommonUtils.getString;
 
 /**
  * This class contains operations to create and update scorecard instances into the Informix
@@ -56,69 +42,12 @@ import static com.topcoder.onlinereview.component.util.CommonUtils.getString;
 @Slf4j
 @Component
 public class ScorecardPersistence {
-
-  /** Selects the scorecards ids that are in use. */
-  private static final String SELECT_IN_USE_IDS =
-      "SELECT pc.parameter FROM phase_criteria pc "
-          + "JOIN phase_criteria_type_lu pct ON pc.phase_criteria_type_id = pct.phase_criteria_type_id "
-          + "WHERE pct.name='Scorecard ID' AND pc.parameter IN ";
-
-  /** Selects the scorecards by ids. */
-  private static final String SELECT_SCORECARD =
-      "SELECT sc.scorecard_id, status.scorecard_status_id as status_id, "
-          + "type.scorecard_type_id as type_id, sc.project_category_id, sc.name as scorecard_name, sc.version, sc.min_score, "
-          + "sc.max_score, sc.create_user, sc.create_date, sc.modify_user, sc.modify_date, "
-          + "status.name AS status_name, type.name AS type_name FROM scorecard AS sc JOIN scorecard_type_lu AS type "
-          + "ON sc.scorecard_type_id=type.scorecard_type_id JOIN scorecard_status_lu AS status ON "
-          + "sc.scorecard_status_id=status.scorecard_status_id WHERE sc.scorecard_id IN ";
-
-  /** Selects the scorecards statuses. */
-  private static final String SELECT_SCORECARD_STATUS =
-      "SELECT scorecard_status_id, name FROM scorecard_status_lu";
-
-  /** Selects the question types. */
-  private static final String SELECT_SCORECARD_QUESTION_TYPE =
-      "SELECT scorecard_question_type_id, name " + "FROM scorecard_question_type_lu";
-
-  /** Selects the scorecards types. */
-  private static final String SELECT_SCORECARD_TYPE =
-      "SELECT scorecard_type_id, name FROM scorecard_type_lu";
-
-  /** Selects the default scorecards. */
-  private static final String SELECT_DEFAULT_SCORECARDS_ID_INFO =
-      "SELECT scorecard_type_id, scorecard_id "
-          + "FROM default_scorecard WHERE project_category_id = ";
-
-  /** Updates the scorecard. */
-  private static final String UPDATE_SCORECARD =
-      "UPDATE scorecard SET scorecard_status_id = ?, "
-          + "scorecard_type_id = ?, project_category_id = ?, name = ?, version = ?, min_score = ?, "
-          + "max_score = ?, modify_user = ?, modify_date = ? WHERE scorecard_id = ?";
-
-  /** Insert the scorecard data. */
-  private static final String INSERT_SCORECARD =
-      "INSERT INTO scorecard(scorecard_id, scorecard_status_id, "
-          + "scorecard_type_id, project_category_id, name, version, min_score, max_score, create_user, "
-          + "create_date, modify_user, modify_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-  /** The default name of the id generator for the scorecards. */
-  private static final String SCORECARD_ID_SEQUENCE = "scorecard_id_seq";
-
-  /** The IDGenerator instance used for scorecards ids. */
-  private IDGenerator scorecardIdGenerator;
-
   @Autowired
-  @Qualifier("tcsJdbcTemplate")
-  private JdbcTemplate jdbcTemplate;
+  ScorecardServiceRpc scorecardServiceRpc;
 
-  @Autowired private DBHelper dbHelper;
   @Autowired private GroupPersistence groupPersistence;
   @Autowired private SectionPersistence sectionPersistence;
   @Autowired private QuestionPersistence questionPersistence;
-
-  @PostConstruct
-  public void postRun() throws IDGenerationException {
-    scorecardIdGenerator = new IDGenerator(SCORECARD_ID_SEQUENCE, dbHelper);
-  }
 
   /**
    * Create the scorecard in the database using the given scorecard instance. The scorecard instance
@@ -144,12 +73,10 @@ public class ScorecardPersistence {
     }
     log.debug(new LogMessage(null, operator, "Create new Scorecard.").toString());
     try {
-      // generate the id first
-      long scorecardId = scorecardIdGenerator.getNextID();
       // get the current time
       Date time = new Date();
       // create scorecard
-      createScorecard(scorecard, scorecardId, operator, time);
+      long scorecardId = scorecardServiceRpc.createScorecard(scorecard, operator, time);
 
       // create groups
       groupPersistence.createGroups(scorecard.getAllGroups(), operator, scorecardId);
@@ -164,34 +91,6 @@ public class ScorecardPersistence {
       log.error(new LogMessage(null, operator, "Fail to create Scorecard.", ex).toString());
       throw new PersistenceException("Error occur during create operation.", ex);
     }
-  }
-
-  /**
-   * Creates the scorecard in the database. Inserts the values into the scorecard table.
-   *
-   * @param scorecard the scorecard to be stored.
-   * @param id the id of the scorecard.
-   * @param operator the creation operator.
-   * @param time the creation time.
-   */
-  private void createScorecard(Scorecard scorecard, long id, String operator, Date time) {
-    log.debug("insert record into scorecard with id:" + id);
-    executeUpdateSql(
-        jdbcTemplate,
-        INSERT_SCORECARD,
-        newArrayList(
-            id,
-            scorecard.getScorecardStatus().getId(),
-            scorecard.getScorecardType().getId(),
-            scorecard.getCategory(),
-            scorecard.getName(),
-            scorecard.getVersion(),
-            scorecard.getMinScore(),
-            scorecard.getMaxScore(),
-            operator,
-            time,
-            operator,
-            time));
   }
 
   /**
@@ -229,7 +128,7 @@ public class ScorecardPersistence {
       // increment the version number
       String version = incrementVersion(oldScorecard.getVersion());
       // get old group id
-      Set oldGroupsIds = getGroupsIds(oldScorecard);
+      Set<Long> oldGroupsIds = getGroupsIds(oldScorecard);
       // create update time
       Date time = new Date();
       // update the scorecard data
@@ -237,11 +136,11 @@ public class ScorecardPersistence {
 
       // get the new groups
       Group[] newGroups = scorecard.getAllGroups();
-      List deletedSectionIds = new ArrayList();
-      List deletedQuestionsIds = new ArrayList();
+      List<Long> deletedSectionIds = new ArrayList<>();
+      List<Long> deletedQuestionsIds = new ArrayList<>();
 
       // add all old groups to the delete list
-      List deletedGroupsIds = new ArrayList(oldGroupsIds);
+      List<Long> deletedGroupsIds = new ArrayList<>(oldGroupsIds);
 
       for (int i = 0; i < newGroups.length; i++) {
         Long longId = newGroups[i].getId();
@@ -317,8 +216,8 @@ public class ScorecardPersistence {
    * @param oldScorecard the cource scorcard.
    * @return the set of groups ids.
    */
-  private static Set getGroupsIds(Scorecard oldScorecard) {
-    Set ids = new HashSet();
+  private static Set<Long> getGroupsIds(Scorecard oldScorecard) {
+    Set<Long> ids = new HashSet<>();
     Group[] groups = oldScorecard.getAllGroups();
 
     for (int i = 0; i < groups.length; i++) {
@@ -339,20 +238,7 @@ public class ScorecardPersistence {
    */
   private void updateScorecard(Scorecard scorecard, String operator, Date time, String version) {
     log.debug("update scorecard with id : " + scorecard.getId());
-    executeUpdateSql(
-        jdbcTemplate,
-        UPDATE_SCORECARD,
-        newArrayList(
-            scorecard.getScorecardStatus().getId(),
-            scorecard.getScorecardType().getId(),
-            scorecard.getCategory(),
-            scorecard.getName(),
-            version,
-            scorecard.getMinScore(),
-            scorecard.getMaxScore(),
-            operator,
-            time,
-            scorecard.getId()));
+    scorecardServiceRpc.updateScorecard(scorecard, operator, time, version);
   }
 
   /**
@@ -403,17 +289,9 @@ public class ScorecardPersistence {
   public ScorecardType[] getAllScorecardTypes() throws PersistenceException {
     log.debug("get all scorecard types.");
     try {
-      // create statement and execute select query
-      List<Map<String, Object>> rs = executeSql(jdbcTemplate, SELECT_SCORECARD_TYPE);
-      List result = new ArrayList();
-      // for each row in the result set create new ScorecardType instance.
-      for (Map<String, Object> row : rs) {
-        long id = getLong(row, "scorecard_type_id");
-        String name = getString(row, "name");
-        result.add(new ScorecardType(id, name));
-      }
+      List<ScorecardType> result = scorecardServiceRpc.getAllScorecardTypes();
       // convert the list to array
-      return (ScorecardType[]) result.toArray(new ScorecardType[result.size()]);
+      return result.toArray(new ScorecardType[result.size()]);
     } catch (Exception ex) {
       log.error("Failed to get all scorecard types. \n", ex);
       throw new PersistenceException("Error occur during database operation.", ex);
@@ -429,20 +307,9 @@ public class ScorecardPersistence {
   public QuestionType[] getAllQuestionTypes() throws PersistenceException {
     log.debug("get all question types.");
     try {
-      // create statement and execute select query
-      List<Map<String, Object>> rs = executeSql(jdbcTemplate, SELECT_SCORECARD_QUESTION_TYPE);
-
-      List result = new ArrayList();
-
-      // for each row in the result set create new QuestionType instance.
-      for (Map<String, Object> row : rs) {
-        Long id = getLong(row, "scorecard_question_type_id");
-        String name = getString(row, "name");
-        result.add(new QuestionType(id, name));
-      }
-
+      List<QuestionType> result = scorecardServiceRpc.getAllQuestionTypes();
       // convert the list to array
-      return (QuestionType[]) result.toArray(new QuestionType[result.size()]);
+      return result.toArray(new QuestionType[result.size()]);
     } catch (Exception ex) {
       log.error("Failed to get all question types. \n", ex);
       throw new PersistenceException("Error occur during database operation.", ex);
@@ -458,17 +325,9 @@ public class ScorecardPersistence {
   public ScorecardStatus[] getAllScorecardStatuses() throws PersistenceException {
     log.debug("get all scorecard status.");
     try {
-      // create statement and execute select query
-      List<Map<String, Object>> rs = executeSql(jdbcTemplate, SELECT_SCORECARD_STATUS);
-      List result = new ArrayList();
-      // for each row in the result set create new QuestionType instance.
-      for (Map<String, Object> row : rs) {
-        long id = getLong(row, "scorecard_status_id");
-        String name = getString(row, "name");
-        result.add(new ScorecardStatus(id, name));
-      }
+      List<ScorecardStatus> result = scorecardServiceRpc.getAllScorecardStatuses();
       // convert the list to array
-      return (ScorecardStatus[]) result.toArray(new ScorecardStatus[result.size()]);
+      return result.toArray(new ScorecardStatus[result.size()]);
     } catch (Exception ex) {
       log.error("Failed to get all scorecard status. \n", ex);
       throw new PersistenceException("Error occur during database operation.", ex);
@@ -498,11 +357,11 @@ public class ScorecardPersistence {
                     + ", and is "
                     + (complete ? "complete" : "incomplete"))
             .toString());
-    Set inUseIds = selectInUse(ids);
-    List scorecards = getScorecards(ids, inUseIds);
+    Set<Long> inUseIds = selectInUse(ids);
+    List<Scorecard> scorecards = getScorecards(ids, inUseIds);
 
     if (complete) {
-      for (Iterator it = scorecards.iterator(); it.hasNext(); ) {
+      for (Iterator<Scorecard> it = scorecards.iterator(); it.hasNext(); ) {
         Scorecard card = (Scorecard) it.next();
         card.addGroups(groupPersistence.getGroups(card.getId()));
       }
@@ -522,14 +381,14 @@ public class ScorecardPersistence {
    *     is null or empty.
    * @throws PersistenceException if error occurred while accessing the persistence.
    */
-  public Scorecard[] getScorecards(List<Map<String, Object>> resultSet, boolean complete)
+  public Scorecard[] getScorecards(List<ScorecardProto> resultSet, boolean complete)
       throws PersistenceException {
     if (resultSet == null) {
       throw new IllegalArgumentException("resultSet cannot be null.");
     }
-    List scorecards = new ArrayList();
+    List<Scorecard> scorecards = new ArrayList<>();
     try {
-      for (Map<String, Object> row : resultSet) {
+      for (ScorecardProto row : resultSet) {
         Scorecard scorecard = populateScorecard(row);
         if (groupPersistence != null) {
           scorecard.addGroups(groupPersistence.getGroups(scorecard.getId()));
@@ -565,15 +424,9 @@ public class ScorecardPersistence {
                 null,
                 "retrieve scorecards id info with projectCategoryId:" + projectCategoryId)
             .toString());
-    List scorecardsInfo = new ArrayList();
     try {
-      List<Map<String, Object>> rs =
-          executeSql(jdbcTemplate, SELECT_DEFAULT_SCORECARDS_ID_INFO + projectCategoryId);
-      for (Map<String, Object> row : rs) {
-        scorecardsInfo.add(
-            new ScorecardIDInfo(getLong(row, "scorecard_type_id"), getLong(row, "scorecard_id")));
-      }
-      return (ScorecardIDInfo[]) scorecardsInfo.toArray(new ScorecardIDInfo[scorecardsInfo.size()]);
+      List<ScorecardIDInfo> scorecardsInfo = scorecardServiceRpc.getDefaultScorecardsIDInfo(projectCategoryId);
+      return scorecardsInfo.toArray(new ScorecardIDInfo[scorecardsInfo.size()]);
     } catch (Exception ex) {
       log.error(
           new LogMessage(
@@ -592,25 +445,52 @@ public class ScorecardPersistence {
    * @param rs the source result set.
    * @return the Scorecard instance.
    */
-  private static Scorecard populateScorecard(Map<String, Object> rs) {
-    Scorecard card = new Scorecard(getLong(rs, "scorecard_id"));
-    card.setCategory(getLong(rs, "project_category_id"));
-    card.setVersion(getString(rs, "version"));
-    card.setMinScore(getFloat(rs, "min_score"));
-    card.setMaxScore(getFloat(rs, "max_score"));
-    card.setName(getString(rs, "scorecard_name"));
+  private static Scorecard populateScorecard(ScorecardProto s) {
+    Scorecard card = new Scorecard(s.getScorecardId());
+    if (s.hasProjectCategoryId()) {
+      card.setCategory(s.getProjectCategoryId());
+    }
+    if (s.hasVersion()) {
+      card.setVersion(s.getVersion());
+    }
+    if (s.hasMinScore()) {
+      card.setMinScore(s.getMinScore());
+    }
+    if (s.hasMaxScore()) {
+      card.setMaxScore(s.getMaxScore());
+    }
+    if (s.hasName()) {
+      card.setName(s.getName());
+    }
 
     ScorecardStatus status = new ScorecardStatus();
-    status.setId(getLong(rs, "status_id"));
-    status.setName(getString(rs, "status_name"));
+    if (s.hasScorecardStatusId()) {
+      status.setId(s.getScorecardStatusId());
+    }
+    if (s.hasScorecardStatusName()) {
+      status.setName(s.getScorecardStatusName());
+    }
     card.setScorecardStatus(status);
-
-    card.setScorecardType(new ScorecardType(getLong(rs, "type_id"), getString(rs, "type_name")));
-
-    card.setModificationUser(getString(rs, "modify_user"));
-    card.setCreationUser(getString(rs, "create_user"));
-    card.setCreationTimestamp(getDate(rs, "create_date"));
-    card.setModificationTimestamp(getDate(rs, "modify_date"));
+    ScorecardType type = new ScorecardType();
+    if (s.hasScorecardTypeId()) {
+      type.setId(s.getScorecardTypeId());
+    }
+    if (s.hasScorecardTypeName()) {
+      type.setName(s.getScorecardTypeName());
+    }
+    card.setScorecardType(type);
+    if (s.hasCreateUser()) {
+      card.setCreationUser(s.getCreateUser());
+    }
+    if (s.hasCreateDate()) {
+      card.setCreationTimestamp(new Date(s.getCreateDate().getSeconds() * 1000));
+    }
+    if (s.hasModifyUser()) {
+      card.setModificationUser(s.getModifyUser());
+    }
+    if (s.hasModifyDate()) {
+      card.setModificationTimestamp(new Date(s.getModifyDate().getSeconds() * 1000));
+    }
 
     return card;
   }
@@ -623,16 +503,12 @@ public class ScorecardPersistence {
    * @return the list of Scorecards.
    * @throws PersistenceException if any error occurs.
    */
-  private List getScorecards(Long[] ids, Set<Long> inUseIds) throws PersistenceException {
+  private List<Scorecard> getScorecards(Long[] ids, Set<Long> inUseIds) throws PersistenceException {
     try {
-      List<Map<String, Object>> rs =
-          executeSqlWithParam(
-              jdbcTemplate,
-              SELECT_SCORECARD + DBUtils.createQuestionMarks(ids.length),
-              newArrayList(ids));
-      List<Scorecard> result = new ArrayList();
-      for (Map<String, Object> row : rs) {
-        Scorecard card = populateScorecard(row);
+      List<ScorecardProto> response = scorecardServiceRpc.getScorecards(ids);
+      List<Scorecard> result = new ArrayList<>();
+      for (ScorecardProto s : response) {
+        Scorecard card = populateScorecard(s);
         if (inUseIds.contains(card.getId())) {
           card.setInUse(true);
         }
@@ -656,14 +532,8 @@ public class ScorecardPersistence {
   private Set<Long> selectInUse(Long[] ids) throws PersistenceException {
     Set<Long> result = new HashSet<Long>();
     try {
-      List<Map<String, Object>> rs =
-          executeSqlWithParam(
-              jdbcTemplate,
-              SELECT_IN_USE_IDS + DBUtils.createQuestionMarks(ids.length),
-              newArrayList(ids));
-      for (Map<String, Object> row : rs) {
-        result.add(getLong(row, "parameter"));
-      }
+      List<Long> response = scorecardServiceRpc.getScorecardsInUse(ids);
+      result.addAll(response);
       return result;
     } catch (Exception ex) {
       log.error(

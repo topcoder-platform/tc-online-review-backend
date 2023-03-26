@@ -3,11 +3,9 @@
  */
 package com.topcoder.onlinereview.component.security.groups.services.hibernate;
 
+import com.topcoder.onlinereview.component.grpcclient.GrpcHelper;
+import com.topcoder.onlinereview.component.grpcclient.security.SecurityServiceRpc;
 import com.topcoder.onlinereview.component.security.groups.model.BillingAccount;
-import com.topcoder.onlinereview.component.security.groups.model.Client;
-import com.topcoder.onlinereview.component.security.groups.model.DirectProject;
-import com.topcoder.onlinereview.component.security.groups.model.Group;
-import com.topcoder.onlinereview.component.security.groups.model.GroupMember;
 import com.topcoder.onlinereview.component.security.groups.model.GroupPermissionType;
 import com.topcoder.onlinereview.component.security.groups.model.ResourceType;
 import com.topcoder.onlinereview.component.security.groups.services.AuthorizationService;
@@ -15,20 +13,16 @@ import com.topcoder.onlinereview.component.security.groups.services.BillingAccou
 import com.topcoder.onlinereview.component.security.groups.services.DirectProjectService;
 import com.topcoder.onlinereview.component.security.groups.services.SecurityGroupException;
 import com.topcoder.onlinereview.component.security.groups.services.dto.ProjectDTO;
-import com.topcoder.onlinereview.component.shared.dataaccess.DataAccess;
-import com.topcoder.onlinereview.component.shared.dataaccess.Request;
 import com.topcoder.onlinereview.component.util.LoggingWrapperUtility;
-import org.hibernate.HibernateException;
-import org.hibernate.Query;
-import org.hibernate.Session;
+import com.topcoder.onlinereview.grpc.security.proto.BillingAccountProto;
+import com.topcoder.onlinereview.grpc.security.proto.GroupDirectProjectProto;
+import com.topcoder.onlinereview.grpc.security.proto.GroupMemberProto;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-
-import static com.topcoder.onlinereview.component.util.SpringUtils.getTcsJdbcTemplate;
 
 /**
  * <p>
@@ -84,13 +78,6 @@ import static com.topcoder.onlinereview.component.util.SpringUtils.getTcsJdbcTem
 public class HibernateAuthorizationService extends BaseGroupService implements AuthorizationService {
 
     private static final Logger logger = LoggerFactory.getLogger(HibernateAuthorizationService.class);
-    /**
-     * <p>
-     * Instance of {@link DataAccess} used to execute pre-defined queries. This
-     * field is supposed to be injected by Spring for test purpose only.
-     * </p>
-     */
-    private DataAccess dataAccess;
 
     /**
      * <p>
@@ -98,48 +85,6 @@ public class HibernateAuthorizationService extends BaseGroupService implements A
      * </p>
      */
     private static final String CLASS_NAME = HibernateAuthorizationService.class.getName();
-
-    /**
-     * <p>
-     * Name of query for TC staff IDs.
-     * </p>
-     */
-    private static final String QUERY_IS_USER_TC_STAFF = "is_user_tc_staff";
-
-    /**
-     * <p>
-     * HQL to query memberships for a given user ID.
-     * </p>
-     */
-    private static final String HQL_GROUP_MEMBER = "from GroupMember g where userId = :userId and g.active =  true and g.group.archived = false";
-
-    /**
-     * <p>
-     * This constant field variable defines HQL query to retrieve group IDs
-     * </p>
-     */
-    private static final String HQL_FULL_PERMISSION_GROUP_ID = "SELECT g.group.id FROM GroupMember g WHERE ((useGroupDefault = false AND specificPermission = 'FULL') "
-            + "OR (useGroupDefault = true AND group.defaultPermission = 'FULL')) "
-            + "AND g.group.archived = false AND g.active = true AND g.userId=:userId";
-
-    /**
-     * <p>
-     * HQL to find customer-administrator pair record according to the given
-     * userId and clientId.
-     * </p>
-     */
-    private static final String HQL_CUSTOMER_ADMINISTRATOR = "FROM CustomerAdministrator ca WHERE ca.userId = :userId AND ca.client.id = :clientId";
-
-
-    /**
-     * <p>
-     * HQL to find customer-administrator pair record according to the given
-     * userId.
-     * </p>
-     * @since 1.1
-     */
-    private static final String HQL_ANY_CUSTOMER_ADMINISTRATOR =
-        "FROM CustomerAdministrator ca WHERE ca.userId = :userId";
 
     /**
      * <p>
@@ -175,7 +120,6 @@ public class HibernateAuthorizationService extends BaseGroupService implements A
      * @throws IllegalArgumentException
      *             If resourceType is null
      */
-    @SuppressWarnings("unchecked")
     public GroupPermissionType checkAuthorization(long userId, long resourceId, ResourceType resourceType)
             throws SecurityGroupException {
 
@@ -186,22 +130,19 @@ public class HibernateAuthorizationService extends BaseGroupService implements A
                 new Object[] { userId, resourceId, resourceType });
 
         try {
-            Session session = sessionFactory.getCurrentSession();
-            Query query = session.createQuery(HQL_GROUP_MEMBER);
-            query.setLong("userId", userId);
+            SecurityServiceRpc securityServiceRpc = GrpcHelper.getSecurityServiceRpc();
+            List<GroupMemberProto> groupMemberList = securityServiceRpc.getGroupMembers(userId);
 
-            List<GroupMember> groupMemberList = (List<GroupMember>) query.list();
-            for (GroupMember groupMember : groupMemberList) {
-                Group group = groupMember.getGroup();
+            for (GroupMemberProto groupMember : groupMemberList) {
 
                 boolean resourceAvailable = false;
 
                 if (resourceType == ResourceType.PROJECT) {
-                    if (null != group) {
-                        List<DirectProject> directProjects = group.getDirectProjects();
+                    if (groupMember.hasGroupId()) {
+                        List<GroupDirectProjectProto> directProjects = securityServiceRpc.getDirectProjects(groupMember.getGroupId());
                         if (null != directProjects) {
-                            for (DirectProject directProject : directProjects) {
-                                if (null != directProject && directProject.getDirectProjectId() == resourceId) {
+                            for (GroupDirectProjectProto directProject : directProjects) {
+                                if (directProject.hasTcDirectProjectId() && directProject.getTcDirectProjectId() == resourceId) {
                                     resourceAvailable = true;
                                     break;
                                 }
@@ -211,7 +152,7 @@ public class HibernateAuthorizationService extends BaseGroupService implements A
                         // if a user has access to a Billing Account, he also has access to all Projects 
                         // backed by that Billing Account.
                         if (!resourceAvailable) {
-                            List<BillingAccount> billingAccounts = group.getBillingAccounts();
+                            List<BillingAccountProto> billingAccounts = securityServiceRpc.getBillingAccounts(groupMember.getGroupId());
                             if (null != billingAccounts) {
                                 if (directProjectService == null) {
                                     directProjectService = new HibernateDirectProjectService();
@@ -227,13 +168,12 @@ public class HibernateAuthorizationService extends BaseGroupService implements A
                         }
 
                         //if this group is granted permissions automatically, check client's projects.
-                        if(!resourceAvailable && group.getAutoGrant()) {
-                            Client client = group.getClient();
-                            if(null != client) {
+                        if(!resourceAvailable && groupMember.getGroupAutoGrant()) {
+                            if(groupMember.hasGroupClientId()) {
                                 if(null == directProjectService) {
                                     directProjectService = new HibernateDirectProjectService();
                                 }
-                                List<ProjectDTO> projects = directProjectService.getProjectsByClientId(client.getId());
+                                List<ProjectDTO> projects = directProjectService.getProjectsByClientId(groupMember.getGroupClientId());
                                 for (ProjectDTO project : projects) {
                                     if (project.getProjectId() == resourceId) {
                                         resourceAvailable = true;
@@ -249,11 +189,11 @@ public class HibernateAuthorizationService extends BaseGroupService implements A
                     }
 
                 } else if (resourceType == ResourceType.BILLING_ACCOUNT) {
-                    if (null != group) {
-                        List<BillingAccount> billingAccounts = group.getBillingAccounts();
+                    if (groupMember.hasGroupId()) {
+                        List<BillingAccountProto> billingAccounts = securityServiceRpc.getBillingAccounts(groupMember.getGroupId());
                         if (null != billingAccounts) {
-                            for (BillingAccount billingAccount : billingAccounts) {
-                                if (null != billingAccount && billingAccount.getId() == resourceId) {
+                            for (BillingAccountProto billingAccount : billingAccounts) {
+                                if (billingAccount.hasProjectId() && billingAccount.getProjectId() == resourceId) {
                                     resourceAvailable = true;
                                     break;
                                 }
@@ -262,14 +202,13 @@ public class HibernateAuthorizationService extends BaseGroupService implements A
 
                         //if the group is granted permissions automatically,
                         // we should check the client's billing accounts.
-                        if(!resourceAvailable && group.getAutoGrant()) {
-                            Client client = group.getClient();
-                            if(null != client) {
+                        if(!resourceAvailable && groupMember.getGroupAutoGrant()) {
+                            if(groupMember.hasGroupClientId()) {
                                 if(null == billingAccountService) {
                                     billingAccountService = new HibernateBillingAccountService();
                                 }
                                 List<BillingAccount> accounts = billingAccountService
-                                        .getBillingAccountsForClient(client.getId());
+                                        .getBillingAccountsForClient(groupMember.getGroupClientId());
                                 if (null != accounts) {
                                     for (BillingAccount billingAccount : accounts) {
                                         if (null != billingAccount && billingAccount.getId() == resourceId) {
@@ -287,10 +226,10 @@ public class HibernateAuthorizationService extends BaseGroupService implements A
                 if (resourceAvailable ) {
                     GroupPermissionType permissionType = null;
 
-                    if (groupMember.isUseGroupDefault()) {
-                        permissionType = group.getDefaultPermission();
+                    if (groupMember.getUseGroupDefault()) {
+                        permissionType = GroupPermissionType.valueOf(groupMember.getGroupDefaultPermission());
                     } else {
-                        permissionType = groupMember.getSpecificPermission();
+                        permissionType = GroupPermissionType.valueOf(groupMember.getSpecificPermission());
                     }
 
                     LoggingWrapperUtility.logExit(logger, signature, new Object[] { permissionType });
@@ -299,7 +238,7 @@ public class HibernateAuthorizationService extends BaseGroupService implements A
                 }
             }
             LoggingWrapperUtility.logExit(logger, signature, null);
-        } catch (HibernateException e) {
+        } catch (Exception e) {
             wrapAndLogSecurityException(e, logger, signature);
         }
 
@@ -329,16 +268,10 @@ public class HibernateAuthorizationService extends BaseGroupService implements A
                 userId, clientId });
         boolean result = false;
         try {
-            Session session = sessionFactory.getCurrentSession();
-            Query query = session.createQuery(clientId == 0 ? HQL_ANY_CUSTOMER_ADMINISTRATOR : 
-                HQL_CUSTOMER_ADMINISTRATOR);
-            query.setLong("userId", userId);
-            if (clientId > 0) {
-                query.setLong("clientId", clientId);
-            }
-            result = query.list().size() > 0;
+            SecurityServiceRpc securityServiceRpc = GrpcHelper.getSecurityServiceRpc();
+            result = securityServiceRpc.isCustomerAdministrator(userId, clientId);
             LoggingWrapperUtility.logExit(logger, signature, new Object[] { result });
-        } catch (HibernateException e) {
+        } catch (Exception e) {
             wrapAndLogSecurityException(e, logger, signature);
         }
 
@@ -363,19 +296,9 @@ public class HibernateAuthorizationService extends BaseGroupService implements A
         /**
          * This code snippet is largely for sake of constructing unit test.
          */
-        if (null == dataAccess) {
-            dataAccess = new DataAccess(getTcsJdbcTemplate());
-        }
-
-        Request request = new Request();
-        request.setContentHandle(QUERY_IS_USER_TC_STAFF);
-        request.setProperty("uid", String.valueOf(userId));
-
+        SecurityServiceRpc securityServiceRpc = GrpcHelper.getSecurityServiceRpc();
         try {
-            List<Map<String, Object>> container = dataAccess.getData(request).get(QUERY_IS_USER_TC_STAFF);
-            if (!container.isEmpty()) {
-                result = true;
-            }
+            result = securityServiceRpc.isAdministrator(userId);
 
             LoggingWrapperUtility.logExit(logger, signature, new Object[] { result });
         } catch (Exception e) {
@@ -396,17 +319,14 @@ public class HibernateAuthorizationService extends BaseGroupService implements A
      * @throws SecurityGroupException
      *             If anything wrong happens.
      */
-    @SuppressWarnings("unchecked")
     public List<Long> getGroupIdsOfFullPermissionsUser(long userId) throws SecurityGroupException {
         final String signature = CLASS_NAME + ".getGroupIdsOfFullPermissionsUser()";
         LoggingWrapperUtility.logEntrance(logger, signature, new String[] { "userId" }, new Object[] { userId });
 
         List<Long> result = new ArrayList<Long>();
         try {
-            Session session = sessionFactory.getCurrentSession();
-            Query query = session.createQuery(HQL_FULL_PERMISSION_GROUP_ID);
-            query.setLong("userId", userId);
-            result = query.list();
+            SecurityServiceRpc securityServiceRpc = GrpcHelper.getSecurityServiceRpc();
+            result = securityServiceRpc.getGroupIdsOfFullPermissionsUser(userId);
             if (!result.isEmpty()) {
                 LoggingWrapperUtility.logExit(logger, signature, result.toArray());
             } else {
@@ -417,7 +337,7 @@ public class HibernateAuthorizationService extends BaseGroupService implements A
                  */
                 LoggingWrapperUtility.logExit(logger, signature, new String[] { "Empty List" });
             }
-        } catch (HibernateException e) {
+        } catch (Exception e) {
             wrapAndLogSecurityException(e, logger, signature);
         }
 
@@ -442,29 +362,6 @@ public class HibernateAuthorizationService extends BaseGroupService implements A
             getGroupIdsOfFullPermissionsUser(userId).size() > 0;
         LoggingWrapperUtility.logExit(logger, signature, new Object[] { res });
         return res;
-    }
-
-    /**
-     * <p>
-     * Getter of dataAccess field.
-     * </p>
-     * 
-     * @return the dataAccess
-     */
-    public DataAccess getDataAccess() {
-        return dataAccess;
-    }
-
-    /**
-     * <p>
-     * Setter of dataAccess field.
-     * </p>
-     * 
-     * @param dataAccess
-     *            the dataAccess to set
-     */
-    public void setDataAccess(DataAccess dataAccess) {
-        this.dataAccess = dataAccess;
     }
  
     /**

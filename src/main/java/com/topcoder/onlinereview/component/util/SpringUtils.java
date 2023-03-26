@@ -3,7 +3,6 @@ package com.topcoder.onlinereview.component.util;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.ApplicationContextException;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -37,18 +36,6 @@ public class SpringUtils implements ApplicationContextAware {
 
   public static String getPropertyValue(String propertyName) {
     return applicationContext.getEnvironment().getProperty(propertyName);
-  }
-
-  public static JdbcTemplate getTcsJdbcTemplate() {
-    return applicationContext.getBean("tcsJdbcTemplate", JdbcTemplate.class);
-  }
-
-  public static JdbcTemplate getOltpJdbcTemplate() {
-    return applicationContext.getBean("oltpJdbcTemplate", JdbcTemplate.class);
-  }
-
-  public static JdbcTemplate getCommonJdbcTemplate() {
-    return applicationContext.getBean("commonJdbcTemplate", JdbcTemplate.class);
   }
 
   public static <T> T getBean(Class<T> clazz) {

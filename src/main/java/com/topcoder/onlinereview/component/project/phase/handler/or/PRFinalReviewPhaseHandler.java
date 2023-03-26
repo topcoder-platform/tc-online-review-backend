@@ -3,6 +3,7 @@
  */
 package com.topcoder.onlinereview.component.project.phase.handler.or;
 
+import com.topcoder.onlinereview.component.grpcclient.phasehandler.PhaseHandlerServiceRpc;
 import com.topcoder.onlinereview.component.project.management.PersistenceException;
 import com.topcoder.onlinereview.component.project.management.Project;
 import com.topcoder.onlinereview.component.project.management.ProjectManager;
@@ -64,11 +65,11 @@ public class PRFinalReviewPhaseHandler extends FinalReviewPhaseHandler {
      * @throws PhaseHandlingException if there is any error occurred while processing the phase.
      * @throws IllegalArgumentException if the input parameters is null or empty string.
      */
-    public void perform(Phase phase, String operator) throws PhaseHandlingException {
+    public void perform(PhaseHandlerServiceRpc phaseHandlerServiceRpc, Phase phase, String operator) throws PhaseHandlingException {
         boolean toStart = PhasesHelper.checkPhaseStatus(phase.getPhaseStatus());
-        super.perform(phase, operator);
+        super.perform(phaseHandlerServiceRpc, phase, operator);
 
-        prHelper.processFinalReviewPR(phase.getProject().getId(), toStart, operator);
+        prHelper.processFinalReviewPR(phaseHandlerServiceRpc, phase.getProject().getId(), toStart, operator);
 
         // If stopping phase and final fix is approved.
         if (!toStart && !checkFinalReview(phase)) {

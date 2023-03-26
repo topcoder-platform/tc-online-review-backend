@@ -4,6 +4,7 @@
 package com.topcoder.onlinereview.component.project.phase.handler.or;
 
 import com.topcoder.onlinereview.component.deliverable.Submission;
+import com.topcoder.onlinereview.component.grpcclient.phasehandler.PhaseHandlerServiceRpc;
 import com.topcoder.onlinereview.component.project.phase.ManagerHelper;
 import com.topcoder.onlinereview.component.project.phase.Phase;
 import com.topcoder.onlinereview.component.project.phase.PhaseHandlingException;
@@ -46,8 +47,8 @@ public class PRIterativeReviewPhaseHandler extends IterativeReviewPhaseHandler {
      * @throws IllegalArgumentException
      *             if the input parameters is null or empty string.
      */
-    public void perform(Phase phase, String operator) throws PhaseHandlingException {
-        super.perform(phase, operator);
+    public void perform(PhaseHandlerServiceRpc phaseHandlerServiceRpc, Phase phase, String operator) throws PhaseHandlingException {
+        super.perform(phaseHandlerServiceRpc, phase, operator);
         boolean toStart = PhasesHelper.checkPhaseStatus(phase.getPhaseStatus());
 
         long projectId = phase.getProject().getId();

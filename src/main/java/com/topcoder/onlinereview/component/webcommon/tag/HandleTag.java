@@ -1,20 +1,17 @@
 package com.topcoder.onlinereview.component.webcommon.tag;
 
-import com.topcoder.onlinereview.component.shared.dataaccess.Request;
+import com.topcoder.onlinereview.component.grpcclient.GrpcHelper;
+import com.topcoder.onlinereview.component.grpcclient.webcommon.WebCommonServiceRpc;
 import com.topcoder.onlinereview.component.webcommon.ApplicationServer;
-import com.topcoder.onlinereview.component.webcommon.CachedDataAccess;
+import com.topcoder.onlinereview.grpc.webcommon.proto.CoderRatingsProto;
+import com.topcoder.onlinereview.grpc.webcommon.proto.GetCoderAllRatingsResponse;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.servlet.jsp.JspException;
 import javax.servlet.jsp.PageContext;
 import javax.servlet.jsp.tagext.TagSupport;
-import java.util.List;
-import java.util.Map;
-
-import static com.topcoder.onlinereview.component.util.CommonUtils.getInt;
-import static com.topcoder.onlinereview.component.util.CommonUtils.getString;
-import static com.topcoder.onlinereview.component.util.SpringUtils.getOltpJdbcTemplate;
 
 public class HandleTag extends TagSupport {
     private static final Logger log = LoggerFactory.getLogger(HandleTag.class);
@@ -147,34 +144,28 @@ public class HandleTag extends TagSupport {
                                  String[] lightStyles, String[] darkStyles, boolean darkBG) throws Exception {
 
         //lookup ratings from cache
-        CachedDataAccess da = new CachedDataAccess(getOltpJdbcTemplate());
-
-        Request r = new Request();
-        r.setContentHandle("coder_all_ratings");
-        r.setProperty("cr", String.valueOf(coderId));
-
-        Map<String, List<Map<String, Object>>> m = da.getData(r);
+        WebCommonServiceRpc webCommonServiceRpc = GrpcHelper.getWebCommonServiceRpc();
+        GetCoderAllRatingsResponse result = webCommonServiceRpc.getCoderAllRatings(coderId);
 
         StringBuffer output = new StringBuffer();
 
-        List<Map<String, Object>> rsc = m.get("coder_all_ratings");
-        if (rsc.isEmpty()) {
+        if (!result.hasCoderRatings()) {
             if(handle != null && handle.trim().length() != 0) {
                 output.append(handle);
             } else {
                 output.append("UNKNOWN USER");
             }
-        } else if (rsc.get(0).get("coder_id") == null) {
-            output.append(getString(rsc.get(0), "handle"));
+        } else if (!result.getCoderRatings().hasCoderId()) {
+            output.append(result.getCoderRatings().hasHandle() ? result.getCoderRatings().getHandle() : null);
         } else {
-
+            CoderRatingsProto ratings = result.getCoderRatings();
             //check for css override
             boolean bCSSOverride = false;
             if (cssclass != null && !cssclass.equals("")) {
                 bCSSOverride = true;
             }
             output.append("<a href=\"");
-            String handleFromDB = getString(rsc.get(0), "handle");
+            String handleFromDB = ratings.hasHandle() ? ratings.getHandle() : null;
             if (link == null || link.equals("")) {
                 StringBuffer buf = new StringBuffer(100);
                 if (pageContext != null && pageContext.getRequest().getServerName().indexOf(ApplicationServer.SERVER_NAME) >= 0) {
@@ -186,53 +177,53 @@ public class HandleTag extends TagSupport {
             }
             output.append(link);
             if (context != null) {
-                if (context.trim().equalsIgnoreCase(ALGORITHM) && getIntNotNull(rsc.get(0), "algorithm_rating") > 0) {
+                if (context.trim().equalsIgnoreCase(ALGORITHM) && ratings.hasAlgorithmRating()) {
                     output.append("&amp;tab=alg");
-                } else if (context.trim().equalsIgnoreCase(HS_ALGORITHM) && getIntNotNull(rsc.get(0), "hs_algorithm_rating") > 0) {
+                } else if (context.trim().equalsIgnoreCase(HS_ALGORITHM) && ratings.hasHsAlgorithmRating()) {
                     output.append("&amp;tab=hs");
-                } else if (context.trim().equalsIgnoreCase(MARATHON_MATCH) && getIntNotNull(rsc.get(0), "marathon_match_rating") > 0) {
+                } else if (context.trim().equalsIgnoreCase(MARATHON_MATCH) && ratings.hasMarathonMatchRating()) {
                     output.append("&amp;tab=long");
-                } else if (context.trim().equalsIgnoreCase(DESIGN) && getIntNotNull(rsc.get(0), "design_rating") > 0) {
+                } else if (context.trim().equalsIgnoreCase(DESIGN) && ratings.hasDesignRating()) {
                     output.append("&amp;tab=des");
-                } else if (context.trim().equalsIgnoreCase(DEVELOPMENT) && getIntNotNull(rsc.get(0), "development_rating") > 0) {
+                } else if (context.trim().equalsIgnoreCase(DEVELOPMENT) && ratings.hasDevelopmentRating()) {
                     output.append("&amp;tab=dev");
-                } else if (context.trim().equalsIgnoreCase(CONCEPTUALIZATION) && getIntNotNull(rsc.get(0), "conceptualization_rating") > 0) {
+                } else if (context.trim().equalsIgnoreCase(CONCEPTUALIZATION) && ratings.hasConceptualizationRating()) {
                     output.append("&amp;tab=concept");
-                } else if (context.trim().equalsIgnoreCase(SPECIFICATION) && getIntNotNull(rsc.get(0), "specification_rating") > 0) {
+                } else if (context.trim().equalsIgnoreCase(SPECIFICATION) && ratings.hasSpecificationRating()) {
                     output.append("&amp;tab=spec");
-                } else if (context.trim().equalsIgnoreCase(ARCHITECTURE) && getIntNotNull(rsc.get(0), "architecture_rating") > 0) {
+                } else if (context.trim().equalsIgnoreCase(ARCHITECTURE) && ratings.hasArchitectureRating()) {
                     output.append("&amp;tab=arch");
-                } else if (context.trim().equalsIgnoreCase(ASSEMBLY) && getIntNotNull(rsc.get(0), "assembly_rating") > 0) {
+                } else if (context.trim().equalsIgnoreCase(ASSEMBLY) && ratings.hasAssemblyRating()) {
                     output.append("&amp;tab=assembly");
-                } else if (context.trim().equalsIgnoreCase(TEST_SUITES) && getIntNotNull(rsc.get(0), "test_suites_rating") > 0) {
+                } else if (context.trim().equalsIgnoreCase(TEST_SUITES) && ratings.hasTestSuitesRating()) {
                     output.append("&amp;tab=test");
-                } else if (context.trim().equalsIgnoreCase(TEST_SCENARIOS) && getIntNotNull(rsc.get(0), "test_scenarios_rating") > 0) {
+                } else if (context.trim().equalsIgnoreCase(TEST_SCENARIOS) && ratings.hasTestScenariosRating()) {
                     output.append("&amp;tab=test_scenarios");
-                } else if (context.trim().equalsIgnoreCase(UI_PROTOTYPE) && getIntNotNull(rsc.get(0), "ui_prototype_rating") > 0) {
+                } else if (context.trim().equalsIgnoreCase(UI_PROTOTYPE) && ratings.hasUiPrototypeRating()) {
                     output.append("&amp;tab=ui_prototype");
-                } else if (context.trim().equalsIgnoreCase(RIA_BUILD) && getIntNotNull(rsc.get(0), "ria_build_rating") > 0) {
+                } else if (context.trim().equalsIgnoreCase(RIA_BUILD) && ratings.hasRiaBuildRating()) {
                     output.append("&amp;tab=ria_build");
-                } else if (context.trim().equalsIgnoreCase(CONTENT_CREATION) && getIntNotNull(rsc.get(0), "content_creation_rating") > 0) {
+                } else if (context.trim().equalsIgnoreCase(CONTENT_CREATION) && ratings.hasContentCreationRating()) {
                     output.append("&amp;tab=content_creation");
-                } else if (context.trim().equalsIgnoreCase(REPORTING) && getIntNotNull(rsc.get(0), "reporting_rating") > 0) {
+                } else if (context.trim().equalsIgnoreCase(REPORTING) && ratings.hasReportingRating()) {
                     output.append("&amp;tab=reporting");
                 } else if (context.trim().equalsIgnoreCase(COMPONENT)) {
-                    if (getIntNotNull(rsc.get(0), "design_rating") >= getIntNotNull(rsc.get(0), "development_rating")) {
-                        if (getIntNotNull(rsc.get(0), "design_rating") > 0) {
+                    if (ratings.getDesignRating() >= ratings.getDevelopmentRating()) {
+                        if (ratings.hasDesignRating()) {
                             output.append("&amp;tab=des");
                         }
                     } else {
-                        if (getIntNotNull(rsc.get(0), "development_rating") > 0) {
+                        if (ratings.hasDevelopmentRating()) {
                             output.append("&amp;tab=dev");
                         }
                     }
                 } else if (context.trim().equalsIgnoreCase(HS_OR_ALGORITHM)) {
-                    if (getIntNotNull(rsc.get(0), "algorithm_rating") >= getIntNotNull(rsc.get(0), "hs_algorithm_rating")) {
-                        if (getIntNotNull(rsc.get(0), "algorithm_rating") > 0) {
+                    if (ratings.getAlgorithmRating() >= ratings.getHsAlgorithmRating()) {
+                        if (ratings.hasAlgorithmRating()) {
                             output.append("&amp;tab=alg");
                         }
                     } else {
-                        if (getIntNotNull(rsc.get(0), "hs_algorithm_rating") > 0) {
+                        if (ratings.hasHsAlgorithmRating()) {
                             output.append("&amp;tab=hs");
                         }
                     }
@@ -245,77 +236,75 @@ public class HandleTag extends TagSupport {
             } else {
                 int rating = 0;
                 // special case for admins
-                if (getIntNotNull(rsc.get(0), "algorithm_rating") < 0) {
-                    rating = getIntNotNull(rsc.get(0), "algorithm_rating");
+                if ( ratings.getAlgorithmRating() < 0) {
+                    rating = ratings.getAlgorithmRating();
                 } else {
                     if (context == null) {
-                        rating = max(getIntNotNull(rsc.get(0), "algorithm_rating"),
-                                getIntNotNull(rsc.get(0), "hs_algorithm_rating"),
-                                getIntNotNull(rsc.get(0), "marathon_match_rating"),
-                                getIntNotNull(rsc.get(0), "design_rating"),
-                                getIntNotNull(rsc.get(0), "development_rating"),
-                                getIntNotNull(rsc.get(0), "conceptualization_rating"),
-                                getIntNotNull(rsc.get(0), "specification_rating"),
-                                getIntNotNull(rsc.get(0), "architecture_rating"),
-                                getIntNotNull(rsc.get(0), "assembly_rating"),
-                                getIntNotNull(rsc.get(0), "test_suites_rating"),
-                                getIntNotNull(rsc.get(0), "test_scenarios_rating"),
-                                getIntNotNull(rsc.get(0), "ui_prototype_rating"),
-                                getIntNotNull(rsc.get(0), "ria_build_rating"),
-                                getIntNotNull(rsc.get(0), "content_creation_rating"),
-                                getIntNotNull(rsc.get(0), "reporting_rating"));
+                        rating = max(ratings.getAlgorithmRating(),
+                                ratings.getHsAlgorithmRating(),
+                                ratings.getMarathonMatchRating(),
+                                ratings.getDesignRating(),
+                                ratings.getDevelopmentRating(),
+                                ratings.getConceptualizationRating(),
+                                ratings.getSpecificationRating(),
+                                ratings.getArchitectureRating(),
+                                ratings.getAssemblyRating(),
+                                ratings.getTestSuitesRating(),
+                                ratings.getTestScenariosRating(),
+                                ratings.getUiPrototypeRating(),
+                                ratings.getRiaBuildRating(),
+                                ratings.getContentCreationRating(),
+                                ratings.getReportingRating());
                     } else if (context.trim().equalsIgnoreCase(ALGORITHM)) {
-                        rating = getIntNotNull(rsc.get(0), "algorithm_rating");
+                        rating = ratings.getAlgorithmRating();
                     } else if (context.trim().equalsIgnoreCase(HS_ALGORITHM)) {
-                        rating = getIntNotNull(rsc.get(0), "hs_algorithm_rating");
+                        rating = ratings.getHsAlgorithmRating();
                     } else if (context.trim().equalsIgnoreCase(MARATHON_MATCH)) {
-                        rating = getIntNotNull(rsc.get(0), "marathon_match_rating");
+                        rating = ratings.getMarathonMatchRating();
                     } else if (context.trim().equalsIgnoreCase(DESIGN)) {
-                        rating = getIntNotNull(rsc.get(0), "design_rating");
+                        rating = ratings.getDesignRating();
                     } else if (context.trim().equalsIgnoreCase(DEVELOPMENT)) {
-                        rating = getIntNotNull(rsc.get(0), "development_rating");
+                        rating = ratings.getDevelopmentRating();
                     } else if (context.trim().equalsIgnoreCase(CONCEPTUALIZATION)) {
-                        rating = getIntNotNull(rsc.get(0), "conceptualization_rating");
+                        rating = ratings.getConceptualizationRating();
                     } else if (context.trim().equalsIgnoreCase(SPECIFICATION)) {
-                        rating = getIntNotNull(rsc.get(0), "specification_rating");
+                        rating = ratings.getSpecificationRating();
                     } else if (context.trim().equalsIgnoreCase(ARCHITECTURE)) {
-                        rating = getIntNotNull(rsc.get(0), "architecture_rating");
+                        rating = ratings.getArchitectureRating();
                     } else if (context.trim().equalsIgnoreCase(ASSEMBLY)) {
-                        rating = getIntNotNull(rsc.get(0), "assembly_rating");
+                        rating = ratings.getAssemblyRating();
                     } else if (context.trim().equalsIgnoreCase(TEST_SUITES)) {
-                        rating = getIntNotNull(rsc.get(0), "test_suites_rating");
+                        rating = ratings.getTestSuitesRating();
                     } else if (context.trim().equalsIgnoreCase(TEST_SCENARIOS)) {
-                        rating = getIntNotNull(rsc.get(0), "test_scenarios_rating");
+                        rating = ratings.getTestScenariosRating();
                     } else if (context.trim().equalsIgnoreCase(UI_PROTOTYPE)) {
-                        rating = getIntNotNull(rsc.get(0), "ui_prototype_rating");
+                        rating = ratings.getUiPrototypeRating();
                     } else if (context.trim().equalsIgnoreCase(RIA_BUILD)) {
-                        rating = getIntNotNull(rsc.get(0), "ria_build_rating");
+                        rating = ratings.getRiaBuildRating();
                     } else if (context.trim().equalsIgnoreCase(CONTENT_CREATION)) {
-                        rating = getIntNotNull(rsc.get(0), "content_creation_rating");
+                        rating = ratings.getContentCreationRating();
                     } else if (context.trim().equalsIgnoreCase(REPORTING)) {
-                        rating = getIntNotNull(rsc.get(0), "reporting_rating");
+                        rating = ratings.getReportingRating();
                     } else if (context.trim().equalsIgnoreCase(COMPONENT)) {
-                        rating = max(getIntNotNull(rsc.get(0), "design_rating"),
-                                getIntNotNull(rsc.get(0), "development_rating"));
+                        rating = max(ratings.getDesignRating(),ratings.getDevelopmentRating());
                     } else if (context.trim().equalsIgnoreCase(HS_OR_ALGORITHM)) {
-                        rating = max(getIntNotNull(rsc.get(0), "hs_algorithm_rating"),
-                                getIntNotNull(rsc.get(0), "algorithm_rating"));
+                        rating = max(ratings.getHsAlgorithmRating(),ratings.getAlgorithmRating());
                     } else {
-                        rating = max(getIntNotNull(rsc.get(0), "algorithm_rating"),
-                                getIntNotNull(rsc.get(0), "hs_algorithm_rating"),
-                                getIntNotNull(rsc.get(0), "marathon_match_rating"),
-                                getIntNotNull(rsc.get(0), "design_rating"),
-                                getIntNotNull(rsc.get(0), "development_rating"),
-                                getIntNotNull(rsc.get(0), "conceptualization_rating"),
-                                getIntNotNull(rsc.get(0), "specification_rating"),
-                                getIntNotNull(rsc.get(0), "architecture_rating"),
-                                getIntNotNull(rsc.get(0), "assembly_rating"),
-                                getIntNotNull(rsc.get(0), "test_suites_rating"),
-                                getIntNotNull(rsc.get(0), "test_scenarios_rating"),
-                                getIntNotNull(rsc.get(0), "ui_prototype_rating"),
-                                getIntNotNull(rsc.get(0), "ria_build_rating"),
-                                getIntNotNull(rsc.get(0), "content_creation_rating"),
-                                getIntNotNull(rsc.get(0), "reporting_rating"));
+                        rating = max(ratings.getAlgorithmRating(),
+                                ratings.getHsAlgorithmRating(),
+                                ratings.getMarathonMatchRating(),
+                                ratings.getDesignRating(),
+                                ratings.getDevelopmentRating(),
+                                ratings.getConceptualizationRating(),
+                                ratings.getSpecificationRating(),
+                                ratings.getArchitectureRating(),
+                                ratings.getAssemblyRating(),
+                                ratings.getTestSuitesRating(),
+                                ratings.getTestScenariosRating(),
+                                ratings.getUiPrototypeRating(),
+                                ratings.getRiaBuildRating(),
+                                ratings.getContentCreationRating(),
+                                ratings.getReportingRating());
                     }
                 }
 
@@ -348,15 +337,6 @@ public class HandleTag extends TagSupport {
         else if (rating > 2199) return darkBG ? lightStyles[6] : darkStyles[6];
         return "";
     }
-    
-    private static int getIntNotNull(Map<String, Object> row, String key) {
-        Integer i = getInt(row, key);
-        if (i == null) {
-            return 0;
-        }
-        return i;
-    }
-
 
     private static int max(int a, int b, int c, int d, int e, int i, int j, int k, int l, int m, int n, int o, int p, int q, int r) {
         return max(max(max(max(max(max(max(max(max(max(max(max(max(max(a, b), c), d), e), i), j), k), l), m), n), o), p), q), r);

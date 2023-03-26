@@ -3,6 +3,7 @@
  */
 package com.topcoder.onlinereview.component.project.phase.handler;
 
+import com.topcoder.onlinereview.component.grpcclient.phasehandler.PhaseHandlerServiceRpc;
 import com.topcoder.onlinereview.component.project.phase.ManagerHelper;
 import com.topcoder.onlinereview.component.project.phase.OperationCheckResult;
 import com.topcoder.onlinereview.component.project.phase.Phase;
@@ -235,7 +236,7 @@ public class PostMortemPhaseHandler extends AbstractPhaseHandler {
      * @throws PhaseHandlingException
      *             if there is any error occurs.
      */
-    public void perform(Phase phase, String operator) throws PhaseHandlingException {
+    public void perform(PhaseHandlerServiceRpc phaseHandlerServiceRpc, Phase phase, String operator) throws PhaseHandlingException {
         // perform parameters checking
         PhasesHelper.checkNull(phase, "phase");
         PhasesHelper.checkString(operator, "operator");

@@ -275,8 +275,7 @@ public class Upload extends AuditedDeliverableStructure {
         // This method returns true if all of the following are true: id is not UNSET_ID, uploadType
         // is not null, uploadStatus is not null, owner is not UNSET_OWNER, project is not
         // UNSET_PROJECT, parameter is not null, base.isValidToPersist
-        return ((super.getId() != UNSET_ID)
-                    && (uploadType != null)
+        return ((uploadType != null)
                     && (uploadType.isValidToPersist())
                     && (uploadStatus != null)
                     && (uploadStatus.isValidToPersist())

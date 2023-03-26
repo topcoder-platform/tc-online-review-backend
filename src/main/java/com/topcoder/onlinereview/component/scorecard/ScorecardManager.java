@@ -3,20 +3,15 @@
  */
 package com.topcoder.onlinereview.component.scorecard;
 
-import com.topcoder.onlinereview.component.datavalidator.IntegerValidator;
-import com.topcoder.onlinereview.component.datavalidator.LongValidator;
-import com.topcoder.onlinereview.component.datavalidator.StringValidator;
+import com.topcoder.onlinereview.component.grpcclient.scorecard.ScorecardServiceRpc;
 import com.topcoder.onlinereview.component.search.SearchBuilderException;
-import com.topcoder.onlinereview.component.search.SearchBundle;
-import com.topcoder.onlinereview.component.search.SearchBundleManager;
 import com.topcoder.onlinereview.component.search.filter.Filter;
+import com.topcoder.onlinereview.grpc.scorecard.proto.ScorecardProto;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * This is the manager class of this component. It loads persistence implementation using settings
@@ -40,19 +35,8 @@ import java.util.Map;
  */
 @Component
 public class ScorecardManager {
-  public static final String SCORECARD_SEARCH_BUNDLE_NAME = "ScorecardSearchBundle";
-
-  /** The maximal length for ScorecardStatusName. */
-  private static final int SCORECARD_STATUS_NAME_MAXLENGTH = 64;
-
-  /** The maximal length for ScorecardTypeName. */
-  private static final int SCORECARD_TYPE_NAME_MAXLENGTH = 64;
-
-  /** The maximal length for ScorecardName. */
-  private static final int SCORECARD_NAME_MAXLENGTH = 64;
-
-  /** The maximal length for ScorecardVersion. */
-  private static final int SCORECARD_VERSION_MAXLENGTH = 16;
+  @Autowired
+  ScorecardServiceRpc scorecardServiceRpc;
 
   /**
    * The persistence instance. It is initialized in the constructor and never changed after that. It
@@ -60,55 +44,11 @@ public class ScorecardManager {
    */
   @Autowired private ScorecardPersistence persistence;
 
-  @Autowired private SearchBundleManager searchBundleManager;
-
-  /**
-   * The search bundle instance. It is initialized in the constructor and never changed after that.
-   * It is used in the search scorecard method. It can never be null.
-   */
-  private SearchBundle searchBundle;
-
   /**
    * The scorecard validator instance. It is initialized in the constructor and never changed after
    * that. It is used to validate scorecards before create/update them. It can never be null.
    */
   @Autowired private ScorecardValidator validator;
-
-  /**
-   * Create a new instance of ScorecardManagerImpl using the given configuration namespace. First it
-   * load the 'PersistenceClass' and 'PersistenceNamespace' properties to initialize the persistence
-   * plug-in implementation. The 'PersistenceNamespace' is optional and if it does not present,
-   * value of 'PersistenceClass' property will be used. Then it load the 'SearchBuilderNamespace'
-   * property to initialize SearchBuilder component.
-   */
-  @PostConstruct
-  public void postRun() {
-    searchBundle = searchBundleManager.getSearchBundle(SCORECARD_SEARCH_BUNDLE_NAME);
-    // Create a validationMap, and map the items to be checked with desired validator.
-    // Please refer to Component Specification 1.3.8 for the details.
-    Map validationMap = new HashMap();
-    validationMap.put(ScorecardSearchBundle.SCORECARD_STATUS_ID, LongValidator.isPositive());
-    validationMap.put(ScorecardSearchBundle.SCORECARD_TYPE_ID, LongValidator.isPositive());
-    validationMap.put(ScorecardSearchBundle.PROJECT_CATEGORY_ID, LongValidator.isPositive());
-    validationMap.put(ScorecardSearchBundle.PROJECT_ID, LongValidator.isPositive());
-    validationMap.put(
-        ScorecardSearchBundle.SCORECARD_STATUS_NAME,
-        StringValidator.hasLength(
-            IntegerValidator.lessThanOrEqualTo(SCORECARD_STATUS_NAME_MAXLENGTH)));
-    validationMap.put(
-        ScorecardSearchBundle.SCORECARD_TYPE_NAME,
-        StringValidator.hasLength(
-            IntegerValidator.lessThanOrEqualTo(SCORECARD_TYPE_NAME_MAXLENGTH)));
-    validationMap.put(
-        ScorecardSearchBundle.SCORECARD_NAME,
-        StringValidator.hasLength(IntegerValidator.lessThanOrEqualTo(SCORECARD_NAME_MAXLENGTH)));
-    validationMap.put(
-        ScorecardSearchBundle.SCORECARD_VERSION,
-        StringValidator.hasLength(IntegerValidator.lessThanOrEqualTo(SCORECARD_VERSION_MAXLENGTH)));
-
-    // Set the SearchableFields with this validationMap.
-    searchBundle.setSearchableFields(validationMap);
-  }
 
   /**
    * Create the scorecard in the database using the given scorecard instance. The scorecard instance
@@ -193,7 +133,7 @@ public class ScorecardManager {
 
     try {
       // Use the SearchBundle instance to search for ids
-      List<Map<String, Object>> result = searchBundle.search(filter);
+      List<ScorecardProto> result = scorecardServiceRpc.searchScorecards(filter);
 
       // If no search result found
       if (result.isEmpty()) {

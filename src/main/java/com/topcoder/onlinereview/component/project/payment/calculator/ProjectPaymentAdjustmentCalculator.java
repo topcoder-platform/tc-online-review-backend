@@ -3,26 +3,20 @@
  */
 package com.topcoder.onlinereview.component.project.payment.calculator;
 
+import com.topcoder.onlinereview.component.grpcclient.payment.PaymentServiceRpc;
 import com.topcoder.onlinereview.component.project.payment.Helper;
+import com.topcoder.onlinereview.component.project.payment.ProjectPaymentAdjustment;
+
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-
-import static com.topcoder.onlinereview.component.util.CommonUtils.executeSqlWithParam;
-import static com.topcoder.onlinereview.component.util.CommonUtils.getDouble;
-import static com.topcoder.onlinereview.component.util.CommonUtils.getFloat;
-import static com.topcoder.onlinereview.component.util.CommonUtils.getLong;
-
 
 /**
  * <p>
@@ -274,40 +268,11 @@ import static com.topcoder.onlinereview.component.util.CommonUtils.getLong;
 @Component("projectPaymentAdjustmentCalculator")
 public class ProjectPaymentAdjustmentCalculator implements ProjectPaymentCalculator {
 
+    @Autowired
+    private PaymentServiceRpc paymentServiceRpc;
+
     public static final String DEFAULT_CONFIG_NAMESPACE =
         "com.topcoder.management.payment.calculator.impl.ProjectPaymentAdjustmentCalculator";
-
-    /**
-     * <p>
-     * The multiplier column in project_payment_adjustment table.
-     * </p>
-     */
-    private static final String MULTIPLIER_COLUMN = "multiplier";
-
-    /**
-     * <p>
-     * The fixed_amount column in project_payment_adjustment table.
-     * </p>
-     */
-    private static final String FIXED_AMOUNT_COLUMN = "fixed_amount";
-
-    /**
-     * <p>
-     * The resource_role_id column in project_payment_adjustment table.
-     * </p>
-     */
-    private static final String RESOURCE_ROLE_ID_COLUMN = "resource_role_id";
-
-    /**
-     * <p>
-     * The prefix of the SQL query to retrieve adjustment values from project_payment_adjustment.
-     * </p>
-     * <p>
-     * It will be appended in getDefaultPayments() method with given resourceRoleIds to complete the IN clause.
-     * </p>
-     */
-    private static final String GET_ADJUSTMENT_QUERY_PREFIX = "SELECT resource_role_id, fixed_amount, multiplier "
-        + "FROM project_payment_adjustment " + "WHERE project_id=? AND " + "resource_role_id IN (?";
 
     /**
      * <p>
@@ -324,10 +289,6 @@ public class ProjectPaymentAdjustmentCalculator implements ProjectPaymentCalcula
     @Autowired
     @Qualifier("defaultProjectPaymentCalculator")
     private ProjectPaymentCalculator projectPaymentCalculator;
-
-    @Autowired
-    @Qualifier("tcsJdbcTemplate")
-    private JdbcTemplate jdbcTemplate;
 
     /**
      * <p>
@@ -376,26 +337,8 @@ public class ProjectPaymentAdjustmentCalculator implements ProjectPaymentCalcula
             throw Helper.logException(log, signature, e);
         }
 
-        // Create the parameterized query to be used to get the fixed amount and multiplier for each one of the
-        // specific resource role id from the database
-        StringBuilder query = new StringBuilder(GET_ADJUSTMENT_QUERY_PREFIX);
-
-        // Optionally concatenate the "?" placeholders for the other resource roles IDs (The above query is created
-        // assuming that there will be at least on resource role id in the list, otherwise IAE is thrown ).
-        for (int i = 1; i < resourceRoleIDs.size(); ++i) {
-            query.append(",?");
-        }
-        // add the closing parenthesis to the query
-        query.append(")");
-
-        List<Object> params = new ArrayList<>();
-        params.add(projectId);
-        for (int i = 0; i < resourceRoleIDs.size(); ++i) {
-            params.add(resourceRoleIDs.get(i));
-        }
-
         // Execute the query and get the result.
-        List<Map<String, Object>> resultSet = executeSqlWithParam(jdbcTemplate, query.toString(), params);
+        List<ProjectPaymentAdjustment> paymentAdjustments = paymentServiceRpc.getPaymentAdjustmentsForResource(projectId, resourceRoleIDs);
 
         // call the underlying implementation to calculate the default payments.
         Map<Long, BigDecimal> defaultPayments =
@@ -406,9 +349,9 @@ public class ProjectPaymentAdjustmentCalculator implements ProjectPaymentCalcula
         // please note that it is possible that some of resource role IDs will not be present
         // in the defaultPayments Map returned by the underlying implementation of the ProjectPaymentCalculator
         // this is taken into consideration in this method implementation.
-        for (Map<String, Object> row: resultSet) {
+        for (ProjectPaymentAdjustment paymentAdjustment: paymentAdjustments) {
             // adjust the default payments
-            adjustPayment(defaultPayments, row);
+            adjustPayment(defaultPayments, paymentAdjustment);
         }
 
         Helper.logExit(log, signature, new Object[] {defaultPayments});
@@ -429,16 +372,16 @@ public class ProjectPaymentAdjustmentCalculator implements ProjectPaymentCalcula
      * @throws SQLException
      *             If any error occurs.
      */
-    private void adjustPayment(Map<Long, BigDecimal> defaultPayments, Map<String, Object> resultSet) {
-        long resourceRoleId = getLong(resultSet, RESOURCE_ROLE_ID_COLUMN);
-        BigDecimal fixedAmount = Optional.ofNullable(getDouble(resultSet, FIXED_AMOUNT_COLUMN)).map(d -> new BigDecimal(d)).orElse(null);
+    private void adjustPayment(Map<Long, BigDecimal> defaultPayments, ProjectPaymentAdjustment projectPaymentAdjustment) {
+        long resourceRoleId = projectPaymentAdjustment.getResourceRoleId();
+        BigDecimal fixedAmount = projectPaymentAdjustment.getFixedAmount();
         if (fixedAmount != null) {
             // put directly into the map since fixed amount is available
-            defaultPayments.put(resourceRoleId, fixedAmount.setScale(2, RoundingMode.HALF_UP));
+            defaultPayments.put(resourceRoleId, fixedAmount);
         } else {
             // i.e fixedAmount is null
             // get the multiplier
-            float multiplier = getFloat(resultSet, MULTIPLIER_COLUMN);
+            float multiplier = projectPaymentAdjustment.getMultiplier().floatValue();
                 // check if resource role id has default payment to be adjusted
                 BigDecimal defaultPayment = defaultPayments.get(resourceRoleId);
 

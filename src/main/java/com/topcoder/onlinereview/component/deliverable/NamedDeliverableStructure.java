@@ -115,8 +115,7 @@ public abstract class NamedDeliverableStructure extends AuditedDeliverableStruct
     public boolean isValidToPersist() {
         // This method returns true only all of the following are true: id is not UNSET_ID, name is
         // not null, description is not null, super.isValidToPersist is true.
-        return ((getId() != UNSET_ID)
-                    && (name != null)
+        return ((name != null)
                     && (description != null)
                     && (super.isValidToPersist()));
     }

@@ -3,6 +3,8 @@
  */
 package com.topcoder.onlinereview.component.project.phase;
 
+import com.topcoder.onlinereview.component.grpcclient.phasehandler.PhaseHandlerServiceRpc;
+
 /**
  * <p>
  * Optional, pluggable phase handling mechanism that can be configured per phase type/operation. The handler will
@@ -71,5 +73,5 @@ public interface PhaseHandler {
      *             string
      * @throws PhaseHandlingException if an exception occurs while performing the phase transition
      */
-    public void perform(Phase phase, String operator) throws PhaseHandlingException;
+    public void perform(PhaseHandlerServiceRpc phaseHandlerServiceRpc, Phase phase, String operator) throws PhaseHandlingException;
 }

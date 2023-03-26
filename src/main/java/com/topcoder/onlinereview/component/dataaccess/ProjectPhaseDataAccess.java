@@ -3,6 +3,7 @@
  */
 package com.topcoder.onlinereview.component.dataaccess;
 
+import com.topcoder.onlinereview.component.grpcclient.dataaccess.DataAccessServiceRpc;
 import com.topcoder.onlinereview.component.project.phase.Dependency;
 import com.topcoder.onlinereview.component.project.phase.Phase;
 import com.topcoder.onlinereview.component.project.phase.PhaseStatus;
@@ -10,6 +11,10 @@ import com.topcoder.onlinereview.component.project.phase.PhaseType;
 import com.topcoder.onlinereview.component.project.phase.Project;
 import com.topcoder.onlinereview.component.workday.Workdays;
 import com.topcoder.onlinereview.component.workday.WorkdaysFactory;
+import com.topcoder.onlinereview.grpc.dataaccess.proto.ProjectPhaseProto;
+import com.topcoder.onlinereview.grpc.dataaccess.proto.SearchProjectPhasesResponse;
+import com.topcoder.onlinereview.grpc.dataaccess.proto.SearchProjectsParameter;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -19,10 +24,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static com.topcoder.onlinereview.component.util.CommonUtils.getDate;
-import static com.topcoder.onlinereview.component.util.CommonUtils.getInt;
-import static com.topcoder.onlinereview.component.util.CommonUtils.getLong;
-
 /**
  * <p>A simple DAO for project phases backed up by Query Tool.</p>
  *
@@ -31,7 +32,8 @@ import static com.topcoder.onlinereview.component.util.CommonUtils.getLong;
  */
 @Component
 public class ProjectPhaseDataAccess extends BaseDataAccess {
-
+    @Autowired
+    DataAccessServiceRpc dataAccessServiceRpc;
     @Autowired
     private WorkdaysFactory workdaysFactory;
 
@@ -43,7 +45,7 @@ public class ProjectPhaseDataAccess extends BaseDataAccess {
      * @return a <code>Map</code> mapping project IDs to the project phases.
      */
     public Map<Long, Project> searchActiveProjectPhases(PhaseStatus[] phaseStatuses, PhaseType[] phaseTypes) {
-        return searchProjectPhasesByQueryTool("tcs_project_phases_by_status", "stid",
+        return searchProjectPhasesByQueryTool(SearchProjectsParameter.STATUS_ID,
                                               String.valueOf(PROJECT_STATUS_ACTIVE_ID), phaseStatuses, phaseTypes);
     }
 
@@ -55,7 +57,7 @@ public class ProjectPhaseDataAccess extends BaseDataAccess {
      * @return a <code>Map</code> mapping project IDs to the project phases.
      */
     public Map<Long, Project> searchDraftProjectPhases(PhaseStatus[] phaseStatuses, PhaseType[] phaseTypes) {
-        return searchProjectPhasesByQueryTool("tcs_project_phases_by_status", "stid",
+        return searchProjectPhasesByQueryTool(SearchProjectsParameter.STATUS_ID,
                                               String.valueOf(PROJECT_STATUS_DRAFT_ID), phaseStatuses, phaseTypes);
     }
 
@@ -69,7 +71,7 @@ public class ProjectPhaseDataAccess extends BaseDataAccess {
      */
     public Map<Long, Project> searchUserProjectPhases(long userId, PhaseStatus[] phaseStatuses,
                                                       PhaseType[] phaseTypes) {
-        return searchProjectPhasesByQueryTool("tcs_project_phases_by_user", "uid",
+        return searchProjectPhasesByQueryTool(SearchProjectsParameter.USER_ID,
                                               String.valueOf(userId), phaseStatuses, phaseTypes);
     }
 
@@ -84,7 +86,7 @@ public class ProjectPhaseDataAccess extends BaseDataAccess {
      * @return a <code>Project</code> array listing the project phases.
      * @throws DataAccessException if an unexpected error occurs while running the query via Query Tool.
      */
-    private Map<Long, Project> searchProjectPhasesByQueryTool(String queryName, String paramName, String paramValue,
+    private Map<Long, Project> searchProjectPhasesByQueryTool(SearchProjectsParameter paramName, String paramValue,
                                                               PhaseStatus[] phaseStatuses, PhaseType[] phaseTypes) {
 
         // Build the cache of phase statuses for faster lookup by ID
@@ -94,7 +96,7 @@ public class ProjectPhaseDataAccess extends BaseDataAccess {
         Map<Long, PhaseType> typesMap = buildPhaseTypesLookupMap(phaseTypes);
 
         // Get project details by status using Query Tool
-        Map<String, List<Map<String, Object>>> results = runQuery(queryName, paramName, paramValue);
+        SearchProjectPhasesResponse results = dataAccessServiceRpc.searchProjectPhases(paramName, paramValue);
 
         // Convert returned data into Project objects
         Map<Long, Phase> cachedPhases = new HashMap<Long, Phase>();
@@ -103,27 +105,42 @@ public class ProjectPhaseDataAccess extends BaseDataAccess {
         Map<Long, Project> phProjects = new HashMap<>();
         Project currentPhProject = null;
         Phase currentPhase = null;
-        List<Map<String, Object>> phasesData = results.get(queryName);
+        List<ProjectPhaseProto> phasesData = results.getPhasesList();
         int recordNum = phasesData.size();
         for (int i = 0; i < recordNum; i++) {
-            long projectId = getLong(phasesData.get(i), "project_id");
+            ProjectPhaseProto phaseData = phasesData.get(i);
+            long projectId = phaseData.getProjectId();
             if ((currentPhProject == null) || (currentPhProject.getId() != projectId)) {
                 currentPhProject = new Project(new Date(Long.MAX_VALUE), workdays);
                 currentPhProject.setId(projectId);
                 phProjects.put(projectId, currentPhProject);
             }
 
-            long phaseId = getLong(phasesData.get(i), "project_phase_id");
+            long phaseId = phaseData.getProjectPhaseId();
             if ((currentPhase == null) || (currentPhase.getId() != phaseId)) {
-                currentPhase = new Phase(currentPhProject, getLong(phasesData.get(i), "duration"));
+                currentPhase = new Phase(currentPhProject, phaseData.getDuration());
                 currentPhase.setId(phaseId);
-                currentPhase.setActualEndDate(getDate(phasesData.get(i), "actual_end_time"));
-                currentPhase.setActualStartDate(getDate(phasesData.get(i), "actual_start_time"));
-                currentPhase.setFixedStartDate(getDate(phasesData.get(i), "fixed_start_time"));
-                currentPhase.setScheduledEndDate(getDate(phasesData.get(i), "scheduled_end_time"));
-                currentPhase.setScheduledStartDate(getDate(phasesData.get(i), "scheduled_start_time"));
-                currentPhase.setPhaseStatus(statusesMap.get(getLong(phasesData.get(i), "phase_status_id")));
-                currentPhase.setPhaseType(typesMap.get(getLong(phasesData.get(i), "phase_type_id")));
+                if (phaseData.hasActualEndTime()) {
+                    currentPhase.setActualEndDate(new Date(phaseData.getActualEndTime().getSeconds() * 1000));
+                }
+                if (phaseData.hasActualStartTime()) {
+                    currentPhase.setActualStartDate(new Date(phaseData.getActualStartTime().getSeconds() * 1000));
+                }
+                if (phaseData.hasFixedStartTime()) {
+                    currentPhase.setFixedStartDate(new Date(phaseData.getFixedStartTime().getSeconds() * 1000));
+                }
+                if (phaseData.hasScheduledEndTime()) {
+                    currentPhase.setScheduledEndDate(new Date(phaseData.getScheduledEndTime().getSeconds() * 1000));
+                }
+                if (phaseData.hasScheduledStartTime()) {
+                    currentPhase.setScheduledStartDate(new Date(phaseData.getScheduledStartTime().getSeconds() * 1000));
+                }
+                if (phaseData.hasPhaseStatusId()) {
+                    currentPhase.setPhaseStatus(statusesMap.get(phaseData.getPhaseStatusId()));
+                }
+                if (phaseData.hasPhaseTypeId()) {
+                    currentPhase.setPhaseType(typesMap.get(phaseData.getPhaseTypeId()));
+                }
                 cachedPhases.put(phaseId, currentPhase);
                 Date currentPhaseStartDate = currentPhase.getScheduledStartDate();
                 Date currentProjectStartDate = currentPhProject.getStartDate();
@@ -132,12 +149,12 @@ public class ProjectPhaseDataAccess extends BaseDataAccess {
                 }
             }
 
-            if (phasesData.get(i).get("dependent_phase_id") != null) {
-                long dependencyId = getLong(phasesData.get(i), "dependency_phase_id");
-                long dependentId = getLong(phasesData.get(i), "dependent_phase_id");
-                long lagTime = getLong(phasesData.get(i), "lag_time");
-                boolean dependencyStart = (getInt(phasesData.get(i), "dependency_start") == 1);
-                boolean dependentStart = (getInt(phasesData.get(i), "dependent_start") == 1);
+            if (phaseData.hasDependentPhaseId()) {
+                long dependencyId = phaseData.getDependencyPhaseId();
+                long dependentId = phaseData.getDependentPhaseId();
+                long lagTime = phaseData.getLagTime();
+                boolean dependencyStart = phaseData.getDependencyStart();
+                boolean dependentStart = phaseData.getDependentStart();
                 if (cachedPhases.containsKey(dependencyId)) {
                     Dependency dependency = new Dependency(cachedPhases.get(dependencyId), currentPhase,
                                                            dependencyStart, dependentStart, lagTime);

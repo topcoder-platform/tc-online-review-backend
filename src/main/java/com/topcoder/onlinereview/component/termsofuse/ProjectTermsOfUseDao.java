@@ -5,19 +5,16 @@ package com.topcoder.onlinereview.component.termsofuse;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
+
+import com.topcoder.onlinereview.component.grpcclient.termsofuse.TermsOfUseServiceRpc;
+import com.topcoder.onlinereview.grpc.termsofuse.proto.ProjectRoleTermsOfUseProto;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import static com.google.common.collect.Lists.newArrayList;
-import static com.topcoder.onlinereview.component.util.CommonUtils.executeSqlWithParam;
-import static com.topcoder.onlinereview.component.util.CommonUtils.getInt;
 
 /**
  * <p>
@@ -116,62 +113,14 @@ import static com.topcoder.onlinereview.component.util.CommonUtils.getInt;
 @Slf4j
 @Component
 public class ProjectTermsOfUseDao {
+    @Autowired
+    TermsOfUseServiceRpc termsOfUseServiceRpc;
     /**
      * <p>
      * Represents the class name.
      * </p>
      */
     private static final String CLASS_NAME = ProjectTermsOfUseDao.class.getName();
-
-    /**
-     * <p>
-     * Represents the SQL string to insert a project role terms of use association.
-     * </p>
-     */
-    private static final String INSERT_PROJECT_TERMS = "INSERT INTO project_role_terms_of_use_xref (project_id,"
-        + " resource_role_id, terms_of_use_id, sort_order, group_ind) VALUES (?, ?, ?, ?, ?)";
-
-    /**
-     * <p>
-     * Represents the SQL string to delete a project role terms of use association.
-     * </p>
-     */
-    private static final String DELETE_PROJECT_TERMS = "DELETE FROM project_role_terms_of_use_xref"
-        + " WHERE project_id = ? and resource_role_id = ? and terms_of_use_id = ? and group_ind = ?";
-
-    /**
-     * <p>
-     * Represents the SQL string to query the terms of use.
-     * </p>
-     *
-     * <p>
-     * <em>Changes in 1.1:</em>
-     * <ol>
-     * <li>Removed electronically_signable and member_agreeable columns.</li>
-     * <li>Added JOIN to terms_of_use_agreeability_type_lu table.</li>
-     * </ol>
-     * </p>
-     */
-    private static final String QUERY_TERMS =
-        "SELECT tou.terms_of_use_id, sort_order, group_ind, terms_of_use_type_id, title, url,"
-        + " tou.terms_of_use_agreeability_type_id, touat.name as terms_of_use_agreeability_type_name,"
-        + " touat.description as terms_of_use_agreeability_type_description FROM project_role_terms_of_use_xref"
-        + " INNER JOIN terms_of_use tou ON project_role_terms_of_use_xref.terms_of_use_id = tou.terms_of_use_id"
-        + " INNER JOIN terms_of_use_agreeability_type_lu touat ON touat.terms_of_use_agreeability_type_id"
-        + " = tou.terms_of_use_agreeability_type_id"
-        + " WHERE project_id = ? AND resource_role_id = ? order by group_ind, sort_order";
-
-    /**
-     * <p>
-     * Represents the SQL string to delete all project role terms of use association for a given project.
-     * </p>
-     */
-    private static final String DELETE_ALL_PROJECT_TERMS = "DELETE FROM project_role_terms_of_use_xref"
-        + " WHERE project_id = ?";
-
-    @Autowired
-    @Qualifier("commonJdbcTemplate")
-    private JdbcTemplate jdbcTemplate;
 
     /**
      * This method will create a project role terms of use association.
@@ -201,8 +150,7 @@ public class ProjectTermsOfUseDao {
             new Object[] {projectId, resourceRoleId, termsOfUseId, sortOrder, groupIndex});
 
         try {
-            Helper.executeUpdate(jdbcTemplate, INSERT_PROJECT_TERMS,
-                new Object[] {projectId, resourceRoleId, termsOfUseId, sortOrder, groupIndex});
+            termsOfUseServiceRpc.createProjectRoleTermsOfUse(projectId, resourceRoleId, termsOfUseId, sortOrder, groupIndex);
 
             // Log method exit
             Helper.logExit(log, signature, null);
@@ -240,10 +188,14 @@ public class ProjectTermsOfUseDao {
             new Object[] {projectId, resourceRoleId, termsOfUseId, groupIndex});
 
         try {
-            Helper.executeUpdate(jdbcTemplate, DELETE_PROJECT_TERMS,
-                new Object[] {projectId, resourceRoleId, termsOfUseId, groupIndex},
-                new StringBuilder().append(projectId).append(", ").append(resourceRoleId).append(", ")
-                    .append(termsOfUseId).append(", ").append(groupIndex).toString());
+            int num = termsOfUseServiceRpc.deleteProjectRoleTermsOfUse(projectId, resourceRoleId, termsOfUseId,
+                    resourceRoleId, groupIndex);
+            if (num != 1) {
+                throw new EntityNotFoundException("The entity was not found for id ("
+                        + new StringBuilder().append(projectId).append(", ").append(resourceRoleId).append(", ")
+                                .append(termsOfUseId).append(", ").append(groupIndex).toString()
+                        + ").");
+            }
 
             // Log method exit
             Helper.logExit(log, signature, null);
@@ -307,9 +259,9 @@ public class ProjectTermsOfUseDao {
             if ((agreeabilityTypeIds != null) && (agreeabilityTypeIds.length == 0)) {
                 throw new IllegalArgumentException("'agreeabilityTypeIds' should not be empty.");
             }
-            List<Map<String, Object>> rs = executeSqlWithParam(jdbcTemplate, QUERY_TERMS, newArrayList(projectId, resourceRoleId));
+            List<ProjectRoleTermsOfUseProto> projectRoleTermsOfUseProtos = termsOfUseServiceRpc.getProjectRoleTermsOfUse(projectId, resourceRoleId);
 
-            Map<Integer, List<TermsOfUse>> result = getTermsOfUse(rs, agreeabilityTypeIdsList);
+            Map<Integer, List<TermsOfUse>> result = getTermsOfUse(projectRoleTermsOfUseProtos, agreeabilityTypeIdsList);
 
             // Log method exit
             Helper.logExit(log, signature, new Object[] {result});
@@ -340,9 +292,7 @@ public class ProjectTermsOfUseDao {
             new Object[] {projectId});
 
         try {
-            Helper.executeUpdate(jdbcTemplate, DELETE_ALL_PROJECT_TERMS,
-                new Object[] {projectId});
-
+            termsOfUseServiceRpc.deleteAllProjectRoleTermsOfUse(projectId);
             // Log method exit
             Helper.logExit(log, signature, null);
         } catch (TermsOfUsePersistenceException e) {
@@ -378,7 +328,7 @@ public class ProjectTermsOfUseDao {
      * @throws SQLException
      *             if any persistence error occurs.
      */
-    private static Map<Integer, List<TermsOfUse>> getTermsOfUse(List<Map<String, Object>> rs, List<Integer> agreeabilityTypeIds) {
+    private static Map<Integer, List<TermsOfUse>> getTermsOfUse(List<ProjectRoleTermsOfUseProto> rs, List<Integer> agreeabilityTypeIds) {
 
         Map<Integer, List<TermsOfUse>> result = new HashMap<Integer, List<TermsOfUse>>();
 
@@ -397,9 +347,9 @@ public class ProjectTermsOfUseDao {
         boolean ignoreGroupList = false;
 
         // Iterate over all results
-        for (Map<String, Object> r: rs) {
+        for (ProjectRoleTermsOfUseProto r: rs) {
             // Get the group
-            group = getInt(r, "group_ind");
+            group = r.getGroupInd();
 
             // if moved to next group, add current list to result and clear.
             if (!group.equals(previousGroup)) {
@@ -416,7 +366,7 @@ public class ProjectTermsOfUseDao {
                 continue;
             }
 
-            TermsOfUse terms = Helper.getTermsOfUse(r, null, null);
+            TermsOfUse terms = Helper.getTermsOfUse(r);
             groupList.add(terms);
 
             if (agreeabilityTypeIds != null) {

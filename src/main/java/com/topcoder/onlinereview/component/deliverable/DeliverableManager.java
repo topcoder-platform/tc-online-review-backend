@@ -3,21 +3,18 @@
  */
 package com.topcoder.onlinereview.component.deliverable;
 
+import com.topcoder.onlinereview.component.grpcclient.deliverable.DeliverableServiceRpc;
 import com.topcoder.onlinereview.component.search.SearchBuilderException;
-import com.topcoder.onlinereview.component.search.SearchBundle;
-import com.topcoder.onlinereview.component.search.SearchBundleManager;
 import com.topcoder.onlinereview.component.search.filter.Filter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 import static com.google.common.collect.Lists.newArrayList;
-import static com.topcoder.onlinereview.component.util.CommonUtils.getLong;
 
 /**
  * The PersistenceDeliverableManager class implements the DeliverableManager interface. It ties
@@ -76,29 +73,10 @@ import static com.topcoder.onlinereview.component.util.CommonUtils.getLong;
 @Component
 public class DeliverableManager {
   /**
-   * The name under which the deliverable search bundle should appear in the SearchBundleManager, if
-   * the SearchBundleManager constructor is used.
-   */
-  public static final String DELIVERABLE_SEARCH_BUNDLE_NAME = "Deliverable Search Bundle";
-
-  /**
-   * The name under which the deliverable with submissions search bundle should appear in the
-   * SearchBundleManager, if the SearchBundleManager constructor is used.
-   */
-  public static final String DELIVERABLE_WITH_SUBMISSIONS_SEARCH_BUNDLE_NAME =
-      "Deliverable With Submission Search Bundle";
-
-  /**
    * The persistence store for Deliverables. This field is set in the constructor, is immutable, and
    * can never be null.
    */
   @Autowired private SqlDeliverablePersistence persistence;
-
-  /**
-   * The search bundle that is used when searching for deliverables. This field is set in the
-   * constructor, is immutable, and can never be null.
-   */
-  private SearchBundle deliverableSearchBundle;
 
   /**
    * The checkers that are used to determine whether a deliverable is complete or not. This field is
@@ -108,26 +86,8 @@ public class DeliverableManager {
    */
   @Autowired private Map<String, DeliverableChecker> deliverableCheckers;
 
-  @Autowired private SearchBundleManager searchBundleManager;
-
-  /**
-   * The search bundle that is used when searching for deliverables combined with submissions. This
-   * field is set in the constructor, is immutable, and can never be null.
-   */
-  private SearchBundle deliverableWithSubmissionsSearchBundle;
-
-  @PostConstruct
-  public void postRun() {
-    deliverableSearchBundle = searchBundleManager.getSearchBundle(DELIVERABLE_SEARCH_BUNDLE_NAME);
-    deliverableWithSubmissionsSearchBundle =
-        searchBundleManager.getSearchBundle(DELIVERABLE_WITH_SUBMISSIONS_SEARCH_BUNDLE_NAME);
-    // Set the searchable fields of SearchBundle.
-    DeliverableHelper.setSearchableFields(
-        deliverableSearchBundle, DeliverableHelper.DELIVERABLE_SEARCH_BUNDLE);
-    DeliverableHelper.setSearchableFields(
-        deliverableWithSubmissionsSearchBundle,
-        DeliverableHelper.DELIVERABLE_WITH_SUBMISSIONS_SEARCH_BUNDLE);
-  }
+  @Autowired
+  private DeliverableServiceRpc deliverableServiceRpc;
 
   /**
    * Searches the deliverables in the persistence store using the given filter. The filter can be
@@ -213,19 +173,12 @@ public class DeliverableManager {
       throws SearchBuilderException, DeliverablePersistenceException, DeliverableCheckingException {
     DeliverableHelper.checkObjectNotNull(filter, "filter");
 
-    // Get object with given filter from corresponding search bundle.
-    List<Map<String, Object>> obj;
+    Long[][] array;
     if (cols.size() == 3) {
-      obj = deliverableSearchBundle.search(filter);
+        array = deliverableServiceRpc.searchDeliverables(filter);
     } else {
-      obj = deliverableWithSubmissionsSearchBundle.search(filter);
+        array = deliverableServiceRpc.searchDeliverablesWithSubmission(filter);
     }
-
-    // Check if the return object is a CustomResultSet, and it's record count is correct too.
-    // And retrieve long[][] from correct CustomResultSet.
-    Long[][] array = checkAndGetCustomResultSetValidDeliverable(obj, cols);
-
-    // Create a List for temporary storage.
     List<Deliverable> list = new ArrayList<>();
 
     log.debug("Deliverable Id Array: " + array.length + ", " + array[0].length);
@@ -271,33 +224,5 @@ public class DeliverableManager {
 
     // Convert List to Deliverable[]
     return list.toArray(new Deliverable[list.size()]);
-  }
-
-  /**
-   * Check if the object is a CustomResultSet. If true, then check if the CustomResultSet's record
-   * count equals count. If all ok, it will return a long[][] array that retrieved from
-   * CustomResultSet.
-   *
-   * @param obj the object to check
-   * @param cols the column name list
-   * @return long[][] from CustomResultSet
-   * @since 1.2
-   */
-  private static Long[][] checkAndGetCustomResultSetValidDeliverable(
-      List<Map<String, Object>> obj, List<String> cols) {
-    log.debug("CustomResultSet Records: " + obj.size());
-
-    // Create a long array for temporary storage.
-    Long[][] res = new Long[cols.size()][obj.size()];
-
-    // Retrieved long[][] from CustomResultSet. If the expected data is not present,
-    // according to the implementation of CustomerResult.getInt(), ClassCastException
-    // will be thrown. Note that all columns and rows of CustomResultSet are 1-indexed.
-    for (int i = 0; i < obj.size(); i++) {
-      for (int j = 0; j < cols.size(); ++j) {
-        res[j][i] = getLong(obj.get(i), cols.get(j));
-      }
-    }
-    return res;
   }
 }

@@ -428,7 +428,7 @@ public class Submission extends AuditedDeliverableStructure {
         // This method returns true if all of the following are true: id is not UNSET_ID, uploads is
         // not null, each element in uploads is not null and isValidToPersist, submissionStatus is not null and
         // isValidToPersist, submissionType is not null and isValidToPersist, super.isValidTopPersist is true.
-        return ((super.getId() != UNSET_ID) && (upload != null && upload.isValidToPersist()) && (submissionStatus != null)
+        return ((upload != null && upload.isValidToPersist()) && (submissionStatus != null)
                 && (submissionStatus.isValidToPersist()) && (submissionType != null)
                 && (submissionType.isValidToPersist()) && super.isValidToPersist());
     }
