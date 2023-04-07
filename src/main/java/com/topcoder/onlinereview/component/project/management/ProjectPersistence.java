@@ -875,14 +875,4 @@ public class ProjectPersistence {
       throw new PersistenceException("error occurs when trying to get ids.");
     }
   }
-
-  public void updateProjectStatus(Project project, ProjectStatus status, String operator)
-      throws PersistenceException {
-    Long projectId = project.getId();
-    log.debug(
-        new LogMessage(projectId, operator, "update project status with projectId:" + projectId)
-            .toString());
-    // update the project type and project category
-    projectServiceRpc.updateProjectStatus(projectId, status.getId());
-  }
 }
