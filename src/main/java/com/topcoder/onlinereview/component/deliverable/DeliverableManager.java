@@ -3,6 +3,7 @@
  */
 package com.topcoder.onlinereview.component.deliverable;
 
+import com.topcoder.onlinereview.component.deliverable.checker.*;
 import com.topcoder.onlinereview.component.grpcclient.deliverable.DeliverableServiceRpc;
 import com.topcoder.onlinereview.component.search.SearchBuilderException;
 import com.topcoder.onlinereview.component.search.filter.Filter;
@@ -11,8 +12,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import javax.annotation.PostConstruct;
 
 import static com.google.common.collect.Lists.newArrayList;
 
@@ -84,10 +88,41 @@ public class DeliverableManager {
    *
    * <p>Change in 1.2: Added generic parameters.
    */
-  @Autowired private Map<String, DeliverableChecker> deliverableCheckers;
+  // @Autowired private AggregationDeliverableChecker aggregationDeliverableChecker;
+  @Autowired private AppealResponsesDeliverableChecker appealResponsesDeliverableChecker;
+  @Autowired private CommittedReviewDeliverableChecker CommittedReviewDeliverableChecker;
+  // @Autowired private FinalFixesDeliverableChecker finalFixesDeliverableChecker;
+  // @Autowired private FinalReviewDeliverableChecker finalReviewDeliverableChecker;
+  // @Autowired private IndividualReviewDeliverableChecker individualReviewDeliverableChecker;
+  // @Autowired private SpecificationSubmissionDeliverableChecker specificationSubmissionDeliverableChecker;
+  // @Autowired private SubmissionDeliverableChecker submissionDeliverableChecker;
+  // @Autowired private SubmitterCommentDeliverableChecker submitterCommentDeliverableChecker;
+  // @Autowired private TestCasesDeliverableChecker testCasesDeliverableChecker;
+
+  private Map<String, DeliverableChecker> deliverableCheckers;
 
   @Autowired
   private DeliverableServiceRpc deliverableServiceRpc;
+
+  @PostConstruct
+  public void postRun() {
+    deliverableCheckers = new HashMap<String, DeliverableChecker>();
+    // deliverableCheckers.put("Aggregation", aggregationDeliverableChecker);
+    deliverableCheckers.put("Appeal Responses", appealResponsesDeliverableChecker);
+    deliverableCheckers.put("Checkpoint Screening Scorecard", CommittedReviewDeliverableChecker);
+    deliverableCheckers.put("Checkpoint Review Scorecard", CommittedReviewDeliverableChecker);
+    deliverableCheckers.put("Primary Screening Scorecard", CommittedReviewDeliverableChecker);
+    deliverableCheckers.put("Review Scorecard", CommittedReviewDeliverableChecker);
+    deliverableCheckers.put("Iterative Review Scorecard", CommittedReviewDeliverableChecker);
+    // deliverableCheckers.put("Specification Review", CommittedReviewDeliverableChecker);
+    // deliverableCheckers.put("Final Fix", finalFixesDeliverableChecker);
+    // deliverableCheckers.put("Final Review", finalReviewDeliverableChecker);
+    // deliverableCheckers.put(null, individualReviewDeliverableChecker);
+    // deliverableCheckers.put(null, specificationSubmissionDeliverableChecker);
+    // deliverableCheckers.put(null, submissionDeliverableChecker);
+    // deliverableCheckers.put(null, submitterCommentDeliverableChecker);
+    // deliverableCheckers.put("Stress Test Cases", testCasesDeliverableChecker);
+  }
 
   /**
    * Searches the deliverables in the persistence store using the given filter. The filter can be
