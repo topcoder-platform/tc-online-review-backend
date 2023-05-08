@@ -46,13 +46,53 @@ public class DeliverableServiceRpc {
                 .loadDeliverablesWithoutSubmission(loadDeliverablesWithoutSubmissionRequest);
         List<DeliverableWithoutSubmissionProto> deliverableWithoutSubmissionList = loadDeliverablesWithoutSubmissionResponse
                 .getDeliverablesWithoutSubmissionsList();
-        Deliverable[] deliverables = new Deliverable[loadDeliverablesWithoutSubmissionResponse
-                .getDeliverablesWithoutSubmissionsCount()];
-        for (int i = 0; i < loadDeliverablesWithoutSubmissionResponse
-                .getDeliverablesWithoutSubmissionsCount(); ++i) {
+        int deliverableWithoutSubmissionCount = loadDeliverablesWithoutSubmissionResponse
+                .getDeliverablesWithoutSubmissionsCount();
+
+        LoadDeliverablesWithSubmissionRequest loadDeliverablesWithSubmissionRequest = LoadDeliverablesWithSubmissionRequest
+                .newBuilder().addAllDeliverableIds(Arrays.asList(deliverableIds))
+                .addAllResourceIds(Arrays.asList(resourceIds)).addAllPhaseIds(Arrays.asList(phaseIds)).build();
+        LoadDeliverablesWithSubmissionResponse loadDeliverablesWithSubmissionResponse = stub
+                .loadDeliverablesWithSubmission(loadDeliverablesWithSubmissionRequest);
+        List<DeliverableWithSubmissionProto> deliverableWithSubmissionList = loadDeliverablesWithSubmissionResponse
+                .getDeliverablesWithSubmissionsList();
+        int deliverableWithSubmissionCount = loadDeliverablesWithSubmissionResponse
+                .getDeliverablesWithSubmissionsCount();
+
+        Deliverable[] deliverables = new Deliverable[deliverableWithoutSubmissionCount
+                + deliverableWithSubmissionCount];
+        for (int i = 0; i < deliverableWithoutSubmissionCount; ++i) {
             DeliverableWithoutSubmissionProto dp = deliverableWithoutSubmissionList.get(i);
             Deliverable deliverable = new Deliverable(dp.getProjectId(), dp.getProjectPhaseId(),
                     dp.getResourceId(), null, dp.getRequired());
+            deliverable.setId(dp.getDeliverableId());
+            if (dp.hasCreateUser()) {
+                deliverable.setCreationUser(dp.getCreateUser());
+            }
+            if (dp.hasCreateDate()) {
+                deliverable.setCreationTimestamp(new Date(dp.getCreateDate().getSeconds() * 1000));
+            }
+            if (dp.hasModifyUser()) {
+                deliverable.setModificationUser(dp.getModifyUser());
+            }
+            if (dp.hasModifyDate()) {
+                deliverable.setModificationTimestamp(new Date(dp.getModifyDate().getSeconds() * 1000));
+            }
+            if (dp.hasName()) {
+                deliverable.setName(dp.getName());
+            }
+            if (dp.hasDescription()) {
+                deliverable.setDescription(dp.getDescription());
+            }
+            deliverables[i] = deliverable;
+        }
+
+        for (int i = deliverableWithoutSubmissionCount; i < deliverableWithoutSubmissionCount
+                + deliverableWithSubmissionCount; ++i) {
+            DeliverableWithSubmissionProto dp = deliverableWithSubmissionList
+                    .get(i - deliverableWithoutSubmissionCount);
+            Deliverable deliverable = new Deliverable(dp.getProjectId(), dp.getProjectPhaseId(),
+                    dp.getResourceId(), dp.hasSubmissionId() ? dp.getSubmissionId() : null, dp.getRequired());
             deliverable.setId(dp.getDeliverableId());
             if (dp.hasCreateUser()) {
                 deliverable.setCreationUser(dp.getCreateUser());
