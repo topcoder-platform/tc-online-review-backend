@@ -21,14 +21,14 @@ public class GrpcChannelManager {
             @Value("${managerHelper.authAudience}") String authAudience,
             @Value("${managerHelper.authDomain}") String authDomain,
             @Value("${managerHelper.authExpirationTime}") String authExpirationTime,
-            @Value("${managerHelper.authProxyURL}") String authProxyURL) {
+            @Value("${managerHelper.authProxyURL}") String authProxyURL) throws NumberFormatException {
         channel = ManagedChannelBuilder.forAddress(address, Integer.parseInt(port))
                 .usePlaintext()
                 .build();
         channelSync = ManagedChannelBuilder.forAddress(syncAddress, Integer.parseInt(syncPort))
                 .intercept(new GrpcInterceptor(authClientId, authClientSecret, authAudience, authDomain,
                         authExpirationTime, authProxyURL))
-                .usePlaintext()
+                .useTransportSecurity()
                 .build();
     }
 

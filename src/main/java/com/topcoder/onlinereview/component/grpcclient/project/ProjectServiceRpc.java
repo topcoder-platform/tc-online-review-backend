@@ -30,8 +30,11 @@ import com.topcoder.onlinereview.component.project.management.UserProjectType;
 import com.topcoder.onlinereview.component.search.filter.Filter;
 import com.topcoder.onlinereview.grpc.project.proto.*;
 
+import lombok.extern.slf4j.Slf4j;
+
 @Service
 @DependsOn({ "grpcChannelManager" })
+@Slf4j
 public class ProjectServiceRpc {
 
     @Autowired
@@ -500,14 +503,15 @@ public class ProjectServiceRpc {
         return response.getCount();
     }
 
-    public int updateProjectStatus(Long projectId, long statusId) {
-        UpdateProjectStatusRequest.Builder request = UpdateProjectStatusRequest.newBuilder();
-        if (projectId != null) {
-            request.setProjectId(projectId);
+    public int reactivateProject(long projectId) {
+        ProjectIdProto request = ProjectIdProto.newBuilder().setProjectId(projectId).build();
+        try {
+            CountProto response = stub.reactivateProject(request);
+            return response.getCount();
+        } catch (Exception e) {
+            log.error("Error during reactivating project", e);
         }
-        request.setStatusId(statusId);
-        CountProto response = stub.updateProjectStatus(request.build());
-        return response.getCount();
+        return 0;
     }
 
     private Project loadProject(ProjectProto p) {

@@ -153,6 +153,21 @@ public class SyncServiceRpc {
         }
     }
 
+    public void manualSync(Long projectId, List<String> tableNames) {
+        SyncInput.Builder request = getSyncInput(projectId);
+
+        for (String tableName : tableNames) {
+            request.addUpdatedTables(Table.newBuilder().setTable(tableName).build());
+        }
+        try {
+            if (request.getUpdatedTablesCount() > 0) {
+                stub.syncLegacy(request.build());
+            }
+        } catch (Exception e) {
+            log.error("Sync Error", e);
+        }
+    }
+
     private SyncInput.Builder getSyncInput(Long projectId) {
         return SyncInput.newBuilder().setProjectId(projectId.intValue());
     }
