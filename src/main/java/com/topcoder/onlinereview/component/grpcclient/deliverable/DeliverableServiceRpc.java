@@ -23,11 +23,8 @@ import com.topcoder.onlinereview.component.deliverable.late.LateDeliverableType;
 import com.topcoder.onlinereview.component.grpcclient.GrpcChannelManager;
 import com.topcoder.onlinereview.grpc.deliverable.proto.*;
 
-import lombok.extern.slf4j.Slf4j;
-
 import com.topcoder.onlinereview.component.search.filter.Filter;
 
-@Slf4j
 @Service
 @DependsOn({ "grpcChannelManager" })
 public class DeliverableServiceRpc {
@@ -249,8 +246,6 @@ public class DeliverableServiceRpc {
             builder.setSubmissionId(deliverable.getSubmission());
         }
         AppealResponsesDeliverableCheckResponse response = stub.appealResponsesDeliverableCheck(builder.build());
-        log.info(String.valueOf(response.getModifyDatesCount()));
-        log.info(String.valueOf(response.getModifyDatesList().size()));
         if (response.getModifyDatesCount() == 0) {
             deliverable.setCompletionDate(new Date());
         } else {
