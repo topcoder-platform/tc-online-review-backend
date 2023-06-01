@@ -95,7 +95,7 @@ public class DeliverableManager {
   // @Autowired private FinalReviewDeliverableChecker finalReviewDeliverableChecker;
   // @Autowired private IndividualReviewDeliverableChecker individualReviewDeliverableChecker;
   // @Autowired private SpecificationSubmissionDeliverableChecker specificationSubmissionDeliverableChecker;
-  // @Autowired private SubmissionDeliverableChecker submissionDeliverableChecker;
+  @Autowired private SubmissionDeliverableChecker submissionDeliverableChecker;
   // @Autowired private SubmitterCommentDeliverableChecker submitterCommentDeliverableChecker;
   // @Autowired private TestCasesDeliverableChecker testCasesDeliverableChecker;
 
@@ -119,7 +119,8 @@ public class DeliverableManager {
     // deliverableCheckers.put("Final Review", finalReviewDeliverableChecker);
     // deliverableCheckers.put(null, individualReviewDeliverableChecker);
     // deliverableCheckers.put(null, specificationSubmissionDeliverableChecker);
-    // deliverableCheckers.put(null, submissionDeliverableChecker);
+    deliverableCheckers.put("Submission", submissionDeliverableChecker);
+    deliverableCheckers.put("Checkpoint Submission", submissionDeliverableChecker);
     // deliverableCheckers.put(null, submitterCommentDeliverableChecker);
     // deliverableCheckers.put("Stress Test Cases", testCasesDeliverableChecker);
   }

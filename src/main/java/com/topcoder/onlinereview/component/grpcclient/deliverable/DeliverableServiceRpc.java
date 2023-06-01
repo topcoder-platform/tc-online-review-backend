@@ -333,8 +333,12 @@ public class DeliverableServiceRpc {
     public void submissionDeliverableCheck(Deliverable deliverable) {
         SubmissionDeliverableCheckRequest.Builder builder = SubmissionDeliverableCheckRequest.newBuilder();
         builder.setResourceId(deliverable.getResource());
-        // TODO: this is wrong
-        builder.setSubmissionTypeId(1);
+        if (deliverable.getName() == "Submission") {
+            builder.setSubmissionTypeId(1);
+        } else {
+            builder.setSubmissionTypeId(3);
+        }
+        
         SubmissionDeliverableCheckResponse response = stub.submissionDeliverableCheck(builder.build());
         if (response.getModifyDatesCount() > 0 && response.getModifyDates(0).hasModifyDate()) {
             deliverable
