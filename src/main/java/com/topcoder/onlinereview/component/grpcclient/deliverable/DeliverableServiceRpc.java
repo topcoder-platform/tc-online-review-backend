@@ -23,8 +23,11 @@ import com.topcoder.onlinereview.component.deliverable.late.LateDeliverableType;
 import com.topcoder.onlinereview.component.grpcclient.GrpcChannelManager;
 import com.topcoder.onlinereview.grpc.deliverable.proto.*;
 
+import lombok.extern.slf4j.Slf4j;
+
 import com.topcoder.onlinereview.component.search.filter.Filter;
 
+@Slf4j
 @Service
 @DependsOn({ "grpcChannelManager" })
 public class DeliverableServiceRpc {
@@ -249,7 +252,8 @@ public class DeliverableServiceRpc {
         if (response.getModifyDatesCount() == 0) {
             deliverable.setCompletionDate(new Date());
         } else {
-            response.getModifyDatesList().stream().filter(x -> x.hasModifyDate()).map(x -> new Date(x.getModifyDate().getSeconds() * 1000))
+            response.getModifyDatesList().stream().filter(x -> x.hasModifyDate())
+                    .map(x -> new Date(x.getModifyDate().getSeconds() * 1000))
                     .max(Comparator.comparing(x -> x)).ifPresent(d -> deliverable.setCompletionDate(d));
         }
     }
@@ -328,17 +332,23 @@ public class DeliverableServiceRpc {
     public void submissionDeliverableCheck(Deliverable deliverable) {
         SubmissionDeliverableCheckRequest.Builder builder = SubmissionDeliverableCheckRequest.newBuilder();
         builder.setResourceId(deliverable.getResource());
-        if (deliverable.getName() == "Submission") {
+        if (deliverable.getName().equals("Submission")) {
             builder.setSubmissionTypeId(1);
         } else {
             builder.setSubmissionTypeId(3);
         }
-        
+
         SubmissionDeliverableCheckResponse response = stub.submissionDeliverableCheck(builder.build());
         if (response.getModifyDatesCount() > 0 && response.getModifyDates(0).hasModifyDate()) {
             deliverable
                     .setCompletionDate(new Date(response.getModifyDates(0).getModifyDate().getSeconds() * 1000));
         }
+        log.info(String.valueOf(deliverable.getProject()));
+        log.info(String.valueOf(deliverable.getPhase()));
+        log.info(String.valueOf(deliverable.getResource()));
+        log.info(String.valueOf(deliverable.getName()));
+        log.info(String.valueOf(deliverable.getCompletionDate()));
+        log.info(String.valueOf(deliverable.isComplete()));
     }
 
     public void submitterCommentDeliverableCheck(Deliverable deliverable) {
