@@ -22,8 +22,12 @@ import com.topcoder.onlinereview.component.deliverable.late.LateDeliverable;
 import com.topcoder.onlinereview.component.deliverable.late.LateDeliverableType;
 import com.topcoder.onlinereview.component.grpcclient.GrpcChannelManager;
 import com.topcoder.onlinereview.grpc.deliverable.proto.*;
+
+import lombok.extern.slf4j.Slf4j;
+
 import com.topcoder.onlinereview.component.search.filter.Filter;
 
+@Slf4j
 @Service
 @DependsOn({ "grpcChannelManager" })
 public class DeliverableServiceRpc {
@@ -245,10 +249,12 @@ public class DeliverableServiceRpc {
             builder.setSubmissionId(deliverable.getSubmission());
         }
         AppealResponsesDeliverableCheckResponse response = stub.appealResponsesDeliverableCheck(builder.build());
+        log.info(String.valueOf(response.getModifyDatesCount()));
+        log.info(String.valueOf(response.getModifyDatesList().size()));
         if (response.getModifyDatesCount() == 0) {
             deliverable.setCompletionDate(new Date());
         } else {
-            response.getModifyDatesList().stream().map(x -> new Date(x.getModifyDate().getSeconds() * 1000))
+            response.getModifyDatesList().stream().filter(x -> x.hasModifyDate()).map(x -> new Date(x.getModifyDate().getSeconds() * 1000))
                     .max(Comparator.comparing(x -> x)).ifPresent(d -> deliverable.setCompletionDate(d));
         }
     }
