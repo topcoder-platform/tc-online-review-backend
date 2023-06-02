@@ -628,7 +628,9 @@ public class ProjectServiceRpc {
 
     private void setProjectProperties(Project project, List<ProjectPropertyProto> properties) {
         for (ProjectPropertyProto pp : properties) {
-            project.setProperty(pp.getName(), pp.hasValue() ? pp.getValue() : null);
+            if (pp.hasValue()) {
+                project.setProperty(pp.getName(), pp.getValue());
+            }
         }
     }
 
