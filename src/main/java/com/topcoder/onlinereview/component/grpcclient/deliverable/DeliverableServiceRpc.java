@@ -22,6 +22,8 @@ import com.topcoder.onlinereview.component.deliverable.late.LateDeliverable;
 import com.topcoder.onlinereview.component.deliverable.late.LateDeliverableType;
 import com.topcoder.onlinereview.component.grpcclient.GrpcChannelManager;
 import com.topcoder.onlinereview.grpc.deliverable.proto.*;
+
+
 import com.topcoder.onlinereview.component.search.filter.Filter;
 
 @Service
@@ -248,7 +250,8 @@ public class DeliverableServiceRpc {
         if (response.getModifyDatesCount() == 0) {
             deliverable.setCompletionDate(new Date());
         } else {
-            response.getModifyDatesList().stream().map(x -> new Date(x.getModifyDate().getSeconds() * 1000))
+            response.getModifyDatesList().stream().filter(x -> x.hasModifyDate())
+                    .map(x -> new Date(x.getModifyDate().getSeconds() * 1000))
                     .max(Comparator.comparing(x -> x)).ifPresent(d -> deliverable.setCompletionDate(d));
         }
     }
@@ -327,8 +330,12 @@ public class DeliverableServiceRpc {
     public void submissionDeliverableCheck(Deliverable deliverable) {
         SubmissionDeliverableCheckRequest.Builder builder = SubmissionDeliverableCheckRequest.newBuilder();
         builder.setResourceId(deliverable.getResource());
-        // TODO: this is wrong
-        builder.setSubmissionTypeId(1);
+        if (deliverable.getName().equals("Submission")) {
+            builder.setSubmissionTypeId(1);
+        } else {
+            builder.setSubmissionTypeId(3);
+        }
+
         SubmissionDeliverableCheckResponse response = stub.submissionDeliverableCheck(builder.build());
         if (response.getModifyDatesCount() > 0 && response.getModifyDates(0).hasModifyDate()) {
             deliverable
