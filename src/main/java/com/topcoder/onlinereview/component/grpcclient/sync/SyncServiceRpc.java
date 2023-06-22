@@ -120,9 +120,19 @@ public class SyncServiceRpc {
         }
     }
 
-    public void SaveReviewSync(Long projectId) {
+    public void SaveReviewManagerEditSync(Long projectId) {
         SyncInput.Builder request = getSyncInput(projectId);
         request.addUpdatedTables(getSubmissionTable(null));
+        try {
+            stub.syncLegacy(request.build());
+        } catch (Exception e) {
+            log.error("Sync Error", e);
+        }
+    }
+
+    public void SaveReviewSync(Long projectId, String reviewType) {
+        SyncInput.Builder request = getSyncInput(projectId);
+        request.addUpdatedTables(getReviewTable(reviewType));
         try {
             stub.syncLegacy(request.build());
         } catch (Exception e) {
@@ -217,6 +227,11 @@ public class SyncServiceRpc {
     private Table getProjectPaymentTable(List<Long> projectPaymentIds) {
         Table.Builder table = Table.newBuilder().setTable("project_payment").setPrimaryKey("project_payment_id");
         addValues(table, projectPaymentIds);
+        return table.build();
+    }
+
+    private Table getReviewTable(String reviewType) {
+        Table.Builder table = Table.newBuilder().setTable("review").setPrimaryKey(reviewType);
         return table.build();
     }
 
