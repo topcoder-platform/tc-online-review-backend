@@ -107,7 +107,13 @@ public class SyncServiceRpc {
     }
 
     public void saveReviewPaymentsSync(Long projectId) {
-
+        SyncInput.Builder request = getSyncInput(projectId);
+        request.addUpdatedTables(getProjectPaymentTable(null));
+        try {
+            stub.syncLegacy(request.build());
+        } catch (Exception e) {
+            log.error("Sync Error", e);
+        }
     }
 
     public void SaveProjectPaymentsSync(Long projectId, List<Long> resourceIds) {
