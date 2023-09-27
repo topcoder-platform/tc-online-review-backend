@@ -390,9 +390,11 @@ public class ScorecardPersistence {
     try {
       for (ScorecardProto row : resultSet) {
         Scorecard scorecard = populateScorecard(row);
+        /*
         if (groupPersistence != null) {
           scorecard.addGroups(groupPersistence.getGroups(scorecard.getId()));
         }
+        */
         scorecards.add(scorecard);
       }
       return (Scorecard[]) scorecards.toArray(new Scorecard[scorecards.size()]);
