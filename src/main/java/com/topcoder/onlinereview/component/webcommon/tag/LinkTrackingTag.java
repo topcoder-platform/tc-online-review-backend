@@ -3,8 +3,8 @@ package com.topcoder.onlinereview.component.webcommon.tag;
 import com.topcoder.onlinereview.component.webcommon.ApplicationServer;
 import com.topcoder.onlinereview.component.webcommon.StringUtils;
 
-import javax.servlet.jsp.JspException;
-import javax.servlet.jsp.tagext.TagSupport;
+import jakarta.servlet.jsp.JspException;
+import jakarta.servlet.jsp.tagext.TagSupport;
 import java.io.IOException;
 
 /**

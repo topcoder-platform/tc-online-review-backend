@@ -3,9 +3,9 @@ package com.topcoder.onlinereview.component.webcommon.tag;
 import com.topcoder.onlinereview.component.webcommon.model.NavNode;
 import com.topcoder.onlinereview.component.webcommon.model.NavTree;
 
-import javax.servlet.jsp.JspException;
-import javax.servlet.jsp.JspWriter;
-import javax.servlet.jsp.tagext.TagSupport;
+import jakarta.servlet.jsp.JspException;
+import jakarta.servlet.jsp.JspWriter;
+import jakarta.servlet.jsp.tagext.TagSupport;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Iterator;

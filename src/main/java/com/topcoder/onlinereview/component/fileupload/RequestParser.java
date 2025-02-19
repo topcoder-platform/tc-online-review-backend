@@ -3,7 +3,7 @@
  */
 package com.topcoder.onlinereview.component.fileupload;
 
-import javax.servlet.ServletRequest;
+import jakarta.servlet.ServletRequest;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Map;

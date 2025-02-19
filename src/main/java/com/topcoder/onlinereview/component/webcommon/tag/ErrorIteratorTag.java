@@ -1,6 +1,6 @@
 package com.topcoder.onlinereview.component.webcommon.tag;
 
-import javax.servlet.jsp.JspException;
+import jakarta.servlet.jsp.JspException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;

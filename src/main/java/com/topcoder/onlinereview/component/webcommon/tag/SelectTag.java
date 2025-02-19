@@ -2,8 +2,8 @@ package com.topcoder.onlinereview.component.webcommon.tag;
 
 import com.topcoder.onlinereview.component.webcommon.StringUtils;
 
-import javax.servlet.jsp.JspException;
-import javax.servlet.jsp.JspWriter;
+import jakarta.servlet.jsp.JspException;
+import jakarta.servlet.jsp.JspWriter;
 import java.util.Collection;
 import java.util.Iterator;
 

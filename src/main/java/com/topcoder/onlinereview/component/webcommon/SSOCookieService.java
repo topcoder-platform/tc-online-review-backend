@@ -7,9 +7,9 @@ import com.topcoder.onlinereview.component.grpcclient.GrpcHelper;
 import com.topcoder.onlinereview.component.grpcclient.webcommon.WebCommonServiceRpc;
 import com.topcoder.onlinereview.grpc.webcommon.proto.GetUserPasswordResponse;
 
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.security.MessageDigest;
 
 import static com.topcoder.onlinereview.component.util.SpringUtils.getPropertyValue;

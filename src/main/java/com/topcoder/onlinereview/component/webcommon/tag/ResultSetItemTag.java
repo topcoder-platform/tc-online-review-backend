@@ -2,7 +2,7 @@ package com.topcoder.onlinereview.component.webcommon.tag;
 
 import com.topcoder.onlinereview.component.webcommon.StringUtils;
 
-import javax.servlet.jsp.JspException;
+import jakarta.servlet.jsp.JspException;
 import java.util.List;
 import java.util.Map;
 

@@ -2,8 +2,8 @@ package com.topcoder.onlinereview.component.webcommon.tag;
 
 import com.topcoder.onlinereview.component.webcommon.model.ImageInfo;
 
-import javax.servlet.jsp.JspException;
-import javax.servlet.jsp.tagext.TagSupport;
+import jakarta.servlet.jsp.JspException;
+import jakarta.servlet.jsp.tagext.TagSupport;
 import java.io.IOException;
 
 /**

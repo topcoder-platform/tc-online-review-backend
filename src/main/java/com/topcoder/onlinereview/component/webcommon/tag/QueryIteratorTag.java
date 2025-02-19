@@ -6,7 +6,7 @@ import com.topcoder.onlinereview.grpc.webcommon.proto.DoStartTagResponse;
 import com.topcoder.onlinereview.grpc.webcommon.proto.ParameterListProto;
 import com.topcoder.onlinereview.grpc.webcommon.proto.ParameterProto;
 
-import javax.servlet.jsp.JspException;
+import jakarta.servlet.jsp.JspException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Hashtable;
@@ -27,7 +27,7 @@ public class QueryIteratorTag extends IteratorTag {
     private Hashtable params;
 
     /**
-     * @see javax.servlet.jsp.tagext.Tag#doStartTag()
+     * @see jakarta.servlet.jsp.tagext.Tag#doStartTag()
      */
     public int doStartTag() throws JspException {
         try {

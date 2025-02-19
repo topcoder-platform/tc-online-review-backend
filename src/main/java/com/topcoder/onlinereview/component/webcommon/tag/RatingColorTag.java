@@ -10,8 +10,8 @@
 
 package com.topcoder.onlinereview.component.webcommon.tag;
 
-import javax.servlet.jsp.JspException;
-import javax.servlet.jsp.tagext.BodyTagSupport;
+import jakarta.servlet.jsp.JspException;
+import jakarta.servlet.jsp.tagext.BodyTagSupport;
 import java.io.IOException;
 
 /**
@@ -71,7 +71,7 @@ public class RatingColorTag extends BodyTagSupport {
         } catch (Exception e) {
             throw new JspException(e.getMessage());
         }
-        return EVAL_BODY_TAG;
+        return EVAL_BODY_BUFFERED;
     }
 
     public int doAfterBody() throws JspException {

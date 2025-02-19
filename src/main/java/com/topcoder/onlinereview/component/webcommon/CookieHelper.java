@@ -3,7 +3,7 @@
  */
 package com.topcoder.onlinereview.component.webcommon;
 
-import javax.servlet.http.Cookie;
+import jakarta.servlet.http.Cookie;
 
 /**
  * <p>

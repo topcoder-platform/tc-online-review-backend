@@ -11,8 +11,8 @@ import com.topcoder.onlinereview.component.webcommon.model.language.ProblemRende
 import com.topcoder.onlinereview.component.webcommon.model.language.PythonLanguage;
 import com.topcoder.onlinereview.component.webcommon.model.language.VBLanguage;
 
-import javax.servlet.jsp.JspException;
-import javax.servlet.jsp.tagext.TagSupport;
+import jakarta.servlet.jsp.JspException;
+import jakarta.servlet.jsp.tagext.TagSupport;
 import java.io.StringReader;
 
 

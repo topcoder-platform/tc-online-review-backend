@@ -3,8 +3,8 @@
  */
 package com.topcoder.onlinereview.component.fileupload;
 
-import javax.servlet.ServletInputStream;
-import javax.servlet.ServletRequest;
+import jakarta.servlet.ServletInputStream;
+import jakarta.servlet.ServletRequest;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;

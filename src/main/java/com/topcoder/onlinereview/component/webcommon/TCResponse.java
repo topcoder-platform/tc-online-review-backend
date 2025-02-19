@@ -1,6 +1,6 @@
 package com.topcoder.onlinereview.component.webcommon;
 
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletResponse;
 
 /**
  * @author dok
