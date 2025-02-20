@@ -3,7 +3,7 @@ package com.topcoder.onlinereview.component.grpcclient.review;
 import java.util.Date;
 import java.util.List;
 
-import javax.annotation.PostConstruct;
+import jakarta.annotation.PostConstruct;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.DependsOn;

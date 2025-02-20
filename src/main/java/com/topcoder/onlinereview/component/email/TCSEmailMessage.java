@@ -3,8 +3,8 @@
  */
 package com.topcoder.onlinereview.component.email;
 
-import javax.mail.Address;
-import javax.mail.internet.InternetAddress;
+import jakarta.mail.Address;
+import jakarta.mail.internet.InternetAddress;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.util.Collections;
@@ -264,7 +264,7 @@ public class TCSEmailMessage extends TCSMessage {
 
         try {
             to[type] = addAddress(to[type], new InternetAddress(addr));
-        } catch (javax.mail.internet.AddressException e) {
+        } catch (jakarta.mail.internet.AddressException e) {
             throw new AddressException("Invalid Address", e);
         }
     }
@@ -440,7 +440,7 @@ public class TCSEmailMessage extends TCSMessage {
 
         try {
             from = new InternetAddress(addr);
-        } catch (javax.mail.internet.AddressException e) {
+        } catch (jakarta.mail.internet.AddressException e) {
             throw new AddressException("Invalid Address", e);
         }
     }
@@ -649,7 +649,7 @@ public class TCSEmailMessage extends TCSMessage {
             InternetAddress ret = new InternetAddress(address);
             ret.setPersonal(personal);
             return ret;
-        } catch (javax.mail.internet.AddressException e) {
+        } catch (jakarta.mail.internet.AddressException e) {
             throw new AddressException("Invalid address: " + address, e);
         } catch (UnsupportedEncodingException e) {
             throw new AddressException("Encoding if not supported for personal: " + personal, e);
