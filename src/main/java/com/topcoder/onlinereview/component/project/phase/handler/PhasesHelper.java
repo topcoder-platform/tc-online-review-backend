@@ -1913,6 +1913,11 @@ public final class PhasesHelper {
      */
     public static Submission[] updateSubmissionsResults(ManagerHelper managerHelper, Phase phase, String operator,
         boolean updateInitialScore, boolean updateFinalResults) throws PhaseHandlingException {
+
+        System.out.println("Update submission results for project: " + phase.getProject().getId());
+        System.out.println("Update initial score: " + updateInitialScore);
+        System.out.println("Update final results: " + updateFinalResults);
+        
         PhasesHelper.checkNull(phase, "phase");
         PhasesHelper.checkString(operator, "operator");
 

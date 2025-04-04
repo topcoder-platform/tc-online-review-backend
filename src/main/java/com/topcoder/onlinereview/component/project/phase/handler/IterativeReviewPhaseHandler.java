@@ -216,6 +216,7 @@ public class IterativeReviewPhaseHandler extends AbstractPhaseHandler {
      *             if the input parameters is null or empty string.
      */
     public void perform(PhaseHandlerServiceRpc phaseHandlerServiceRpc, Phase phase, String operator) throws PhaseHandlingException {
+        System.out.println("Iterative Review Phase Handler - perform");
         PhasesHelper.checkNull(phase, "phase");
         PhasesHelper.checkString(operator, "operator");
         PhasesHelper.checkPhaseType(phase, Constants.PHASE_ITERATIVE_REVIEW);
@@ -229,6 +230,7 @@ public class IterativeReviewPhaseHandler extends AbstractPhaseHandler {
             putPhaseStartInfoValues(phase, values);
         } else {
             boolean passedReview = updateSubmissionScores(phase, operator, values);
+            System.out.println("IterativeReviewHandler - perform, passedReview: " + passedReview);
             values.put("PASSED", passedReview ? 1 : 0);
             if (!passedReview) {
                 insertIterativeReview(phase, operator);
@@ -282,6 +284,7 @@ public class IterativeReviewPhaseHandler extends AbstractPhaseHandler {
             throws PhaseHandlingException {
 
         try {
+            System.out.println("IterativeReviewPhaseHandler - updateSubmissionScores");
             Submission[] subs = PhasesHelper.updateSubmissionsResults(getManagerHelper(), phase, operator, true, true);
 
             // add the submission result to the values map

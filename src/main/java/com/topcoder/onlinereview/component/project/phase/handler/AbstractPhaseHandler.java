@@ -902,6 +902,7 @@ public abstract class AbstractPhaseHandler implements PhaseHandler {
             field.setValue(""+project.getTcDirectProjectId());
         } else if ("IS_WINNER".equals(field.getName())) {
             long userId = user.getId();
+            System.out.println("Winner external reference ID set: " + userId);
             String projectWinnerId = (String) project.getProperty("Winner External Reference ID");
             field.setValue(projectWinnerId.equals(String.valueOf(userId)) ? "1" : "0");
         } else if ("CHALLENGE_ID".equals(field.getName())) {
