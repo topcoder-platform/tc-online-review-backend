@@ -6,17 +6,17 @@ package com.topcoder.onlinereview.component.email;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.activation.DataHandler;
-import javax.activation.DataSource;
-import javax.activation.FileTypeMap;
-import javax.mail.Address;
-import javax.mail.MessagingException;
-import javax.mail.Multipart;
-import javax.mail.NoSuchProviderException;
-import javax.mail.Transport;
-import javax.mail.internet.MimeBodyPart;
-import javax.mail.internet.MimeMessage;
-import javax.mail.internet.MimeMultipart;
+import jakarta.activation.DataHandler;
+import jakarta.activation.DataSource;
+import jakarta.activation.FileTypeMap;
+import jakarta.mail.Address;
+import jakarta.mail.MessagingException;
+import jakarta.mail.Multipart;
+import jakarta.mail.NoSuchProviderException;
+import jakarta.mail.Transport;
+import jakarta.mail.internet.MimeBodyPart;
+import jakarta.mail.internet.MimeMessage;
+import jakarta.mail.internet.MimeMultipart;
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
@@ -380,9 +380,9 @@ public class EmailEngine {
         checkNull(attachments, "attachments");
         checkNull(contentType, "contentType");
 
-        javax.mail.Session eMailSession = null;
+        jakarta.mail.Session eMailSession = null;
         Transport eMailTransport = null;
-        javax.mail.Message eMailMessage = null;
+        jakarta.mail.Message eMailMessage = null;
         //BasicConfigurator.configure();
         //Retrieve configuration properties
         String host = "";
@@ -419,17 +419,17 @@ public class EmailEngine {
         props.put("mail.host", host);
         props.put("mail.from", from);
         try {
-            eMailSession = javax.mail.Session.getInstance(props, null);
+            eMailSession = jakarta.mail.Session.getInstance(props, null);
             eMailMessage = new MimeMessage(eMailSession);
             eMailTransport = eMailSession.getTransport(SMTP_HOST_TYPE);
             eMailTransport.connect(host, port, getPropertyValue(PROPERTY_PREFIX + PROPERTY_SMTP_USER),
                     getPropertyValue(PROPERTY_PREFIX + PROPERTY_SMTP_PASSWORD));
-            eMailMessage.setRecipients(javax.mail.Message.RecipientType.TO, to);
+            eMailMessage.setRecipients(jakarta.mail.Message.RecipientType.TO, to);
             if (cc != null) {
-                eMailMessage.setRecipients(javax.mail.Message.RecipientType.CC, cc);
+                eMailMessage.setRecipients(jakarta.mail.Message.RecipientType.CC, cc);
             }
             if (bcc != null) {
-                eMailMessage.setRecipients(javax.mail.Message.RecipientType.BCC, bcc);
+                eMailMessage.setRecipients(jakarta.mail.Message.RecipientType.BCC, bcc);
             }
             eMailMessage.setFrom(from);
             eMailMessage.setSubject(subject);

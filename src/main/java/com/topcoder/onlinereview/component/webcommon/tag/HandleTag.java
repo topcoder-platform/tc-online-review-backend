@@ -9,9 +9,9 @@ import com.topcoder.onlinereview.grpc.webcommon.proto.GetCoderAllRatingsResponse
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.servlet.jsp.JspException;
-import javax.servlet.jsp.PageContext;
-import javax.servlet.jsp.tagext.TagSupport;
+import jakarta.servlet.jsp.JspException;
+import jakarta.servlet.jsp.PageContext;
+import jakarta.servlet.jsp.tagext.TagSupport;
 
 public class HandleTag extends TagSupport {
     private static final Logger log = LoggerFactory.getLogger(HandleTag.class);

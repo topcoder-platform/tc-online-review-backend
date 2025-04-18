@@ -5,8 +5,8 @@ import com.topcoder.onlinereview.component.webcommon.model.Question;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.servlet.jsp.JspException;
-import javax.servlet.jsp.PageContext;
+import jakarta.servlet.jsp.JspException;
+import jakarta.servlet.jsp.PageContext;
 import java.util.Iterator;
 import java.util.List;
 

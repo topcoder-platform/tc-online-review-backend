@@ -7,7 +7,7 @@ import com.topcoder.onlinereview.component.id.Generator;
 import com.topcoder.onlinereview.component.id.UUIDType;
 import com.topcoder.onlinereview.component.id.UUIDUtility;
 
-import javax.servlet.ServletRequest;
+import jakarta.servlet.ServletRequest;
 
 
 /**

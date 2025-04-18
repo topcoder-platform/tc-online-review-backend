@@ -6,8 +6,8 @@ package com.topcoder.onlinereview.component.login;
 import com.topcoder.onlinereview.component.authenticationfactory.Principal;
 import com.topcoder.onlinereview.component.authenticationfactory.Response;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 /**
  * This interface defines the contract of keeping track of the user log state stored in the request or session.

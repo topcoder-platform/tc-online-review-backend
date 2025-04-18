@@ -2,8 +2,8 @@ package com.topcoder.onlinereview.component.webcommon.tag;
 
 import com.topcoder.onlinereview.component.shared.dataaccess.DataAccessConstants;
 
-import javax.servlet.jsp.JspException;
-import javax.servlet.jsp.tagext.TagSupport;
+import jakarta.servlet.jsp.JspException;
+import jakarta.servlet.jsp.tagext.TagSupport;
 import java.io.IOException;
 import java.util.Enumeration;
 import java.util.HashMap;
